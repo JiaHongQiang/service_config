@@ -1,0 +1,10 @@
+{
+  "id": "security-requirements",
+  "source": "user",
+  "scope": "workspace",
+  "content": "安全要求:\\n- SSH密码加密存储\\n- 输入参数验证\\n- 文件路径安全限制\\n- 会话超时管理",
+  "keywords": "security,authentication,validation",
+  "category": "project_specification",
+  "title": "安全要求规范",
+  "action": "create"
+}

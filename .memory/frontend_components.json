@@ -1,0 +1,10 @@
+{
+  "id": "frontend-components",
+  "source": "user",
+  "scope": "workspace",
+  "content": "需要生成的前端组件:\\n- ServerSelector组件（服务器切换）\\n- ServiceCard组件（每个服务独立卡片）\\n- FileTree组件（配置文件导航）\\n- CodeEditor组件（代码编辑区域）\\n- StatusIndicator组件（状态显示）",
+  "keywords": "frontend,components,javascript",
+  "category": "project_specification",
+  "title": "前端组件要求",
+  "action": "create"
+}

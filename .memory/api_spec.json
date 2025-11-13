@@ -1,0 +1,39 @@
+{
+  "API端点规范": [
+    {
+      "method": "GET",
+      "endpoint": "/api/servers",
+      "description": "服务器列表"
+    },
+    {
+      "method": "POST",
+      "endpoint": "/api/servers/{id}/connect",
+      "description": "连接服务器"
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/services/status",
+      "description": "服务状态"
+    },
+    {
+      "method": "POST",
+      "endpoint": "/api/services/{name}/{action}",
+      "description": "服务操作"
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/config/files",
+      "description": "文件列表"
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/config/files/{path}",
+      "description": "读取文件"
+    },
+    {
+      "method": "POST",
+      "endpoint": "/api/config/files/{path}",
+      "description": "保存文件（自动备份）"
+    }
+  ]
+}

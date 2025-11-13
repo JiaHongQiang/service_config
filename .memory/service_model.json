@@ -1,0 +1,10 @@
+{
+  "id": "service-model-definition",
+  "source": "user",
+  "scope": "workspace",
+  "content": "Service = {\n    \"name\": \"sie|vss|nginx|nginxd|lkdc\",\n    \"display_name\": \"string\",\n    \"config_path\": \"string\",\n    \"has_config\": \"boolean\"\n}",
+  "keywords": "data,model,service",
+  "category": "project_specification",
+  "title": "服务数据模型定义",
+  "action": "create"
+}

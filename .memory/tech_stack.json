@@ -1,0 +1,10 @@
+{
+  "id": "tech-stack-spec",
+  "source": "user",
+  "scope": "workspace",
+  "content": "技术栈规范:\\n- backend: python-flask\\n- frontend: html-css-js-bootstrap\\n- ssh_library: paramiko\\n- editor: monaco-editor",
+  "keywords": "technology,stack,framework",
+  "category": "project_specification",
+  "title": "技术栈规范",
+  "action": "create"
+}

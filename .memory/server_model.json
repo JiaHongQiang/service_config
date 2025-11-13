@@ -1,0 +1,10 @@
+{
+  "id": "server-model-definition",
+  "source": "user",
+  "scope": "workspace",
+  "content": "Server = {\n    \"id\": \"string\",\n    \"name\": \"string\", \n    \"host\": \"string\",\n    \"port\": \"number\",\n    \"username\": \"string\",\n    \"auth_method\": \"password|key\"\n}",
+  "keywords": "data,model,server",
+  "category": "project_specification",
+  "title": "服务器数据模型定义",
+  "action": "create"
+}
