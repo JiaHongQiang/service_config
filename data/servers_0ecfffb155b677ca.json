@@ -1,0 +1,29 @@
+[
+    {
+        "id": "1762839981909",
+        "name": "2.36",
+        "host": "192.168.2.36",
+        "port": 22,
+        "username": "root",
+        "auth_method": "password",
+        "password": "huaiye2024**"
+    },
+    {
+        "id": "1762858653516",
+        "name": "2.108",
+        "host": "192.168.2.108",
+        "port": 50932,
+        "username": "hy",
+        "auth_method": "password",
+        "password": "huaiye2020**"
+    },
+    {
+        "id": "1762938817883",
+        "name": "1",
+        "host": "192.168.2.33",
+        "port": 22,
+        "username": "root",
+        "auth_method": "password",
+        "password": "huaiye2020**"
+    }
+]
