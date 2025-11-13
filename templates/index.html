@@ -251,11 +251,200 @@
             background: rgba(255,255,255,0.2);
         }
 
+        /* 🎉 Toast 容器 */
+        .toast-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        /* 🎨 Toast 样式 */
+        .custom-toast {
+            min-width: 320px;
+            max-width: 400px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+            padding: 16px;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+        }
+
+        .custom-toast.closing {
+            animation: slideOut 0.3s ease-in forwards;
+        }
+
+        /* 成功状态 */
+        .toast-success {
+            border-left: 4px solid #28a745;
+        }
+
+        .toast-success .toast-icon {
+            color: #28a745;
+            background: rgba(40, 167, 69, 0.1);
+        }
+
+        /* 错误状态 */
+        .toast-error {
+            border-left: 4px solid #dc3545;
+        }
+
+        .toast-error .toast-icon {
+            color: #dc3545;
+            background: rgba(220, 53, 69, 0.1);
+        }
+
+        /* 信息状态 */
+        .toast-info {
+            border-left: 4px solid #0d6efd;
+        }
+
+        .toast-info .toast-icon {
+            color: #0d6efd;
+            background: rgba(13, 110, 253, 0.1);
+        }
+
+        /* 警告状态 */
+        .toast-warning {
+            border-left: 4px solid #ffc107;
+        }
+
+        .toast-warning .toast-icon {
+            color: #ffc107;
+            background: rgba(255, 193, 7, 0.1);
+        }
+
+        .toast-content {
+            display: flex;
+            gap: 12px;
+        }
+
+        .toast-icon {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            flex-shrink: 0;
+            font-size: 18px;
+        }
+
+        .toast-body {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .toast-title {
+            font-weight: 600;
+            color: #333;
+            font-size: 14px;
+        }
+
+        .toast-message {
+            color: #666;
+            font-size: 13px;
+            word-break: break-all;
+        }
+
+        .toast-close {
+            background: none;
+            border: none;
+            color: #999;
+            cursor: pointer;
+            font-size: 18px;
+            padding: 0;
+            transition: color 0.2s;
+        }
+
+        .toast-close:hover {
+            color: #333;
+        }
+
+        .toast-progress {
+            height: 3px;
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 2px;
+            margin-top: 8px;
+            overflow: hidden;
+        }
+
+        .toast-progress-bar {
+            height: 100%;
+            animation: progress 3s linear forwards;
+        }
+
+        .toast-success .toast-progress-bar {
+            background: #28a745;
+        }
+
+        .toast-error .toast-progress-bar {
+            background: #dc3545;
+        }
+
+        .toast-info .toast-progress-bar {
+            background: #0d6efd;
+        }
+
+        .toast-warning .toast-progress-bar {
+            background: #ffc107;
+        }
+
+        @keyframes progress {
+            from {
+                width: 100%;
+            }
+            to {
+                width: 0%;
+            }
+        }
+
         /* 响应式调整 */
         @media (max-width: 1400px) {
             :root {
                 --left-sidebar-width: 280px;
                 --right-sidebar-width: 260px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .custom-toast {
+                min-width: 280px;
+                max-width: 95vw;
+            }
+            .toast-container {
+                left: 10px;
+                right: 10px;
+                bottom: 10px;
             }
         }
     </style>
@@ -372,6 +561,9 @@
         </div>
     </div>
 
+    <!-- Toast 容器 -->
+    <div class="toast-container" id="toastContainer"></div>
+
     <!-- 添加服务器模态框 -->
     <div class="modal fade" id="addServerModal" tabindex="-1" aria-labelledby="addServerModalLabel" aria-hidden="true">
         <div class="modal-dialog">
@@ -438,8 +630,82 @@
         let operationLog = [];
         let currentUser = null;
 
+        // ========== Toast 提示系统 ==========
+        class ToastNotification {
+            constructor(title, message, type = 'info', duration = 3000) {
+                this.title = title;
+                this.message = message;
+                this.type = type;
+                this.duration = duration;
+                this.create();
+            }
 
-        // 初始化应用
+            create() {
+                const container = document.getElementById('toastContainer');
+
+                // 创建 Toast 元素
+                const toast = document.createElement('div');
+                toast.className = `custom-toast toast-${this.type}`;
+
+                // 图标映射
+                const icons = {
+                    success: 'fas fa-check-circle',
+                    error: 'fas fa-exclamation-circle',
+                    info: 'fas fa-info-circle',
+                    warning: 'fas fa-exclamation-triangle'
+                };
+
+                toast.innerHTML = `
+                    <div class="toast-content">
+                        <div class="toast-icon">
+                            <i class="${icons[this.type]}"></i>
+                        </div>
+                        <div class="toast-body">
+                            <div class="toast-title">${this.title}</div>
+                            <div class="toast-message">${this.message}</div>
+                        </div>
+                        <button class="toast-close">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="toast-progress">
+                        <div class="toast-progress-bar"></div>
+                    </div>
+                `;
+
+                container.appendChild(toast);
+
+                // 关闭按钮事件
+                toast.querySelector('.toast-close').addEventListener('click', () => {
+                    this.close(toast);
+                });
+
+                // 自动消失
+                setTimeout(() => {
+                    if (toast.parentNode) {
+                        this.close(toast);
+                    }
+                }, this.duration);
+
+                return toast;
+            }
+
+            close(toast) {
+                toast.classList.add('closing');
+                setTimeout(() => {
+                    if (toast.parentNode) {
+                        toast.parentNode.removeChild(toast);
+                    }
+                }, 300);
+            }
+        }
+
+        // 快捷方法
+        function showToast(title, message, type = 'info', duration = 3000) {
+            return new ToastNotification(title, message, type, duration);
+        }
+
+        // ========== 应用初始化 ==========
         document.addEventListener('DOMContentLoaded', function() {
             // 检查用户登录状态
             checkLoginStatus().then(loggedIn => {
@@ -447,32 +713,36 @@
                     window.location.href = '/login';
                     return;
                 }
-                
+
                 // 检查Diff库是否加载成功
                 if (typeof Diff === 'undefined') {
                     console.error('Diff库未正确加载');
                 }
-                
+
                 initializeEditor();
                 loadServers();
                 loadOperationLog();
 
-                // 绑定事件
-                document.getElementById('deleteServerBtn').addEventListener('click', deleteSelectedServer);
-                document.getElementById('connectBtn').addEventListener('click', connectToServer);
-                document.getElementById('refreshFilesBtn').addEventListener('click', loadFileTree);
-                document.getElementById('saveFileBtn').addEventListener('click', saveCurrentFile);
-                document.getElementById('serverSelector').addEventListener('change', handleServerSelection);
-                document.getElementById('submitAddServer').addEventListener('click', addServer);
-                document.getElementById('authMethod').addEventListener('change', toggleAuthFields);
-                document.getElementById('clearLogBtn').addEventListener('click', clearOperationLog);
-                document.getElementById('logoutBtn').addEventListener('click', logout);
+                // 确保在 loadServers() 之后再绑定事件
+                setTimeout(() => {
+                    document.getElementById('deleteServerBtn').addEventListener('click', deleteSelectedServer);
+                    document.getElementById('connectBtn').addEventListener('click', connectToServer);
+                    document.getElementById('refreshFilesBtn').addEventListener('click', loadFileTree);
+                    document.getElementById('saveFileBtn').addEventListener('click', saveCurrentFile);
 
-                // 确保刷新按钮存在后再绑定事件
-                const refreshBtn = document.getElementById('refreshServicesBtn');
-                if (refreshBtn) {
-                    refreshBtn.addEventListener('click', refreshServiceStatus);
-                }
+                    // 在这里绑定 serverSelector 的事件
+                    document.getElementById('serverSelector').addEventListener('change', handleServerSelection);
+
+                    document.getElementById('submitAddServer').addEventListener('click', addServer);
+                    document.getElementById('authMethod').addEventListener('change', toggleAuthFields);
+                    document.getElementById('clearLogBtn').addEventListener('click', clearOperationLog);
+                    document.getElementById('logoutBtn').addEventListener('click', logout);
+
+                    const refreshBtn = document.getElementById('refreshServicesBtn');
+                    if (refreshBtn) {
+                        refreshBtn.addEventListener('click', refreshServiceStatus);
+                    }
+                }, 500);
             });
         });
 
@@ -497,18 +767,15 @@
         // 用户登出
         async function logout() {
             try {
-                const response = await fetch('/auth/logout', {
-                    method: 'POST'
-                });
-                
+                const response = await fetch('/auth/logout', { method: 'POST' });
                 if (response.ok) {
                     window.location.href = '/login';
                 } else {
-                    alert('登出失败');
+                    showToast('登出失败', '请稍后重试', 'error');
                 }
             } catch (error) {
                 console.error('登出请求失败:', error);
-                alert('登出请求失败');
+                showToast('登出失败', '请检查网络连接', 'error');
             }
         }
 
@@ -556,10 +823,10 @@
             body: JSON.stringify(serverData)
         });
 
-        if (response.ok) {
-            const newServer = await response.json();
-            alert(`服务器 "${newServer.name}" 添加成功`);
-            document.getElementById('addServerForm').reset();
+                if (response.ok) {
+                    const newServer = await response.json();
+                    showToast('✓ 添加成功', `服务器: ${newServer.name} (${newServer.host})`, 'success');
+                    document.getElementById('addServerForm').reset();
 
             // ✅ 安全关闭模态框
             const modalEl = document.getElementById('addServerModal');
@@ -572,53 +839,52 @@
                 document.body.style.overflow = '';
             }, 300);
 
-            loadServers();
-            addOperationLog('添加服务器', `成功添加服务器: ${newServer.name} (${newServer.host})`);
-        } else {
-            const error = await response.json();
-            alert(`添加失败: ${error.error}`);
-            addOperationLog('添加服务器', `添加服务器失败: ${error.error}`);
+                    loadServers();
+                    addOperationLog('添加服务器', `成功添加服务器: ${newServer.name} (${newServer.host})`);
+                } else {
+                    const error = await response.json();
+                    showToast('✗ 添加失败', error.error, 'error');
+                    addOperationLog('添加服务器', `添加服务器失败: ${error.error}`);
+                }
+            } catch (error) {
+                console.error('添加服务器失败:', error);
+                showToast('✗ 添加失败', '网络错误或服务器异常', 'error');
+                addOperationLog('添加服务器', `添加服务器失败: ${error.message}`);
+            }
         }
-    } catch (error) {
-        console.error('添加服务器失败:', error);
-        alert('添加服务器失败');
-        addOperationLog('添加服务器', `添加服务器失败: ${error.message}`);
-    }
-}
 
-       // ✅ 删除当前选中的服务器
-async function deleteSelectedServer() {
-    const selector = document.getElementById('serverSelector');
-    const serverId = selector.value;
-    if (!serverId) {
-        alert('请先选择要删除的服务器');
-        return;
-    }
+        // 删除当前选中的服务器
+        async function deleteSelectedServer() {
+            const selector = document.getElementById('serverSelector');
+            const serverId = selector.value;
+            if (!serverId) {
+                showToast('⚠ 选择服务器', '请先选择要删除的服务器', 'warning');
+                return;
+            }
 
     const confirmDelete = confirm('确定要删除该服务器吗？此操作不可恢复。');
     if (!confirmDelete) return;
 
-    try {
-        const resp = await fetch(`/servers/${serverId}`, { method: 'DELETE' });
-        if (resp.ok) {
-            alert('服务器已删除');
-            await loadServers(); // 刷新服务器下拉框
-            selector.value = ''; // 清空选择
-            document.getElementById('connectionStatus').classList.add('d-none');
-            document.getElementById('disconnectedStatus').classList.remove('d-none');
-            addOperationLog('删除服务器', '服务器已删除');
-        } else {
-            const err = await resp.json();
-            alert(`删除失败: ${err.error || '未知错误'}`);
-            addOperationLog('删除服务器', `删除服务器失败: ${err.error || '未知错误'}`);
+            try {
+                const resp = await fetch(`/servers/${serverId}`, { method: 'DELETE' });
+                if (resp.ok) {
+                    showToast('✓ 删除成功', '服务器已删除', 'success');
+                    await loadServers();
+                    selector.value = '';
+                    document.getElementById('connectionStatus').classList.add('d-none');
+                    document.getElementById('disconnectedStatus').classList.remove('d-none');
+                    addOperationLog('删除服务器', '服务器已删除');
+                } else {
+                    const err = await resp.json();
+                    showToast('✗ 删除失败', err.error || '未知错误', 'error');
+                    addOperationLog('删除服务器', `删除服务器失败: ${err.error || '未知错误'}`);
+                }
+            } catch (err) {
+                console.error('删除服务器失败:', err);
+                showToast('✗ 删除失败', '请检查网络连接', 'error');
+                addOperationLog('删除服务器', `删除服务器失败: ${err.message}`);
+            }
         }
-    } catch (err) {
-        console.error('删除服务器失败:', err);
-        alert('删除服务器失败，请检查控制台');
-        addOperationLog('删除服务器', `删除服务器失败: ${err.message}`);
-    }
-}
-
 
         // 初始化Monaco编辑器
         function initializeEditor() {
@@ -674,7 +940,7 @@ async function deleteSelectedServer() {
                 }
             } catch (error) {
                 console.error('加载服务器失败:', error);
-                alert('加载服务器列表失败');
+                showToast('⚠ 加载失败', '无法加载服务器列表', 'error');
             }
         }
 
@@ -693,6 +959,9 @@ async function deleteSelectedServer() {
             const serverId = document.getElementById('serverSelector').value;
             if (!serverId) {
                 console.error('未选择服务器');
+                // 即使没有选择服务器也清空服务列表
+                services = [];
+                renderServiceCards();
                 return;
             }
 
@@ -852,19 +1121,37 @@ function handleTooltipClick(el, callback) {
         // 服务器选择处理
         function handleServerSelection() {
             const selectedServerId = document.getElementById('serverSelector').value;
+
             if (!selectedServerId) {
+                // 清空状态
                 document.getElementById('connectionStatus').classList.add('d-none');
                 document.getElementById('disconnectedStatus').classList.remove('d-none');
-                // 清空服务列表
                 services = [];
                 renderServiceCards();
+                document.getElementById('fileTree').innerHTML = '';
+                editor.setValue('');
+                return;
+            }
+
+            console.log(' 选择了服务器:', selectedServerId);
+
+            // 检查是否已连接
+            const isConnected = !document.getElementById('connectionStatus').classList.contains('d-none');
+
+            if (isConnected) {
+                console.log(' 已连接，加载服务和文件...');
+                loadServices();
+
+                // 清空文件树（等待用户选择具体服务）
+                document.getElementById('fileTree').innerHTML = '<li class="text-muted">请从左侧选择服务打开配置文件</li>';
+                editor.setValue('');
             } else {
-                // 检查是否已连接到选中的服务器
-                const isConnected = !document.getElementById('connectionStatus').classList.contains('d-none');
-                if (isConnected) {
-                    // 如果已连接，加载服务列表
-                    loadServices();
-                }
+                console.log('️ 未连接，请先点击【连接】按钮');
+                // 不再弹出alert，改为更新UI状态
+                services = [];
+                renderServiceCards();
+                document.getElementById('fileTree').innerHTML = '';
+                editor.setValue('');
             }
         }
 
@@ -872,20 +1159,18 @@ function handleTooltipClick(el, callback) {
         async function connectToServer() {
             const serverId = document.getElementById('serverSelector').value;
             if (!serverId) {
-                alert('请先选择服务器');
+                showToast('⚠ 选择服务器', '请先选择服务器', 'warning');
                 return;
             }
 
             try {
-                const response = await fetch(`/servers/${serverId}/connect`, {
-                    method: 'POST'
-                });
+                const response = await fetch(`/servers/${serverId}/connect`, { method: 'POST' });
 
                 if (response.ok) {
                     const result = await response.json();
                     document.getElementById('connectionStatus').classList.remove('d-none');
                     document.getElementById('disconnectedStatus').classList.add('d-none');
-                    alert(result.message);
+                    showToast('✓ 连接成功', result.message, 'success');
                     addOperationLog('连接服务器', result.message);
 
                     // 连接成功后加载服务列表
@@ -895,7 +1180,7 @@ function handleTooltipClick(el, callback) {
                 }
             } catch (error) {
                 console.error('连接服务器失败:', error);
-                alert('连接服务器失败');
+                showToast('✗ 连接失败', '无法连接到服务器', 'error');
                 addOperationLog('连接服务器', `连接服务器失败: ${error.message}`);
             }
         }
@@ -905,14 +1190,14 @@ function handleTooltipClick(el, callback) {
             // 检查是否已连接服务器
             const isConnected = !document.getElementById('connectionStatus').classList.contains('d-none');
             if (!isConnected) {
-                alert('请先连接服务器');
+                showToast('⚠ 未连接', '请先连接服务器', 'warning');
                 return;
             }
 
             // 获取当前选中的服务器ID
             const serverId = document.getElementById('serverSelector').value;
             if (!serverId) {
-                alert('未选择服务器');
+                showToast('⚠ 选择服务器', '未选择服务器', 'warning');
                 return;
             }
 
@@ -921,49 +1206,47 @@ function handleTooltipClick(el, callback) {
                 if (response.ok) {
                     services = await response.json();
                     renderServiceCards();
+                    showToast('✓ 已刷新', '服务状态已更新', 'success');
                 } else {
                     const error = await response.json();
-                    alert(`刷新失败: ${error.error}`);
+                    showToast('✗ 刷新失败', error.error, 'error');
                 }
             } catch (error) {
                 console.error('刷新服务状态失败:', error);
-                alert('刷新服务状态失败');
+                showToast('✗ 刷新失败', '请检查网络连接', 'error');
             }
         }
 
-        // ✅ 服务操作函数（执行后自动刷新状态）
-async function serviceAction(serviceName, action) {
-    // 获取当前选中的服务器ID
-    const serverId = document.getElementById('serverSelector').value;
-    if (!serverId) {
-        alert('未选择服务器');
-        return;
-    }
+        // 服务操作函数
+        async function serviceAction(serviceName, action) {
+            const serverId = document.getElementById('serverSelector').value;
+            if (!serverId) {
+                showToast('⚠ 选择服务器', '未选择服务器', 'warning');
+                return;
+            }
 
-    try {
-        const response = await fetch(`/services/${serviceName}/${action}?server_id=${serverId}`, {
-            method: 'POST'
-        });
+            try {
+                const response = await fetch(`/services/${serviceName}/${action}?server_id=${serverId}`, { method: 'POST' });
 
-        if (response.ok) {
-            const result = await response.json();
-            alert(`${serviceName} 服务${action}命令已发送`);
-            addOperationLog(`服务操作`, `向服务 ${serviceName} 发送 ${action} 命令`);
+                if (response.ok) {
+                    const result = await response.json();
+                    const actionText = { start: '启动', stop: '停止', restart: '重启' }[action];
+                    showToast(`✓ ${actionText}成功`, `${serviceName} 服务${actionText}命令已发送`, 'success');
+                    addOperationLog(`服务操作`, `向服务 ${serviceName} 发送 ${action} 命令`);
 
-            // ✅ 操作成功后自动刷新服务状态
-            await new Promise(r => setTimeout(r, 1000)); // 等待1秒让后端状态更新
-            await loadServices();
-        } else {
-            const error = await response.json();
-            alert(`操作失败: ${error.error}`);
-            addOperationLog(`服务操作`, `向服务 ${serviceName} 发送 ${action} 命令失败: ${error.error}`);
+                    await new Promise(r => setTimeout(r, 1000));
+                    await loadServices();
+                } else {
+                    const error = await response.json();
+                    showToast('✗ 操作失败', error.error, 'error');
+                    addOperationLog(`服务操作`, `向服务 ${serviceName} 发送 ${action} 命令失败: ${error.error}`);
+                }
+            } catch (error) {
+                console.error('服务操作失败:', error);
+                showToast('✗ 操作失败', '网络错误或服务器异常', 'error');
+                addOperationLog(`服务操作`, `向服务 ${serviceName} 发送 ${action} 命令失败: ${error.message}`);
+            }
         }
-    } catch (error) {
-        console.error('服务操作失败:', error);
-        alert('服务操作失败');
-        addOperationLog(`服务操作`, `向服务 ${serviceName} 发送 ${action} 命令失败: ${error.message}`);
-    }
-}
 
 
         // 打开配置文件
@@ -971,7 +1254,7 @@ async function serviceAction(serviceName, action) {
             // 获取当前选中的服务器ID
             const serverId = document.getElementById('serverSelector').value;
             if (!serverId) {
-                alert('未选择服务器');
+                showToast('⚠ 选择服务器', '未选择服务器', 'warning');
                 return;
             }
 
@@ -980,17 +1263,16 @@ async function serviceAction(serviceName, action) {
         }
 
         async function showBackupHistory() {
-    if (!currentFilePath) {
-        alert('请先打开一个配置文件');
-        return;
-    }
+            if (!currentFilePath) {
+                showToast('⚠ 选择文件', '请先打开一个配置文件', 'warning');
+                return;
+            }
 
-    // 获取当前选中的服务器ID
-    const serverId = document.getElementById('serverSelector').value;
-    if (!serverId) {
-        alert('未选择服务器');
-        return;
-    }
+            const serverId = document.getElementById('serverSelector').value;
+            if (!serverId) {
+                showToast('⚠ 选择服务器', '未选择服务器', 'warning');
+                return;
+            }
 
     // 🔧 修正路径格式
     const normalizedPath = currentFilePath.replace(/\\/g, '/');
@@ -1010,10 +1292,10 @@ async function serviceAction(serviceName, action) {
             .filter(f => f.startsWith(dirPath) && f.includes(`${fileName}.backup_`))
             .sort((a, b) => b.localeCompare(a)); // 按时间倒序
 
-        if (backups.length === 0) {
-            alert('没有找到备份文件');
-            return;
-        }
+                if (backups.length === 0) {
+                    showToast('ℹ 提示', '没有找到备份文件', 'info');
+                    return;
+                }
 
         // 🔹 生成备份文件列表
         const listHtml = backups
@@ -1079,25 +1361,29 @@ async function restoreBackupFile(backupPath) {
         const response = await fetch(`/config/files/${encodeURIComponent(backupPath)}?server_id=${serverId}`);
         const data = await response.json();
 
-        if (!data.content) throw new Error('无法读取备份文件内容');
-        editor.setValue(data.content);
-        currentFilePath = backupPath.replace(/\.backup_.+$/, ''); // 去掉备份后缀
-        alert('已加载备份文件内容，请确认并点击保存以覆盖原文件');
-        addOperationLog('恢复备份', `已加载备份文件: ${backupPath}`);
-    } catch (error) {
-        console.error('恢复备份失败:', error);
-        alert('恢复备份失败: ' + error.message);
-        addOperationLog('恢复备份', `恢复备份失败: ${backupPath} - ${error.message}`);
-    }
-}
+                if (!data.content) throw new Error('无法读取备份文件内容');
+                editor.setValue(data.content);
+                currentFilePath = backupPath.replace(/\.backup_.+$/, '');
+                showToast('✓ 已加载', '备份文件已加载，请确认并点击保存', 'success');
+                addOperationLog('恢复备份', `已加载备份文件: ${backupPath}`);
+            } catch (error) {
+                console.error('恢复备份失败:', error);
+                showToast('✗ 恢复失败', error.message, 'error');
+                addOperationLog('恢复备份', `恢复备份失败: ${backupPath} - ${error.message}`);
+            }
+        }
 
 
         // 加载文件树
-        async function loadFileTree(serviceName) {
-            // 获取当前选中的服务器ID
+        async function loadFileTree(serviceName = currentServiceName) {
+            if (!serviceName) {
+                console.warn('️ 未指定服务名称');
+                return;
+            }
+
             const serverId = document.getElementById('serverSelector').value;
             if (!serverId) {
-                alert('未选择服务器');
+                showToast('⚠ 选择服务器', '未选择服务器', 'warning');
                 return;
             }
 
@@ -1106,10 +1392,13 @@ async function restoreBackupFile(backupPath) {
                 if (response.ok) {
                     const files = await response.json();
                     renderFileTree(files, serviceName);
+                    console.log(' 文件树加载成功');
+                } else {
+                    showToast('✗ 加载失败', '无法加载文件列表', 'error');
                 }
             } catch (error) {
                 console.error('加载文件列表失败:', error);
-                alert('加载文件列表失败');
+                showToast('✗ 加载失败', error.message, 'error');
             }
         }
 
@@ -1160,7 +1449,7 @@ async function restoreBackupFile(backupPath) {
 
 async function deleteConfigFile(filePath, event) {
     event.stopPropagation(); // 防止触发文件打开
-    
+
     // 获取当前选中的服务器ID
     const serverId = document.getElementById('serverSelector').value;
     if (!serverId) {
@@ -1175,52 +1464,45 @@ async function deleteConfigFile(filePath, event) {
             method: 'DELETE'
   });
 
-        if (response.ok) {
-            alert(`文件已删除: ${filePath}`);
-            addOperationLog('删除文件', `文件已删除: ${filePath}`);
-            if (currentServiceName) {
-                // ✅ 删除后刷新当前服务的文件导航
-                loadFileTree(currentServiceName);
-            } else {
-                loadFileTree();
+                if (response.ok) {
+                    showToast('✓ 删除成功', `文件已删除: ${filePath.split('/').pop()}`, 'success');
+                    addOperationLog('删除文件', `文件已删除: ${filePath}`);
+                    if (currentServiceName) {
+                        loadFileTree(currentServiceName);
+                    }
+                } else {
+                    const err = await response.json();
+                    showToast('✗ 删除失败', err.error, 'error');
+                    addOperationLog('删除文件', `文件删除失败: ${filePath} - ${err.error}`);
+                }
+            } catch (error) {
+                console.error('删除文件失败:', error);
+                showToast('✗ 删除失败', error.message, 'error');
+                addOperationLog('删除文件', `文件删除失败: ${filePath} - ${error.message}`);
             }
-        } else {
-            const err = await response.json();
-            alert(`删除失败: ${err.error}`);
-            addOperationLog('删除文件', `文件删除失败: ${filePath} - ${err.error}`);
         }
-    } catch (error) {
-        console.error('删除文件失败:', error);
-        alert('删除文件失败');
-        addOperationLog('删除文件', `文件删除失败: ${filePath} - ${error.message}`);
-    }
-}
 
 
         // 加载文件内容
         async function loadFileContent(filePath) {
-    try {
-        // 🔧 统一路径分隔符
-        const normalizedPath = filePath.replace(/\\/g, '/');
+            try {
+                const normalizedPath = filePath.replace(/\\/g, '/');
+                const serverId = document.getElementById('serverSelector').value;
+                if (!serverId) {
+                    showToast('⚠ 选择服务器', '未选择服务器', 'warning');
+                    return;
+                }
 
-        // 获取当前选中的服务器ID
-        const serverId = document.getElementById('serverSelector').value;
-        if (!serverId) {
-            alert('未选择服务器');
-            return;
-        }
+                const response = await fetch(`/config/files/${encodeURIComponent(normalizedPath)}?server_id=${serverId}`);
 
-        console.log(`[DEBUG] 加载文件: ${normalizedPath}`);
-        const response = await fetch(`/config/files/${encodeURIComponent(normalizedPath)}?server_id=${serverId}`);
-
-        if (!response.ok) {
-            if (response.status === 404) {
-                alert(`❌ 文件不存在: ${normalizedPath}`);
-                return;
-            }
-            const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.error || `加载失败 (HTTP ${response.status})`);
-        }
+                if (!response.ok) {
+                    if (response.status === 404) {
+                        showToast('✗ 文件不存在', normalizedPath, 'error');
+                        return;
+                    }
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.error || `加载失败 (HTTP ${response.status})`);
+                }
 
         // ✅ 获取文件内容
         const fileData = await response.json();
@@ -1244,32 +1526,29 @@ async function deleteConfigFile(filePath, event) {
         if (compareBtn) compareBtn.disabled = false;
         if (backupBtn) backupBtn.disabled = false;
 
-        console.log(`[INFO] 文件加载完成: ${normalizedPath}`);
-    } catch (error) {
-        console.error('❌ 加载文件内容失败:', error);
-        alert('加载文件内容失败: ' + error.message);
-    }
-}
+            } catch (error) {
+                console.error('加载文件内容失败:', error);
+                showToast('✗ 加载失败', error.message, 'error');
+            }
+        }
 
 
         async function compareWithServer() {
-    if (!currentFilePath) {
-        alert('请先选择一个文件');
-        return;
-    }
+            if (!currentFilePath) {
+                showToast('⚠ 选择文件', '请先选择一个文件', 'warning');
+                return;
+            }
 
-    // 获取当前选中的服务器ID
-    const serverId = document.getElementById('serverSelector').value;
-    if (!serverId) {
-        alert('未选择服务器');
-        return;
-    }
+            const serverId = document.getElementById('serverSelector').value;
+            if (!serverId) {
+                showToast('⚠ 选择服务器', '未选择服务器', 'warning');
+                return;
+            }
 
-    // 检查Diff库是否可用
-    if (typeof Diff === 'undefined') {
-        alert('对比功能依赖的库未正确加载，请刷新页面重试');
-        return;
-    }
+            if (typeof Diff === 'undefined') {
+                showToast('✗ 对比失败', '对比功能依赖的库未正确加载，请刷新页面重试', 'error');
+                return;
+            }
 
     try {
         // 获取服务器上最新内容
@@ -1321,15 +1600,15 @@ async function deleteConfigFile(filePath, event) {
         // 分别渲染两个面板的内容
         const serverContentEl = modal.querySelector('#serverDiffContent');
         const localContentEl = modal.querySelector('#localDiffContent');
-        
+
         let serverHtml = '';
         let localHtml = '';
-        
+
         diff.forEach(part => {
             const value = part.value.replace(/</g, '&lt;').replace(/ /g, '&nbsp;');
             const lines = value.split('\n');
             lines.pop(); // 移除最后一个空行
-            
+
             if (part.added) {
                 // 这些行只在本地版本中存在
                 localHtml += `<div class="p-1 rounded mb-1" style="background:#e6ffed;color:#0b6623;">${lines.map(line => '+' + line).join('\n').replace(/\n/g, '<br>')}</div>`;
@@ -1342,7 +1621,7 @@ async function deleteConfigFile(filePath, event) {
                 localHtml += `<div class="p-1 rounded mb-1">${lines.join('\n').replace(/\n/g, '<br>')}</div>`;
             }
         });
-        
+
         serverContentEl.innerHTML = serverHtml;
         localContentEl.innerHTML = localHtml;
 
@@ -1414,13 +1693,13 @@ async function deleteConfigFile(filePath, event) {
                 operation: operation,
                 details: details
             };
-            
+
             operationLog.unshift(logEntry);
             // 限制记录数量为100条
             if (operationLog.length > 100) {
                 operationLog.pop();
             }
-            
+
             saveOperationLog();
             renderOperationLog();
         }
@@ -1454,7 +1733,7 @@ async function deleteConfigFile(filePath, event) {
                 logContainer.innerHTML = '<li class="text-muted">暂无操作记录</li>';
                 return;
             }
-            
+
             logContainer.innerHTML = '';
             operationLog.forEach(entry => {
                 const logItem = document.createElement('li');
@@ -1480,27 +1759,3 @@ async function deleteConfigFile(filePath, event) {
 
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

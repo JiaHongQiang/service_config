@@ -1,9 +1,12 @@
 import os
 import json
+import stat
+
 import paramiko
 from flask import Blueprint, jsonify, request, render_template, session
 from models import UserManager
 from functools import wraps
+from difflib import unified_diff
 
 # ==========================
 # Blueprint 配置
@@ -23,8 +26,8 @@ services = [
     {"name": "nginx", "display_name": "Nginx", "config_path": "/opt/nginx/conf/", "has_config": True},
     {"name": "nginxd", "display_name": "NginxD", "config_path": "/opt/nginx/conf/", "has_config": True},
     {"name": "lkdc", "display_name": "密钥管理服务", "config_path": "", "has_config": False},
-    {"name": "hy_file_server", "display_name": "文件服务", "config_path": "/home/hy_file_server", "has_config": True},
-    {"name": "hy_message_push_server", "display_name": "离线推送服务", "config_path": "/home/hy_message_push_server", "has_config": True}
+    {"name": "hy_file_server", "display_name": "文件服务", "config_path": "/home/hy_file_server/", "has_config": True},
+    {"name": "hy_message_push_server", "display_name": "离线推送服务", "config_path": "/home/hy_message_push_server/", "has_config": True}
 ]
 
 # 初始化用户管理器
@@ -345,7 +348,7 @@ def service_action(service_name, action):
 @api_bp.route('/config/files', methods=['GET'])
 @login_required
 def get_config_files():
-    """列出服务配置文件"""
+    """列出服务配置文件 - 增强版本"""
     server_id = request.args.get('server_id')
     ssh, err, code = get_ssh_client(server_id)
     if err:
@@ -449,5 +452,64 @@ def delete_config_file(file_path):
         return jsonify({"message": f"文件 {file_path} 删除成功"})
     except FileNotFoundError:
         return jsonify({"error": "文件不存在"}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# 在配置文件管理部分添加新路由
+@api_bp.route('/config/compare', methods=['POST'])
+@login_required
+def compare_files():
+    """对比两个文件或文件与服务器版本"""
+    server_id = request.args.get('server_id')
+    ssh, err, code = get_ssh_client(server_id)
+    if err:
+        return err, code
+
+    try:
+        data = request.get_json()
+        file_path = data.get('file_path')
+        local_content = data.get('local_content')
+
+        if not file_path or local_content is None:
+            return jsonify({"error": "缺少必要参数: file_path, local_content"}), 400
+
+        # 从远程服务器读取文件
+        sftp = ssh.open_sftp()
+        try:
+            with sftp.open('/' + file_path, 'r') as f:
+                server_content = f.read().decode('utf-8', errors='ignore')
+        except FileNotFoundError:
+            server_content = ""
+        finally:
+            sftp.close()
+
+        # 生成 unified diff 格式的对比结果
+        server_lines = server_content.splitlines(keepends=True)
+        local_lines = local_content.splitlines(keepends=True)
+
+        diff_result = list(unified_diff(
+            server_lines,
+            local_lines,
+            fromfile=f'服务器: {file_path}',
+            tofile=f'本地: {file_path}',
+            lineterm=''
+        ))
+
+        # 统计差异
+        added_count = len([line for line in diff_result if line.startswith('+')])
+        removed_count = len([line for line in diff_result if line.startswith('-')])
+
+        return jsonify({
+            "file_path": file_path,
+            "server_content": server_content,
+            "local_content": local_content,
+            "diff": diff_result,
+            "stats": {
+                "added": added_count,
+                "removed": removed_count,
+                "total_changes": added_count + removed_count
+            }
+        }), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
