@@ -1,0 +1,22 @@
+[
+    {
+        "keyword": "License error",
+        "name": "License过期"
+    },
+    {
+        "keyword": "start up",
+        "name": "启动成功"
+    },
+    {
+        "keyword": "Permission denied",
+        "name": "权限被拒绝"
+    },
+    {
+        "keyword": "File not found",
+        "name": "文件未找到"
+    },
+    {
+        "keyword": "Out of memory",
+        "name": "内存不足"
+    }
+]

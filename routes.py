@@ -7,6 +7,8 @@ from flask import Blueprint, jsonify, request, render_template, session
 from models import UserManager
 from functools import wraps
 from difflib import unified_diff
+import time
+import threading
 
 # ==========================
 # Blueprint 配置
@@ -18,16 +20,18 @@ api_bp = Blueprint('api', __name__)
 # ==========================
 # 服务器配置文件路径将根据用户ID动态生成
 active_connections = {}                 # 存储每个 server_id 的 SSH 连接，key为 user_id-server_id
+log_watchers = {}                       # 存储日志监听器
+detected_errors = {}                    # 存储检测到的错误日志
 
 # 模拟服务列表
 services = [
-    {"name": "sie", "display_name": "流媒体服务", "config_path": "/home/hy_media_server/conf/", "has_config": True},
-    {"name": "vss", "display_name": "业务服务", "config_path": "/home/hy_media_server/conf/", "has_config": True},
-    {"name": "nginx", "display_name": "Nginx", "config_path": "/opt/nginx/conf/", "has_config": True},
-    {"name": "nginxd", "display_name": "NginxD", "config_path": "/opt/nginx/conf/", "has_config": True},
-    {"name": "lkdc", "display_name": "密钥管理服务", "config_path": "", "has_config": False},
-    {"name": "hy_file_server", "display_name": "文件服务", "config_path": "/home/hy_file_server/", "has_config": True},
-    {"name": "hy_message_push_server", "display_name": "离线推送服务", "config_path": "/home/hy_message_push_server/", "has_config": True}
+    {"name": "sie", "display_name": "流媒体服务", "config_path": "/home/hy_media_server/conf/", "log_path": "/home/hy_media_server/log/666-1/run/log-666-1-run.log", "has_config": True},
+    {"name": "vss", "display_name": "业务服务", "config_path": "/home/hy_media_server/conf/", "log_path": "", "has_config": True},
+    {"name": "nginx", "display_name": "Nginx", "config_path": "/opt/nginx/conf/", "log_path": "", "has_config": True},
+    {"name": "nginxd", "display_name": "NginxD", "config_path": "/opt/nginx/conf/", "log_path": "", "has_config": True},
+    {"name": "lkdc", "display_name": "密钥管理服务", "config_path": "", "log_path": "", "has_config": False},
+    {"name": "hy_file_server", "display_name": "文件服务", "config_path": "/home/hy_file_server/", "log_path": "", "has_config": True},
+    {"name": "hy_message_push_server", "display_name": "离线推送服务", "config_path": "/home/hy_message_push_server/", "log_path": "", "has_config": True}
 ]
 
 # 初始化用户管理器
@@ -48,6 +52,10 @@ def login_required(f):
 def get_user_servers_file(user_id: str) -> str:
     """根据用户ID生成服务器配置文件路径"""
     return f'data/servers_{user_id}.json'
+
+def get_error_patterns_file() -> str:
+    """获取错误日志模式文件路径"""
+    return 'data/error_log_patterns.json'
 
 def get_ssh_client(server_id: str):
     """
@@ -329,6 +337,14 @@ def service_action(service_name, action):
         return jsonify({"error": "Invalid action"}), 400
 
     try:
+        # 获取服务信息
+        service_info = next((s for s in services if s["name"] == service_name), None)
+        log_path = service_info.get("log_path", "") if service_info else ""
+        
+        # 如果是启动操作且有日志路径，则启动日志监听
+        if action == "start" and log_path and server_id:
+            start_log_watcher(server_id, service_name, log_path)
+        
         cmd = f"sudo systemctl {action} {service_name}"
         stdin, stdout, stderr = ssh.exec_command(cmd)
         exit_code = stdout.channel.recv_exit_status()
@@ -341,6 +357,91 @@ def service_action(service_name, action):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+def start_log_watcher(server_id, service_name, log_path):
+    """启动日志监听器"""
+    user_server_id = f"{session['user_id']}-{server_id}"
+    watcher_id = f"{user_server_id}-{service_name}"
+    
+    # 如果已经存在监听器，则先停止
+    if watcher_id in log_watchers:
+        log_watchers[watcher_id]['stop'] = True
+    
+    # 创建新的监听器
+    watcher = {
+        'stop': False,
+        'service_name': service_name,
+        'log_path': log_path
+    }
+    
+    log_watchers[watcher_id] = watcher
+    
+    # 在新线程中启动监听
+    thread = threading.Thread(target=watch_log, args=(user_server_id, watcher))
+    thread.daemon = True
+    thread.start()
+
+def watch_log(user_server_id, watcher):
+    """监听日志文件"""
+    ssh = active_connections.get(user_server_id)
+    if not ssh:
+        return
+    
+    try:
+        # 打开SFTP连接来读取日志文件
+        sftp = ssh.open_sftp()
+        
+        # 获取错误模式
+        error_patterns = []
+        patterns_file = get_error_patterns_file()
+        if os.path.exists(patterns_file):
+            with open(patterns_file, 'r', encoding='utf-8') as f:
+                error_patterns = json.load(f)
+        
+        # 为这个用户和服务初始化错误存储
+        watcher_id = f"{user_server_id}-{watcher['service_name']}"
+        if watcher_id not in detected_errors:
+            detected_errors[watcher_id] = []
+        
+        # 读取日志文件末尾内容
+        try:
+            with sftp.open(watcher['log_path'], 'r') as f:
+                # 跳转到文件末尾
+                f.seek(0, 2)  # SEEK_END
+                last_pos = f.tell()
+                
+                while not watcher['stop']:
+                    f.seek(last_pos)
+                    lines = f.readlines()
+                    if lines:
+                        last_pos = f.tell()
+                        # 检查是否有错误模式匹配
+                        for line in lines:
+                            for pattern in error_patterns:
+                                if pattern['keyword'] in line:
+                                    # 记录匹配到的错误
+                                    error_record = {
+                                        'timestamp': time.strftime('%Y-%m-%d %H:%M:%S'),
+                                        'service': watcher['service_name'],
+                                        'error_name': pattern['name'],
+                                        'log_line': line.strip()
+                                    }
+                                    # 保存错误记录
+                                    detected_errors[watcher_id].append(error_record)
+                                    # 保持最多100条错误记录
+                                    if len(detected_errors[watcher_id]) > 100:
+                                        detected_errors[watcher_id].pop(0)
+                                    print(f"Error detected: {error_record}")
+                    
+                    time.sleep(1)  # 每秒检查一次
+                    
+        except FileNotFoundError:
+            # 日志文件不存在，等待一段时间后重试
+            time.sleep(5)
+        finally:
+            sftp.close()
+            
+    except Exception as e:
+        print(f"Log watching error: {e}")
 
 # ==========================
 # 配置文件管理
@@ -454,6 +555,22 @@ def delete_config_file(file_path):
         return jsonify({"error": "文件不存在"}), 404
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+# 新增API端点用于获取检测到的错误日志
+@api_bp.route('/services/<service_name>/errors', methods=['GET'])
+@login_required
+def get_service_errors(service_name):
+    """获取服务的错误日志"""
+    server_id = request.args.get('server_id')
+    if not server_id:
+        return jsonify({"error": "缺少 server_id 参数"}), 400
+    
+    user_server_id = f"{session['user_id']}-{server_id}"
+    watcher_id = f"{user_server_id}-{service_name}"
+    
+    errors = detected_errors.get(watcher_id, [])
+    return jsonify(errors)
 
 
 # 在配置文件管理部分添加新路由

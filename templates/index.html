@@ -218,7 +218,7 @@
 
         /* 操作记录样式 */
         .operation-log {
-            max-height: calc(100vh - 180px);
+            max-height: calc(50vh - 120px);
             overflow-y: auto;
             font-size: 0.85rem;
         }
@@ -546,17 +546,39 @@
 
     <!-- 右侧操作记录面板 -->
     <div class="right-sidebar">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <h5 class="mb-0">操作记录</h5>
-            <button class="btn btn-sm btn-outline-secondary" id="clearLogBtn">
-                <i class="fas fa-trash-alt"></i>
-            </button>
-        </div>
-        <div class="card">
-            <div class="card-body p-2">
-                <ul class="list-unstyled mb-0 operation-log" id="operationLog">
-                    <li class="text-muted">暂无操作记录</li>
-                </ul>
+        <div class="row h-100">
+            <!-- 日志模块 -->
+            <div class="col-12 mb-3" style="height: 50%;">
+                <div class="card h-100 d-flex flex-column">
+                    <div class="card-header py-2 d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0">日志模块</h6>
+                        <button class="btn btn-sm btn-outline-secondary clear-service-log-btn" id="clearServiceLogBtn">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
+                    <div class="card-body p-2 h-100 overflow-auto">
+                        <ul class="list-unstyled mb-0 operation-log">
+                            <li class="text-muted">暂无日志记录</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 操作记录 -->
+            <div class="col-12" style="height: 50%;">
+                <div class="card h-100 d-flex flex-column">
+                    <div class="card-header py-2 d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0">操作记录</h6>
+                        <button class="btn btn-sm btn-outline-secondary clear-operation-log-btn" id="clearOperationLogBtn">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
+                    <div class="card-body p-2 h-100 overflow-auto">
+                        <ul class="list-unstyled mb-0 operation-log" id="operationLog">
+                            <li class="text-muted">暂无操作记录</li>
+                        </ul>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -629,7 +651,8 @@
         let currentServiceName = '';
         let operationLog = [];
         let currentUser = null;
-
+        let serviceLogs = [];  // 用于存储从后端获取的服务日志
+        
         // ========== Toast 提示系统 ==========
         class ToastNotification {
             constructor(title, message, type = 'info', duration = 3000) {
@@ -735,7 +758,8 @@
 
                     document.getElementById('submitAddServer').addEventListener('click', addServer);
                     document.getElementById('authMethod').addEventListener('change', toggleAuthFields);
-                    document.getElementById('clearLogBtn').addEventListener('click', clearOperationLog);
+                    document.getElementById('clearOperationLogBtn').addEventListener('click', clearOperationLog);
+                    document.getElementById('clearServiceLogBtn').addEventListener('click', clearServiceLogs);
                     document.getElementById('logoutBtn').addEventListener('click', logout);
 
                     const refreshBtn = document.getElementById('refreshServicesBtn');
@@ -743,6 +767,9 @@
                         refreshBtn.addEventListener('click', refreshServiceStatus);
                     }
                 }, 500);
+                
+                // 启动错误日志刷新
+                startErrorLogRefresh();
             });
         });
 
@@ -1233,6 +1260,13 @@ function handleTooltipClick(el, callback) {
                     const actionText = { start: '启动', stop: '停止', restart: '重启' }[action];
                     showToast(`✓ ${actionText}成功`, `${serviceName} 服务${actionText}命令已发送`, 'success');
                     addOperationLog(`服务操作`, `向服务 ${serviceName} 发送 ${action} 命令`);
+                    
+                    // 如果是启动操作，立即获取一次错误日志
+                    if (action === 'start') {
+                        setTimeout(() => {
+                            fetchServiceErrors(serviceName);
+                        }, 2000);
+                    }
 
                     await new Promise(r => setTimeout(r, 1000));
                     await loadServices();
@@ -1748,14 +1782,145 @@ async function deleteConfigFile(filePath, event) {
                 logContainer.appendChild(logItem);
             });
         }
+        
+        // 渲染服务日志
+        function renderServiceLogs() {
+            // 获取所有日志条目并渲染到日志模块
+            const logContainer = document.querySelector('.right-sidebar .row .col-12:first-child .card-body .operation-log');
+            
+            if (serviceLogs.length === 0) {
+                logContainer.innerHTML = '<li class="text-muted">暂无日志记录</li>';
+                return;
+            }
+            
+            // 按时间排序（最新的在前面）
+            const sortedLogs = [...serviceLogs].sort((a, b) => 
+                new Date(b.timestamp) - new Date(a.timestamp)
+            );
+            
+            // 去重：同样的报错只保留最新的一条
+            const uniqueLogs = [];
+            const seenErrors = new Set();
+            
+            for (const log of sortedLogs) {
+                // 使用服务名和错误名组合作为唯一标识
+                const errorKey = `${log.service}-${log.error_name}`;
+                
+                if (!seenErrors.has(errorKey)) {
+                    seenErrors.add(errorKey);
+                    uniqueLogs.push(log);
+                }
+            }
+            
+            logContainer.innerHTML = '';
+            uniqueLogs.forEach(entry => {
+                const logItem = document.createElement('li');
+                logItem.className = 'mb-1 border-bottom pb-1';
+                logItem.innerHTML = `
+                    <div class="d-flex justify-content-between">
+                        <span class="fw-bold">[${entry.service}] ${entry.error_name}</span>
+                        <small class="text-muted">${entry.timestamp}</small>
+                    </div>
+                    <div class="text-muted small">${entry.log_line}</div>
+                `;
+                logContainer.appendChild(logItem);
+            });
+        }
+        
+        // 获取并显示服务错误日志
+        async function fetchServiceErrors(serviceName) {
+            const serverId = document.getElementById('serverSelector').value;
+            if (!serverId) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/services/${serviceName}/errors?server_id=${serverId}`);
+                if (response.ok) {
+                    const errors = await response.json();
+                    // 更新serviceLogs数组
+                    serviceLogs = serviceLogs.filter(log => log.service !== serviceName);
+                    serviceLogs.push(...errors);
+                    renderServiceLogs();
+                }
+            } catch (error) {
+                console.error('获取服务错误日志失败:', error);
+            }
+        }
+        
+        // 定期获取所有服务的错误日志
+        function startErrorLogRefresh() {
+            setInterval(() => {
+                // 获取当前选中的服务器ID
+                const serverId = document.getElementById('serverSelector').value;
+                if (serverId) {
+                    // 获取所有服务的错误日志
+                    services.forEach(service => {
+                        fetchServiceErrors(service.name);
+                    });
+                }
+            }, 5000); // 每5秒刷新一次
+        }
 
         // 清空操作记录
         function clearOperationLog() {
             operationLog = [];
             saveOperationLog();
             renderOperationLog();
+            console.log("操作记录已清空");
         }
+        
+        // 清空服务日志
+        function clearServiceLogs() {
+            serviceLogs = [];
+            renderServiceLogs();
+            console.log("服务日志已清空");
+        }
+        
+        // 添加服务日志条目
+        function addServiceLogEntry(serviceName, errorName, logLine) {
+            if (!serviceLogs[serviceName]) {
+                serviceLogs[serviceName] = [];
+            }
+            
+            serviceLogs[serviceName].push({
+                timestamp: new Date().toLocaleString('zh-CN'),
+                service: serviceName,
+                error_name: errorName,
+                log_line: logLine
+            });
+            
+            renderServiceLogs();
+        }
+        
     </script>
 
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
