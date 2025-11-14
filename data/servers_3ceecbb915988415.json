@@ -1,0 +1,11 @@
+[
+    {
+        "id": "1763090592461",
+        "name": "2.36",
+        "host": "192.168.2.36",
+        "port": 22,
+        "username": "root",
+        "auth_method": "password",
+        "password": "huaiye2024**"
+    }
+]

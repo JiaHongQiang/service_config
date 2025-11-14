@@ -3,7 +3,7 @@ import json
 import stat
 
 import paramiko
-from flask import Blueprint, jsonify, request, render_template, session
+from flask import Blueprint, jsonify, request, render_template, session, redirect
 from models import UserManager
 from functools import wraps
 from difflib import unified_diff
@@ -44,8 +44,16 @@ def login_required(f):
     """装饰器：确保用户已登录"""
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if 'user_id' not in session:
-            return jsonify({"error": "用户未登录"}), 401
+        # 检查请求类型
+        if request.headers.get('Content-Type', '').startswith('application/json') or \
+           request.headers.get('Accept', '').find('application/json') != -1:
+            # API请求，返回JSON响应
+            if 'user_id' not in session:
+                return jsonify({"error": "用户未登录"}), 401
+        else:
+            # HTML页面请求，重定向到登录页
+            if 'user_id' not in session:
+                return redirect('/login')
         return f(*args, **kwargs)
     return decorated_function
 
