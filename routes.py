@@ -12,6 +12,10 @@ from difflib import unified_diff  # 文件差异比较工具
 import time               # 时间处理
 import threading          # 多线程支持
 
+# 导入自定义工具
+from utils import (get_user_servers_file, get_error_patterns_file, decode_line, 
+                  format_ssh_error, get_ssh_client, load_servers, save_servers, find_server)
+
 # ==========================
 # Blueprint 配置
 # ==========================
@@ -113,140 +117,16 @@ def login_required(f):
     return decorated_function
 
 
-# 根据用户ID生成对应的服务器配置文件路径
-# 每个用户的服务器配置存储在独立的文件中
-def get_user_servers_file(user_id: str) -> str:
-    return f'data/servers_{user_id}.json'
+# 已移至 utils.py
 
 
-# 获取错误日志模式配置文件路径
-def get_error_patterns_file() -> str:
-    return 'data/error_log_patterns.json'
+# 已移至 utils.py
 
 
-# 获取指定服务器的SSH客户端连接
-# 参数: server_id - 服务器唯一标识
-# 返回: (ssh_client, error_response, http_status) 三元组
-def get_ssh_client(server_id: str):
-    # 检查用户是否已登录
-    if 'user_id' not in session:
-        return None, jsonify({"error": "用户未登录"}), 401
-    
-    # 构造用户-服务器唯一标识
-    user_server_id = f"{session['user_id']}-{server_id}"
-    
-    # 检查服务器ID是否为空
-    if not server_id:
-        return None, jsonify({"error": "Missing server_id"}), 400
-    
-    # 从活跃连接中查找对应SSH客户端
-    client = active_connections.get(user_server_id)
-    
-    # 如果找不到对应连接，返回错误
-    if not client:
-        return None, jsonify({"error": "该服务器未连接"}), 400
-    
-    # 返回SSH客户端连接
-    return client, None, None
+# 已移至 utils.py
 
 
-# 加载当前用户的服务器配置列表
-# 返回: 服务器配置列表
-def load_servers():
-    # 检查用户是否已登录
-    if 'user_id' not in session:
-        return []
-    
-    # 获取当前用户的服务器配置文件路径
-    servers_file = get_user_servers_file(session['user_id'])
-    
-    try:
-        # 如果配置文件不存在，返回空列表
-        if not os.path.exists(servers_file):
-            return []
-        
-        # 读取并解析JSON格式的服务器配置文件
-        with open(servers_file, 'r', encoding='utf-8') as f:
-            return json.load(f)
-    except Exception:
-        # 发生异常时返回空列表
-        return []
-
-
-# 保存服务器配置列表到文件
-# 参数: servers - 服务器配置列表
-def save_servers(servers):
-    # 检查用户是否已登录
-    if 'user_id' not in session:
-        return False
-    
-    # 获取当前用户的服务器配置文件路径
-    servers_file = get_user_servers_file(session['user_id'])
-    
-    # 确保数据目录存在
-    os.makedirs('data', exist_ok=True)
-    
-    # 将服务器配置写入文件，使用UTF-8编码和4空格缩进
-    with open(servers_file, 'w', encoding='utf-8') as f:
-        json.dump(servers, f, ensure_ascii=False, indent=4)
-    
-    return True
-
-
-# 根据服务器ID查找服务器配置
-# 参数: server_id - 服务器唯一标识
-# 返回: 找到的服务器配置字典，未找到则返回None
-def find_server(server_id):
-    servers = load_servers()
-    # 使用生成器表达式查找匹配的服务器配置
-    return next((s for s in servers if str(s["id"]) == str(server_id)), None)
-
-
-# 解码日志行内容，支持多种字符编码
-# 参数: line - 原始日志行（可能是字节串或字符串）
-# 返回: 解码后的字符串
-def decode_line(line):
-    # 如果已经是字符串，直接返回
-    if isinstance(line, str):
-        return line
-    
-    # 尝试多种常见字符编码进行解码
-    encodings = ['utf-8', 'gbk', 'gb2312', 'gb18030', 'latin1', 'ascii']
-    for encoding in encodings:
-        try:
-            return line.decode(encoding)
-        except (UnicodeDecodeError, AttributeError):
-            # 解码失败，尝试下一种编码
-            continue
-    
-    # 如果所有编码都失败，使用UTF-8忽略错误模式解码
-    try:
-        return line.decode('utf-8', errors='ignore')
-    except:
-        # 最后手段，转换为字符串表示
-        return str(line)
-
-
-# 格式化SSH连接错误信息，提供更友好的中文提示
-# 参数: error - 原始错误对象
-# 返回: 格式化后的中文错误信息
-def format_ssh_error(error):
-    error_msg = str(error)
-    
-    # 根据不同的错误类型返回相应的中文提示
-    if "Administratively prohibited" in error_msg:
-        return "操作被服务器拒绝（权限不足）"
-    elif "Permission denied" in error_msg:
-        return "权限被拒绝"
-    elif "No such file" in error_msg:
-        return "文件或目录不存在"
-    elif "Network is unreachable" in error_msg:
-        return "网络不可达"
-    elif "Connection refused" in error_msg:
-        return "连接被拒绝"
-    else:
-        # 未识别的错误类型，返回原始错误信息
-        return error_msg
+# 已移至 utils.py
 
 
 # 检查服务启动状态
@@ -398,7 +278,7 @@ def register():
         return jsonify({"message": "注册成功", "user_id": user.user_id}), 201
     except Exception as e:
         # 处理异常情况
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": format_ssh_error(e)}), 500
 
 
 # 用户登录接口
@@ -435,7 +315,7 @@ def login():
         }), 200
     except Exception as e:
         # 处理异常情况
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": format_ssh_error(e)}), 500
 
 
 # 用户登出接口
@@ -455,7 +335,7 @@ def logout():
         return jsonify({"message": "已登出"}), 200
     except Exception as e:
         # 处理异常情况
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": format_ssh_error(e)}), 500
 
 
 # 检查用户认证状态接口
@@ -506,7 +386,7 @@ def get_servers():
         return jsonify(load_servers())
     except Exception as e:
         # 处理异常情况
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": format_ssh_error(e)}), 500
 
 
 # 添加服务器接口
@@ -535,7 +415,7 @@ def add_server():
         return jsonify(new_server), 201
     except Exception as e:
         # 处理异常情况
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": format_ssh_error(e)}), 500
 
 
 # 删除服务器接口
@@ -575,7 +455,7 @@ def delete_server(server_id):
         return jsonify({"message": "删除成功"})
     except Exception as e:
         # 处理异常情况
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": format_ssh_error(e)}), 500
 
 
 # 连接服务器接口
@@ -610,7 +490,7 @@ def connect_server(server_id):
         return jsonify({"message": f"已成功连接到 {target['name']} ({target['host']})", "server_id": server_id})
     except Exception as e:
         # 处理连接异常
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": format_ssh_error(e)}), 500
 
 
 # 获取服务状态接口
@@ -624,7 +504,7 @@ def get_services_status():
         return jsonify({"error": "缺少 server_id 参数"}), 400
     
     # 获取SSH客户端连接
-    ssh, err, code = get_ssh_client(server_id)
+    ssh, err, code = get_ssh_client(server_id, active_connections)
     if err:
         return err, code
     
@@ -660,7 +540,7 @@ def get_services_status():
         return jsonify(result)
     except Exception as e:
         # 处理异常情况
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": format_ssh_error(e)}), 500
 
 
 # 服务控制接口
@@ -672,7 +552,7 @@ def service_action(service_name, action):
     server_id = request.args.get('server_id')
     
     # 获取SSH客户端连接
-    ssh, err, code = get_ssh_client(server_id)
+    ssh, err, code = get_ssh_client(server_id, active_connections)
     if err:
         return err, code
     
@@ -711,7 +591,7 @@ def service_action(service_name, action):
             return jsonify({"error": err_out or "命令执行失败"}), 500
     except Exception as e:
         # 处理异常情况
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": format_ssh_error(e)}), 500
 
 
 # 启动日志监视器
@@ -915,7 +795,7 @@ def watch_log(user_server_id, watcher, log_path):
 def get_config_files():
     # 获取请求参数
     server_id = request.args.get('server_id')
-    ssh, err, code = get_ssh_client(server_id)
+    ssh, err, code = get_ssh_client(server_id, active_connections)
     if err:
         return err, code
     service_name = request.args.get('service')
@@ -985,7 +865,7 @@ def get_config_files():
 def list_directory():
     # 获取请求参数
     server_id = request.args.get('server_id')
-    ssh, err, code = get_ssh_client(server_id)
+    ssh, err, code = get_ssh_client(server_id, active_connections)
     if err:
         return err, code
     
@@ -1042,7 +922,7 @@ def list_directory():
 def get_path_info():
     # 获取请求参数
     server_id = request.args.get('server_id')
-    ssh, err, code = get_ssh_client(server_id)
+    ssh, err, code = get_ssh_client(server_id, active_connections)
     if err:
         return err, code
     
@@ -1076,7 +956,7 @@ def get_path_info():
 def read_config_file(file_path):
     # 获取请求参数
     server_id = request.args.get('server_id')
-    ssh, err, code = get_ssh_client(server_id)
+    ssh, err, code = get_ssh_client(server_id, active_connections)
     if err:
         return err, code
     
@@ -1103,7 +983,7 @@ def read_config_file(file_path):
 def write_config_file(file_path):
     # 获取请求参数
     server_id = request.args.get('server_id')
-    ssh, err, code = get_ssh_client(server_id)
+    ssh, err, code = get_ssh_client(server_id, active_connections)
     if err:
         return err, code
     
@@ -1147,7 +1027,7 @@ def write_config_file(file_path):
 def delete_config_file(file_path):
     # 获取请求参数
     server_id = request.args.get('server_id')
-    ssh, err, code = get_ssh_client(server_id)
+    ssh, err, code = get_ssh_client(server_id, active_connections)
     if err:
         return err, code
     
@@ -1234,7 +1114,7 @@ def get_service_log_files(service_name):
 def compare_files():
     # 获取请求参数
     server_id = request.args.get('server_id')
-    ssh, err, code = get_ssh_client(server_id)
+    ssh, err, code = get_ssh_client(server_id, active_connections)
     if err:
         return err, code
     
@@ -1292,7 +1172,7 @@ def compare_files():
         }), 200
     except Exception as e:
         # 处理异常情况
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": format_ssh_error(e)}), 500
 
 
 # 获取错误模式配置接口
@@ -1314,7 +1194,7 @@ def get_error_patterns():
         return jsonify(patterns)
     except Exception as e:
         # 处理异常情况
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": format_ssh_error(e)}), 500
 
 
 # 保存错误模式配置接口

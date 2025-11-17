@@ -1,11 +1,7 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>登录 - 服务管理工具</title>
-    <link rel="icon" href="/favicon.ico" type="image/x-icon">
-    <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
+{% extends "base.html" %}
+{% block title %}登录 - 服务管理工具{% endblock %}
+
+{% block head %}
     <style>
         :root {
             --tech-blue: #0080ff;
@@ -383,8 +379,9 @@
             box-shadow: 0 0 12px rgba(0, 128, 255, 0.4);
         }
     </style>
-</head>
-<body>
+{% endblock %}
+
+{% block content %}
     <!-- 消息提示框 -->
     <div class="alert-container">
         <div class="alert alert-success" id="messageAlert">
@@ -581,5 +578,4 @@
             }
         }
     </script>
-</body>
-</html>
+{% endblock %}

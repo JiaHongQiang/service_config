@@ -33,6 +33,21 @@
             overflow-x: hidden;
         }
 
+        /* 简化重复样式 */
+        .btn-primary, .btn-success, .btn-info, .btn-warning, .btn-danger {
+            border: none;
+            transition: 0.3s;
+        }
+        
+        .btn-primary:hover,
+        .btn-success:hover,
+        .btn-info:hover,
+        .btn-warning:hover,
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 12px rgba(0,123,255,0.4);
+        }
+
         /* 🔹 顶部导航 */
         .header {
             height: var(--header-height);
@@ -139,19 +154,6 @@
             background: var(--tech-blue);
             color: white;
             box-shadow: 0 0 10px var(--tech-blue);
-        }
-
-        .btn-primary, .btn-success, .btn-info, .btn-warning, .btn-danger {
-            border: none;
-            transition: 0.3s;
-        }
-        .btn-primary:hover,
-        .btn-success:hover,
-        .btn-info:hover,
-        .btn-warning:hover,
-        .btn-danger:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 0 12px rgba(0,123,255,0.4);
         }
 
         /* ⚙️ 文件树样式 */
