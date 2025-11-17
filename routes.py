@@ -709,12 +709,100 @@ def get_config_files():
                 result[s["name"]] = []
                 continue
             try:
-                files = sftp.listdir(path)
-                result[s["name"]] = [os.path.join(path, f) for f in files]
+                items = sftp.listdir_attr(path)
+                result[s["name"]] = []
+                for item in items:
+                    item_path = os.path.join(path, item.filename).replace("\\", "/")
+                    # 判断是文件还是文件夹
+                    if stat.S_ISDIR(item.st_mode):
+                        result[s["name"]].append({
+                            "name": item.filename,
+                            "path": item_path,
+                            "type": "directory",
+                            "size": item.st_size,
+                            "mtime": item.st_mtime
+                        })
+                    else:
+                        result[s["name"]].append({
+                            "name": item.filename,
+                            "path": item_path,
+                            "type": "file",
+                            "size": item.st_size,
+                            "mtime": item.st_mtime
+                        })
             except Exception:
                 result[s["name"]] = []
         sftp.close()
         return jsonify(result)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@api_bp.route('/config/files/list', methods=['GET'])
+@login_required
+def list_directory():
+    """列出指定目录下的文件和文件夹"""
+    server_id = request.args.get('server_id')
+    ssh, err, code = get_ssh_client(server_id)
+    if err:
+        return err, code
+
+    path = request.args.get('path')
+    # 如果path为空字符串或None，则返回错误
+    if not path and path != "":
+        return jsonify({"error": "缺少 path 参数"}), 400
+
+    try:
+        sftp = ssh.open_sftp()
+        items = sftp.listdir_attr(path) if path else sftp.listdir_attr(".")
+        result = []
+        for item in items:
+            item_path = os.path.join(path, item.filename).replace("\\", "/") if path else item.filename
+            # 判断是文件还是文件夹
+            if stat.S_ISDIR(item.st_mode):
+                result.append({
+                    "name": item.filename,
+                    "path": item_path,
+                    "type": "directory",
+                    "size": item.st_size,
+                    "mtime": item.st_mtime
+                })
+            else:
+                result.append({
+                    "name": item.filename,
+                    "path": item_path,
+                    "type": "file",
+                    "size": item.st_size,
+                    "mtime": item.st_mtime
+                })
+        sftp.close()
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@api_bp.route('/config/path/info', methods=['GET'])
+@login_required
+def get_path_info():
+    """获取路径信息（判断是文件还是目录）"""
+    server_id = request.args.get('server_id')
+    ssh, err, code = get_ssh_client(server_id)
+    if err:
+        return err, code
+
+    path = request.args.get('path')
+    if not path:
+        return jsonify({"error": "缺少 path 参数"}), 400
+
+    try:
+        sftp = ssh.open_sftp()
+        stat_info = sftp.stat(path)
+        sftp.close()
+        
+        if stat.S_ISDIR(stat_info.st_mode):
+            return jsonify({"path": path, "type": "directory"})
+        else:
+            return jsonify({"path": path, "type": "file"})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -912,5 +1000,38 @@ def compare_files():
                 "total_changes": added_count + removed_count
             }
         }), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@api_bp.route('/config/error_patterns', methods=['GET'])
+def get_error_patterns():
+    """获取错误模式列表"""
+    try:
+        patterns_file = get_error_patterns_file()
+        if os.path.exists(patterns_file):
+            with open(patterns_file, 'r', encoding='utf-8') as f:
+                patterns = json.load(f)
+        else:
+            patterns = []
+        return jsonify(patterns)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@api_bp.route('/config/error_patterns', methods=['POST'])
+@login_required
+def save_error_patterns():
+    """保存错误模式列表"""
+    try:
+        patterns = request.json
+        patterns_file = get_error_patterns_file()
+        
+        # 保存新文件（不创建备份）
+        os.makedirs(os.path.dirname(patterns_file), exist_ok=True)
+        with open(patterns_file, 'w', encoding='utf-8') as f:
+            json.dump(patterns, f, ensure_ascii=False, indent=4)
+        
+        return jsonify({"message": "保存成功"})
     except Exception as e:
         return jsonify({"error": str(e)}), 500

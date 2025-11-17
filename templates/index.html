@@ -454,7 +454,7 @@
     <header class="header bg-white border-bottom">
         <div class="container-fluid h-100 px-3">
             <div class="d-flex align-items-center justify-content-between h-100">
-                <h4 class="mb-0">服务管理工具</h4>
+                <h4 class="mb-0">服务管理平台</h4>
                 <div class="d-flex align-items-center gap-2" style="white-space: nowrap;">
                     <select class="form-select form-select-sm" id="serverSelector" style="min-width: 150px; max-width: 200px;">
                         <option value="">选择服务器</option>
@@ -552,9 +552,14 @@
                 <div class="card h-100 d-flex flex-column">
                     <div class="card-header py-2 d-flex justify-content-between align-items-center">
                         <h6 class="mb-0">日志模块</h6>
-                        <button class="btn btn-sm btn-outline-secondary clear-service-log-btn" id="clearServiceLogBtn">
-                            <i class="fas fa-trash-alt"></i>
-                        </button>
+                        <div>
+                            <button class="btn btn-sm btn-outline-primary me-1" id="addErrorPatternBtn" data-bs-toggle="modal" data-bs-target="#addErrorPatternModal">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-secondary clear-service-log-btn" id="clearServiceLogBtn">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </div>
                     </div>
                     <div class="card-body p-2 h-100 overflow-auto">
                         <ul class="list-unstyled mb-0 operation-log">
@@ -635,6 +640,41 @@
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
                     <button type="button" class="btn btn-primary" id="submitAddServer">添加</button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 添加错误信息模态框 -->
+    <div class="modal fade" id="addErrorPatternModal" tabindex="-1" aria-labelledby="addErrorPatternModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addErrorPatternModalLabel">添加错误信息</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="addErrorPatternForm">
+                        <div class="mb-3">
+                            <label class="form-label">关键字</label>
+                            <input type="text" class="form-control" id="errorKeyword" required>
+                            <div class="form-text">输入用于匹配日志的关键字</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">错误名称</label>
+                            <input type="text" class="form-control" id="errorName" required>
+                            <div class="form-text">输入该错误的显示名称</div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" id="submitAddErrorPattern">添加</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
             </div>
         </div>
     </div>
@@ -752,6 +792,7 @@
                     document.getElementById('connectBtn').addEventListener('click', connectToServer);
                     document.getElementById('refreshFilesBtn').addEventListener('click', loadFileTree);
                     document.getElementById('saveFileBtn').addEventListener('click', saveCurrentFile);
+                    document.getElementById('submitAddErrorPattern').addEventListener('click', addErrorPattern);
 
                     // 在这里绑定 serverSelector 的事件
                     document.getElementById('serverSelector').addEventListener('change', handleServerSelection);
@@ -770,6 +811,17 @@
                 
                 // 启动错误日志刷新
                 startErrorLogRefresh();
+                
+                // 添加模态框事件监听器来正确处理遮罩层
+                const addServerModal = document.getElementById('addServerModal');
+                if (addServerModal) {
+                    addServerModal.addEventListener('hidden.bs.modal', function () {
+                        // 确保在模态框完全隐藏后清理所有相关的遮罩层
+                        setTimeout(() => {
+                            removeAllBackdropElements();
+                        }, 100);
+                    });
+                }
             });
         });
 
@@ -855,16 +907,18 @@
                     showToast('✓ 添加成功', `服务器: ${newServer.name} (${newServer.host})`, 'success');
                     document.getElementById('addServerForm').reset();
 
-            // ✅ 安全关闭模态框
-            const modalEl = document.getElementById('addServerModal');
-            const modalInstance = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
-            modalInstance.hide();
-
-            setTimeout(() => {
-                document.querySelectorAll('.modal-backdrop').forEach(b => b.remove());
-                document.body.classList.remove('modal-open');
-                document.body.style.overflow = '';
-            }, 300);
+                    // 使用Bootstrap方法正确关闭模态框
+                    const modalEl = document.getElementById('addServerModal');
+                    const modal = bootstrap.Modal.getInstance(modalEl);
+                    if (modal) {
+                        modal.hide();
+                    } else {
+                        // 如果实例不存在，手动隐藏
+                        modalEl.classList.remove('show');
+                        modalEl.style.display = 'none';
+                        // 手动清理所有可能的遮罩层
+                        removeAllBackdropElements();
+                    }
 
                     loadServers();
                     addOperationLog('添加服务器', `成功添加服务器: ${newServer.name} (${newServer.host})`);
@@ -878,6 +932,19 @@
                 showToast('✗ 添加失败', '网络错误或服务器异常', 'error');
                 addOperationLog('添加服务器', `添加服务器失败: ${error.message}`);
             }
+        }
+
+        // 专门用于清理所有遮罩层元素的函数
+        function removeAllBackdropElements() {
+            // 移除所有模态框遮罩层
+            document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
+                backdrop.remove();
+            });
+            
+            // 确保body恢复正常状态
+            document.body.classList.remove('modal-open');
+            document.body.style.overflow = '';
+            document.body.style.paddingRight = '';
         }
 
         // 删除当前选中的服务器
@@ -1451,25 +1518,38 @@ async function restoreBackupFile(backupPath) {
 
         // 按字母顺序排序文件
         const sortedFiles = [...files[serviceName]].sort((a, b) => {
-            const fileNameA = a.split('/').pop();
-            const fileNameB = b.split('/').pop();
-            return fileNameA.localeCompare(fileNameB);
+            // 文件夹优先显示
+            if (a.type === 'directory' && b.type !== 'directory') return -1;
+            if (a.type !== 'directory' && b.type === 'directory') return 1;
+            return a.name.localeCompare(b.name);
         });
 
-        sortedFiles.forEach(filePath => {
-            const fileName = filePath.split('/').pop();
+        sortedFiles.forEach(fileItem => {
+            const fileName = fileItem.name;
 
             // 每个文件行：文件名 + 删除按钮
             const fileNode = document.createElement('li');
             fileNode.className = 'd-flex justify-content-between align-items-center mb-1 border-bottom pb-1';
+            
+            // 根据类型显示不同图标
+            let iconClass = 'fa-file';
+            if (fileItem.type === 'directory') {
+                iconClass = 'fa-folder';
+            }
+
+            // 限制文件名长度，防止影响布局
+            const displayName = fileName.length > 30 ? fileName.substring(0, 27) + '...' : fileName;
+
             fileNode.innerHTML = `
-                <div class="text-primary" style="cursor:pointer;" onclick="loadFileContent('${filePath}')">
-                    <i class="fas fa-file me-1"></i>${fileName}
+                <div class="text-primary" style="cursor:pointer; flex: 1;" onclick="handleFileClick('${fileItem.path}', '${fileItem.type}')">
+                    <i class="fas ${iconClass} me-1"></i>${displayName}
                 </div>
-                <button class="btn btn-sm btn-outline-danger py-0 px-1" style="font-size:0.75rem;"
-                    onclick="deleteConfigFile('${filePath}', event)">
+                ${fileItem.type !== 'directory' ? `
+                <button class="btn btn-sm btn-outline-danger py-0 px-1" style="font-size:0.75rem; flex-shrink: 0; margin-left: 5px;"
+                    onclick="deleteConfigFile('${fileItem.path}', event)">
                     <i class="fas fa-trash"></i>
                 </button>
+                ` : ''}
             `;
             fileList.appendChild(fileNode);
         });
@@ -1479,6 +1559,102 @@ async function restoreBackupFile(backupPath) {
     } else {
         treeContainer.innerHTML = '<li class="text-muted">该服务没有可用的配置文件</li>';
     }
+}
+
+// 处理文件点击事件
+async function handleFileClick(filePath, fileType) {
+    if (fileType === 'directory') {
+        // 进入目录浏览
+        await browseDirectory(filePath);
+    } else {
+        loadFileContent(filePath);
+    }
+}
+
+// 浏览目录
+async function browseDirectory(dirPath) {
+    const serverId = document.getElementById('serverSelector').value;
+    if (!serverId) {
+        showToast('⚠ 选择服务器', '未选择服务器', 'warning');
+        return;
+    }
+
+    try {
+        const response = await fetch(`/config/files/list?server_id=${serverId}&path=${encodeURIComponent(dirPath)}`);
+        if (response.ok) {
+            const items = await response.json();
+            renderDirectoryContents(items, dirPath);
+        } else {
+            showToast('✗ 加载失败', '无法加载目录内容', 'error');
+        }
+    } catch (error) {
+        console.error('加载目录内容失败:', error);
+        showToast('✗ 加载失败', error.message, 'error');
+    }
+}
+
+// 渲染目录内容
+function renderDirectoryContents(items, dirPath) {
+    const treeContainer = document.getElementById('fileTree');
+    treeContainer.innerHTML = '';
+
+    // 添加返回上级目录的链接（如果不是根目录）
+    const parentPath = dirPath.substring(0, dirPath.lastIndexOf('/'));
+    const parentItem = document.createElement('li');
+    parentItem.className = 'mb-1';
+    parentItem.innerHTML = `
+        <div class="text-primary" style="cursor:pointer;" onclick="browseUpDirectory('${parentPath}')">
+            <i class="fas fa-arrow-up me-1"></i>..
+        </div>
+    `;
+    treeContainer.appendChild(parentItem);
+
+    // 按字母顺序排序，文件夹优先
+    const sortedItems = [...items].sort((a, b) => {
+        if (a.type === 'directory' && b.type !== 'directory') return -1;
+        if (a.type !== 'directory' && b.type === 'directory') return 1;
+        return a.name.localeCompare(b.name);
+    });
+
+    sortedItems.forEach(item => {
+        const itemNode = document.createElement('li');
+        itemNode.className = 'd-flex justify-content-between align-items-center mb-1 border-bottom pb-1';
+        
+        let iconClass = 'fa-file';
+        if (item.type === 'directory') {
+            iconClass = 'fa-folder';
+        }
+
+        // 限制文件名长度，防止影响布局
+        const displayName = item.name.length > 30 ? item.name.substring(0, 27) + '...' : item.name;
+
+        itemNode.innerHTML = `
+            <div class="text-primary" style="cursor:pointer; flex: 1;" onclick="handleFileClick('${item.path}', '${item.type}')">
+                <i class="fas ${iconClass} me-1"></i>${displayName}
+            </div>
+            ${item.type !== 'directory' ? `
+            <button class="btn btn-sm btn-outline-danger py-0 px-1" style="font-size:0.75rem; flex-shrink: 0; margin-left: 5px;"
+                onclick="deleteConfigFile('${item.path}', event)">
+                <i class="fas fa-trash"></i>
+            </button>
+            ` : ''}
+        `;
+        treeContainer.appendChild(itemNode);
+    });
+}
+
+// 返回上级目录
+async function browseUpDirectory(dirPath) {
+    if (!dirPath && dirPath !== '') {
+        // 如果是根目录，重新加载服务文件树
+        if (currentServiceName) {
+            loadFileTree(currentServiceName);
+        }
+        return;
+    }
+    
+    // 否则浏览指定的上级目录
+    await browseDirectory(dirPath);
 }
 
 async function deleteConfigFile(filePath, event) {
@@ -1506,6 +1682,10 @@ async function deleteConfigFile(filePath, event) {
                     }
                 } else {
                     const err = await response.json();
+
+
+
+
                     showToast('✗ 删除失败', err.error, 'error');
                     addOperationLog('删除文件', `文件删除失败: ${filePath} - ${err.error}`);
                 }
@@ -1575,6 +1755,8 @@ async function deleteConfigFile(filePath, event) {
 
             const serverId = document.getElementById('serverSelector').value;
             if (!serverId) {
+
+
                 showToast('⚠ 选择服务器', '未选择服务器', 'warning');
                 return;
             }
@@ -1736,6 +1918,78 @@ async function deleteConfigFile(filePath, event) {
 
             saveOperationLog();
             renderOperationLog();
+        }
+
+        // 添加错误信息
+        async function addErrorPattern() {
+            const keyword = document.getElementById('errorKeyword').value.trim();
+            const name = document.getElementById('errorName').value.trim();
+
+            if (!keyword || !name) {
+                showToast('⚠ 输入错误', '请填写完整信息', 'warning');
+                return;
+            }
+
+            try {
+                // 获取现有的错误模式
+                const response = await fetch('/config/error_patterns');
+                let patterns = [];
+                
+                if (response.ok) {
+                    patterns = await response.json();
+                } else if (response.status === 401) {
+                    showToast('✗ 未登录', '请先登录系统', 'error');
+                    return;
+                }
+
+                // 检查是否已存在相同的模式
+                const exists = patterns.some(pattern => 
+                    pattern.keyword === keyword || pattern.name === name
+                );
+
+                if (exists) {
+                    showToast('⚠ 重复项', '关键字或名称已存在', 'warning');
+                    return;
+                }
+
+                // 添加新模式
+                const newPattern = { keyword, name };
+                patterns.push(newPattern);
+
+                // 保存更新后的模式
+                const saveResponse = await fetch('/config/error_patterns', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(patterns)
+                });
+
+                if (saveResponse.ok) {
+                    showToast('✓ 添加成功', `已添加错误信息: ${name}`, 'success');
+                    document.getElementById('addErrorPatternForm').reset();
+                    
+                    // 关闭模态框
+                    const modalEl = document.getElementById('addErrorPatternModal');
+                    const modalInstance = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+                    modalInstance.hide();
+                    
+                    // 确保在模态框完全隐藏后清理所有相关的遮罩层
+                    setTimeout(() => {
+                        removeAllBackdropElements();
+                    }, 100);
+
+                    addOperationLog('添加错误信息', `关键字: ${keyword}, 名称: ${name}`);
+                } else if (saveResponse.status === 401) {
+                    showToast('✗ 未登录', '请先登录系统', 'error');
+                } else {
+                    throw new Error('保存失败');
+                }
+            } catch (error) {
+                console.error('添加错误信息失败:', error);
+                showToast('✗ 添加失败', '请稍后重试', 'error');
+                addOperationLog('添加错误信息', `添加失败: ${error.message}`);
+            }
         }
 
         // 保存操作记录到localStorage
@@ -1904,6 +2158,12 @@ async function deleteConfigFile(filePath, event) {
 
 </body>
 </html>
+
+
+
+
+
+
 
 
 
