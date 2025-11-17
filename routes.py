@@ -1,35 +1,43 @@
-import os
-import json
-import stat
+# 导入标准库
+import os                 # 操作系统相关功能
+import json               # JSON数据处理
+import stat               # 文件状态信息
 
-import paramiko
-from flask import Blueprint, jsonify, request, render_template, session, redirect
-from models import UserManager
-from functools import wraps
-from difflib import unified_diff
-import time
-import threading
+# 导入第三方库
+import paramiko           # SSH连接库，用于远程服务器管理
+from flask import Blueprint, jsonify, request, render_template, session, redirect  # Flask Web框架组件
+from models import UserManager  # 自定义用户管理模块
+from functools import wraps     # 装饰器工具
+from difflib import unified_diff  # 文件差异比较工具
+import time               # 时间处理
+import threading          # 多线程支持
 
 # ==========================
 # Blueprint 配置
 # ==========================
+# 创建Flask蓝图，用于组织路由和视图函数
 api_bp = Blueprint('api', __name__)
 
 # ==========================
 # 全局变量
 # ==========================
+# 存储活跃的SSH连接对象，键为用户-服务器标识，值为SSH客户端实例
 active_connections = {}
+# 日志监视器字典，用于跟踪正在监视的日志文件
 log_watchers = {}
+# 检测到的错误记录，按监视器分组存储
 detected_errors = {}
+# 服务启动跟踪器，用于监控服务启动状态
 startup_trackers = {}
 
 # 模拟服务列表 - 支持多路径日志
+# 定义系统中所有可管理的服务及其配置信息
 services = [
     {
-        "name": "sie",
-        "display_name": "流媒体服务",
-        "config_path": "/home/hy_media_server/conf/",
-        "log_paths": [
+        "name": "sie",                      # 服务名称（系统内部标识）
+        "display_name": "流媒体服务",         # 服务显示名称
+        "config_path": "/home/hy_media_server/conf/",  # 配置文件路径
+        "log_paths": [                       # 日志文件路径列表
             "/home/hy_media_server/log/222-1/run/log-222-1-run.log",
             "/home/hy_media_server/log/222-1/interface/log-222-1-run.log",
             "/home/hy_media_server/log/666-1/run/log-666-1-run.log",
@@ -39,13 +47,13 @@ services = [
             "/home/hy_media_server/log/999-1/run/log-999-1-run.log",
             "/home/hy_media_server/log/999-1/interface/log-999-1-run.log"
         ],
-        "startup_check": {
-            "enabled": True,
-            "keyword": "start up",
-            "required_count": 3,
-            "timeout": 30
+        "startup_check": {                   # 启动状态检查配置
+            "enabled": True,                 # 是否启用启动检查
+            "keyword": "start up",          # 启动成功的关键字
+            "required_count": 3,             # 需要检测到关键字的日志文件数量
+            "timeout": 30                    # 启动超时时间（秒）
         },
-        "has_config": True
+        "has_config": True                   # 是否有配置文件
     },
     {
         "name": "vss",
@@ -75,94 +83,157 @@ services = [
      "log_paths": [], "startup_check": {"enabled": False}, "has_config": True}
 ]
 
+# 初始化用户管理器，指定数据存储目录为 'data'
 user_manager = UserManager('data')
 
 
 # ==========================
 # 工具函数
 # ==========================
+# 登录验证装饰器：用于保护需要登录才能访问的路由
+# 检查用户会话状态，如果未登录则返回错误信息或重定向到登录页面
 def login_required(f):
     """装饰器：确保用户已登录"""
 
     @wraps(f)
     def decorated_function(*args, **kwargs):
+        # 判断请求是否为AJAX请求（通过Content-Type或Accept头部判断）
         if request.headers.get('Content-Type', '').startswith('application/json') or \
                 request.headers.get('Accept', '').find('application/json') != -1:
+            # AJAX请求返回JSON格式错误信息
             if 'user_id' not in session:
                 return jsonify({"error": "用户未登录"}), 401
         else:
+            # 普通页面请求重定向到登录页
             if 'user_id' not in session:
                 return redirect('/login')
+        # 用户已登录，继续执行原函数
         return f(*args, **kwargs)
 
     return decorated_function
 
 
+# 根据用户ID生成对应的服务器配置文件路径
+# 每个用户的服务器配置存储在独立的文件中
 def get_user_servers_file(user_id: str) -> str:
     return f'data/servers_{user_id}.json'
 
 
+# 获取错误日志模式配置文件路径
 def get_error_patterns_file() -> str:
     return 'data/error_log_patterns.json'
 
 
+# 获取指定服务器的SSH客户端连接
+# 参数: server_id - 服务器唯一标识
+# 返回: (ssh_client, error_response, http_status) 三元组
 def get_ssh_client(server_id: str):
+    # 检查用户是否已登录
     if 'user_id' not in session:
         return None, jsonify({"error": "用户未登录"}), 401
+    
+    # 构造用户-服务器唯一标识
     user_server_id = f"{session['user_id']}-{server_id}"
+    
+    # 检查服务器ID是否为空
     if not server_id:
         return None, jsonify({"error": "Missing server_id"}), 400
+    
+    # 从活跃连接中查找对应SSH客户端
     client = active_connections.get(user_server_id)
+    
+    # 如果找不到对应连接，返回错误
     if not client:
         return None, jsonify({"error": "该服务器未连接"}), 400
+    
+    # 返回SSH客户端连接
     return client, None, None
 
 
+# 加载当前用户的服务器配置列表
+# 返回: 服务器配置列表
 def load_servers():
+    # 检查用户是否已登录
     if 'user_id' not in session:
         return []
+    
+    # 获取当前用户的服务器配置文件路径
     servers_file = get_user_servers_file(session['user_id'])
+    
     try:
+        # 如果配置文件不存在，返回空列表
         if not os.path.exists(servers_file):
             return []
+        
+        # 读取并解析JSON格式的服务器配置文件
         with open(servers_file, 'r', encoding='utf-8') as f:
             return json.load(f)
     except Exception:
+        # 发生异常时返回空列表
         return []
 
 
+# 保存服务器配置列表到文件
+# 参数: servers - 服务器配置列表
 def save_servers(servers):
+    # 检查用户是否已登录
     if 'user_id' not in session:
         return False
+    
+    # 获取当前用户的服务器配置文件路径
     servers_file = get_user_servers_file(session['user_id'])
+    
+    # 确保数据目录存在
     os.makedirs('data', exist_ok=True)
+    
+    # 将服务器配置写入文件，使用UTF-8编码和4空格缩进
     with open(servers_file, 'w', encoding='utf-8') as f:
         json.dump(servers, f, ensure_ascii=False, indent=4)
+    
     return True
 
 
+# 根据服务器ID查找服务器配置
+# 参数: server_id - 服务器唯一标识
+# 返回: 找到的服务器配置字典，未找到则返回None
 def find_server(server_id):
     servers = load_servers()
+    # 使用生成器表达式查找匹配的服务器配置
     return next((s for s in servers if str(s["id"]) == str(server_id)), None)
 
 
+# 解码日志行内容，支持多种字符编码
+# 参数: line - 原始日志行（可能是字节串或字符串）
+# 返回: 解码后的字符串
 def decode_line(line):
+    # 如果已经是字符串，直接返回
     if isinstance(line, str):
         return line
+    
+    # 尝试多种常见字符编码进行解码
     encodings = ['utf-8', 'gbk', 'gb2312', 'gb18030', 'latin1', 'ascii']
     for encoding in encodings:
         try:
             return line.decode(encoding)
         except (UnicodeDecodeError, AttributeError):
+            # 解码失败，尝试下一种编码
             continue
+    
+    # 如果所有编码都失败，使用UTF-8忽略错误模式解码
     try:
         return line.decode('utf-8', errors='ignore')
     except:
+        # 最后手段，转换为字符串表示
         return str(line)
 
 
+# 格式化SSH连接错误信息，提供更友好的中文提示
+# 参数: error - 原始错误对象
+# 返回: 格式化后的中文错误信息
 def format_ssh_error(error):
     error_msg = str(error)
+    
+    # 根据不同的错误类型返回相应的中文提示
     if "Administratively prohibited" in error_msg:
         return "操作被服务器拒绝（权限不足）"
     elif "Permission denied" in error_msg:
@@ -174,20 +245,29 @@ def format_ssh_error(error):
     elif "Connection refused" in error_msg:
         return "连接被拒绝"
     else:
+        # 未识别的错误类型，返回原始错误信息
         return error_msg
 
 
+# 检查服务启动状态
+# 参数: 
+#   tracker_key - 启动跟踪器键名
+#   log_path - 日志文件路径
+#   line_str - 日志行内容
 def check_startup_status(tracker_key, log_path, line_str):
     """检查服务启动状态"""
+    # 获取对应的启动跟踪器
     tracker = startup_trackers.get(tracker_key)
     if not tracker:
         return
 
+    # 如果已经报告过结果，则不再处理
     if tracker['reported']:
         return
 
-    # 检查是否包含启动关键字
+    # 检查日志行是否包含启动关键字
     if tracker['keyword'] in line_str:
+        # 记录检测到关键字的日志文件
         tracker['detected_files'].add(log_path)
         print(
             f"[STARTUP] Detected '{tracker['keyword']}' in {log_path} ({len(tracker['detected_files'])}/{tracker['required_count']})")
@@ -195,23 +275,28 @@ def check_startup_status(tracker_key, log_path, line_str):
         # 检查是否达到要求数量
         if len(tracker['detected_files']) >= tracker['required_count']:
             print(f"[STARTUP] Reached required count, reporting success...")
+            # 报告启动成功
             report_startup_result(tracker_key, True)
 
 
+# 独立线程监控服务启动超时
+# 参数: tracker_key - 启动跟踪器键名
 def monitor_startup_timeout(tracker_key):
     """独立线程监控启动超时"""
+    # 获取对应的启动跟踪器
     tracker = startup_trackers.get(tracker_key)
     if not tracker:
         return
 
+    # 获取超时设置和启动时间
     timeout = tracker['timeout']
     start_time = tracker['start_time']
 
-    # 每0.5秒检查一次
+    # 每0.5秒检查一次启动状态
     while True:
         time.sleep(0.5)
 
-        # 如果tracker已被删除或已报告，则退出
+        # 如果tracker已被删除或已报告，则退出监控循环
         tracker = startup_trackers.get(tracker_key)
         if not tracker or tracker['reported']:
             break
@@ -219,19 +304,26 @@ def monitor_startup_timeout(tracker_key):
         # 检查是否超时
         elapsed = time.time() - start_time
         if elapsed >= timeout:
-            # 超时了，检查是否达到要求
+            # 超时了，检查是否达到要求的数量
             if len(tracker['detected_files']) < tracker['required_count']:
                 print(f"[STARTUP] Timeout reached, reporting failure...")
+                # 报告启动超时失败
                 report_startup_result(tracker_key, False)
             break
 
 
+# 报告服务启动结果
+# 参数: 
+#   tracker_key - 启动跟踪器键名
+#   success - 启动是否成功
 def report_startup_result(tracker_key, success):
     """报告启动结果"""
+    # 获取对应的启动跟踪器
     tracker = startup_trackers.get(tracker_key)
     if not tracker or tracker['reported']:
         return
 
+    # 标记为已报告，避免重复报告
     tracker['reported'] = True
 
     # 解析 tracker_key 获取服务信息
@@ -241,12 +333,16 @@ def report_startup_result(tracker_key, success):
     # 创建一个虚拟的 watcher_id 用于存储统一的启动结果
     result_watcher_id = f"{tracker_key}-startup-result"
 
+    # 如果结果列表不存在，创建空列表
     if result_watcher_id not in detected_errors:
         detected_errors[result_watcher_id] = []
 
+    # 获取启动ID，用于区分不同次启动
     startup_id = tracker.get('startup_id', 0)
 
+    # 构造启动结果记录
     if success:
+        # 启动成功记录
         error_record = {
             'timestamp': time.strftime('%Y-%m-%d %H:%M:%S'),
             'service': service_name,
@@ -258,155 +354,246 @@ def report_startup_result(tracker_key, success):
         }
         print(f"✓ [STARTUP SUCCESS] {service_name} fully started (startup_id: {startup_id})")
     else:
+        # 启动超时记录
         error_record = {
             'timestamp': time.strftime('%Y-%m-%d %H:%M:%S'),
             'service': service_name,
             'log_file': 'all',
             'error_name': '启动超时',
-            'log_line': f'超时 {tracker["timeout"]}s，只在 {len(tracker["detected_files"])}/{tracker["required_count"]} 个日志文件中检测到启动成功',
+            'log_line': f'超时 {tracker["timeout"]}s，只在 {len(tracker["detected_files"])} 个日志文件中检测到启动成功',
             'detected_at': time.time(),
             'startup_id': startup_id  # 添加启动ID
         }
         print(f"✗ [STARTUP TIMEOUT] {service_name} startup incomplete (startup_id: {startup_id})")
 
+    # 将启动结果添加到检测错误列表中
     detected_errors[result_watcher_id].append(error_record)
 
 
 # ==========================
 # 用户认证接口
 # ==========================
+# 用户注册接口
+# 接收用户名和密码，创建新用户
 @api_bp.route('/auth/register', methods=['POST'])
 def register():
     try:
+        # 获取请求中的JSON数据
         data = request.json
         username = data.get('username')
         password = data.get('password')
+        
+        # 验证用户名和密码是否为空
         if not username or not password:
             return jsonify({"error": "用户名和密码不能为空"}), 400
+        
+        # 调用用户管理器创建用户
         user = user_manager.create_user(username, password)
+        
+        # 检查用户是否创建成功
         if not user:
             return jsonify({"error": "用户已存在"}), 400
+        
+        # 返回注册成功响应
         return jsonify({"message": "注册成功", "user_id": user.user_id}), 201
     except Exception as e:
+        # 处理异常情况
         return jsonify({"error": str(e)}), 500
 
 
+# 用户登录接口
+# 验证用户名和密码，创建用户会话
 @api_bp.route('/auth/login', methods=['POST'])
 def login():
     try:
+        # 获取请求中的JSON数据
         data = request.json
         username = data.get('username')
         password = data.get('password')
+        
+        # 验证用户名和密码是否为空
         if not username or not password:
             return jsonify({"error": "用户名和密码不能为空"}), 400
+        
+        # 调用用户管理器验证用户
         user = user_manager.authenticate_user(username, password)
+        
+        # 检查用户验证是否成功
         if not user:
             return jsonify({"error": "用户名或密码错误"}), 401
+        
+        # 创建用户会话
         session_id = user_manager.create_session(user)
         session['user_id'] = user.user_id
         session['session_id'] = session_id
+        
+        # 返回登录成功响应
         return jsonify({
             "message": "登录成功",
             "user_id": user.user_id,
             "username": user.username
         }), 200
     except Exception as e:
+        # 处理异常情况
         return jsonify({"error": str(e)}), 500
 
 
+# 用户登出接口
+# 销毁用户会话，清除登录状态
 @api_bp.route('/auth/logout', methods=['POST'])
 @login_required
 def logout():
     try:
+        # 如果会话中存在session_id，则销毁会话
         if 'session_id' in session:
             user_manager.destroy_session(session['session_id'])
+        
+        # 清除会话数据
         session.clear()
+        
+        # 返回登出成功响应
         return jsonify({"message": "已登出"}), 200
     except Exception as e:
+        # 处理异常情况
         return jsonify({"error": str(e)}), 500
 
 
+# 检查用户认证状态接口
+# 检查当前用户是否已登录
 @api_bp.route('/auth/status', methods=['GET'])
 def auth_status():
+    # 检查会话中是否存在用户ID
     if 'user_id' in session:
+        # 根据用户ID获取用户信息
         user = user_manager.get_user_by_id(session['user_id'])
         if user:
+            # 用户已登录，返回用户信息
             return jsonify({
                 "logged_in": True,
                 "user_id": user.user_id,
                 "username": user.username
             }), 200
+    # 用户未登录
     return jsonify({"logged_in": False}), 401
 
 
+# 主页路由
+# 需要登录才能访问
 @api_bp.route('/')
 @login_required
 def index():
     return render_template('index.html')
 
 
+# 登录页面路由
+# 根据用户登录状态决定显示登录页还是主页
 @api_bp.route('/login')
 def login_page():
+    # 如果用户已登录，直接跳转到主页
     if 'user_id' in session:
         return render_template('index.html')
+    # 用户未登录，显示登录页面
     return render_template('login.html')
 
 
+# 获取服务器列表接口
+# 返回当前用户的所有服务器配置
 @api_bp.route('/servers', methods=['GET'])
 @login_required
 def get_servers():
     try:
+        # 加载并返回服务器列表
         return jsonify(load_servers())
     except Exception as e:
+        # 处理异常情况
         return jsonify({"error": str(e)}), 500
 
 
+# 添加服务器接口
+# 添加新的服务器配置
 @api_bp.route('/servers', methods=['POST'])
 @login_required
 def add_server():
     try:
+        # 获取请求中的服务器配置数据
         new_server = request.json
+        
+        # 加载现有服务器列表
         servers = load_servers()
+        
+        # 检查服务器ID是否已存在
         if any(s["id"] == new_server["id"] for s in servers):
             return jsonify({"error": "服务器ID已存在"}), 400
+        
+        # 添加新服务器到列表
         servers.append(new_server)
+        
+        # 保存更新后的服务器列表
         save_servers(servers)
+        
+        # 返回添加成功的服务器信息
         return jsonify(new_server), 201
     except Exception as e:
+        # 处理异常情况
         return jsonify({"error": str(e)}), 500
 
 
+# 删除服务器接口
+# 根据服务器ID删除服务器配置及相关连接
 @api_bp.route('/servers/<server_id>', methods=['DELETE'])
 @login_required
 def delete_server(server_id):
     try:
+        # 加载服务器列表
         servers = load_servers()
+        
+        # 过滤掉要删除的服务器
         updated = [s for s in servers if str(s["id"]) != str(server_id)]
+        
+        # 检查是否有服务器被删除
         if len(updated) == len(servers):
             return jsonify({"error": "未找到该服务器"}), 404
+        
+        # 保存更新后的服务器列表
         save_servers(updated)
+        
+        # 构造用户-服务器唯一标识
         user_server_id = f"{session['user_id']}-{server_id}"
+        
+        # 关闭并清理相关SSH连接
         if user_server_id in active_connections:
             active_connections[user_server_id].close()
             del active_connections[user_server_id]
+        
+        # 停止并清理相关日志监视器
         watchers_to_remove = [k for k in log_watchers if k.startswith(user_server_id)]
         for watcher_key in watchers_to_remove:
             log_watchers[watcher_key]['stop'] = True
             del log_watchers[watcher_key]
+        
+        # 返回删除成功响应
         return jsonify({"message": "删除成功"})
     except Exception as e:
+        # 处理异常情况
         return jsonify({"error": str(e)}), 500
 
 
+# 连接服务器接口
+# 建立到指定服务器的SSH连接
 @api_bp.route('/servers/<server_id>/connect', methods=['POST'])
 @login_required
 def connect_server(server_id):
+    # 查找目标服务器配置
     target = find_server(server_id)
     if not target:
         return jsonify({"error": "服务器不存在"}), 404
+    
     try:
+        # 创建SSH客户端
         ssh = paramiko.SSHClient()
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        
+        # 建立SSH连接
         ssh.connect(
             hostname=target["host"],
             port=int(target["port"]),
@@ -414,86 +601,141 @@ def connect_server(server_id):
             password=target["password"],
             timeout=8
         )
+        
+        # 构造用户-服务器唯一标识并保存连接
         user_server_id = f"{session['user_id']}-{server_id}"
         active_connections[user_server_id] = ssh
+        
+        # 返回连接成功响应
         return jsonify({"message": f"已成功连接到 {target['name']} ({target['host']})", "server_id": server_id})
     except Exception as e:
+        # 处理连接异常
         return jsonify({"error": str(e)}), 500
 
 
+# 获取服务状态接口
+# 查询远程服务器上所有服务的运行状态
 @api_bp.route('/services/status', methods=['GET'])
 @login_required
 def get_services_status():
+    # 获取请求参数中的服务器ID
     server_id = request.args.get('server_id')
     if not server_id:
         return jsonify({"error": "缺少 server_id 参数"}), 400
+    
+    # 获取SSH客户端连接
     ssh, err, code = get_ssh_client(server_id)
     if err:
         return err, code
+    
     try:
         result = []
+        # 遍历所有服务
         for s in services:
+            # 检查服务是否存在
             stdin, stdout, stderr = ssh.exec_command(f"systemctl list-unit-files | grep -w {s['name']}.service")
             service_exists = stdout.read().decode().strip()
+            
             if service_exists:
+                # 获取服务状态
                 stdin, stdout, stderr = ssh.exec_command(f"sudo systemctl is-active {s['name']}")
                 status = stdout.read().decode().strip()
+                
+                # 根据状态设置对应的颜色标识
                 if status == "active":
-                    color = "status-running"
+                    color = "status-running"  # 运行中
                 elif status in ["inactive", "failed"]:
-                    color = "status-stopped"
+                    color = "status-stopped"  # 已停止
                 else:
-                    color = "status-unknown"
+                    color = "status-unknown"  # 状态未知
+                
+                # 将服务信息和状态添加到结果中
                 result.append({
                     **s,
                     "status": status,
                     "status_indicator": color
                 })
+        
+        # 返回服务状态列表
         return jsonify(result)
     except Exception as e:
+        # 处理异常情况
         return jsonify({"error": str(e)}), 500
 
 
+# 服务控制接口
+# 对指定服务执行启动、停止或重启操作
 @api_bp.route('/services/<service_name>/<action>', methods=['POST'])
 @login_required
 def service_action(service_name, action):
+    # 获取请求参数中的服务器ID
     server_id = request.args.get('server_id')
+    
+    # 获取SSH客户端连接
     ssh, err, code = get_ssh_client(server_id)
     if err:
         return err, code
+    
+    # 验证操作类型是否有效
     if action not in ["start", "stop", "restart"]:
         return jsonify({"error": "Invalid action"}), 400
+    
     try:
+        # 查找服务信息
         service_info = next((s for s in services if s["name"] == service_name), None)
         log_paths = service_info.get("log_paths", []) if service_info else []
+        
+        # 如果是停止操作，停止相关日志监视器
         if action == "stop" and server_id:
             stop_log_watchers(server_id, service_name)
+        
+        # 构造并执行系统命令
         cmd = f"sudo systemctl {action} {service_name}"
         stdin, stdout, stderr = ssh.exec_command(cmd)
+        
+        # 获取命令执行结果
         exit_code = stdout.channel.recv_exit_status()
         out = stdout.read().decode()
         err_out = stderr.read().decode()
+        
         if exit_code == 0:
+            # 命令执行成功
+            # 如果是启动操作且有日志路径，启动日志监视器
             if action == "start" and log_paths and server_id:
                 start_log_watchers(server_id, service_name, log_paths)
+            
+            # 返回操作成功响应
             return jsonify({"message": f"{service_name} {action} 成功", "output": out})
         else:
+            # 命令执行失败，返回错误信息
             return jsonify({"error": err_out or "命令执行失败"}), 500
     except Exception as e:
+        # 处理异常情况
         return jsonify({"error": str(e)}), 500
 
 
+# 启动日志监视器
+# 为指定服务的所有日志文件启动监视线程
+# 参数: 
+#   server_id - 服务器ID
+#   service_name - 服务名称
+#   log_paths - 日志文件路径列表
 def start_log_watchers(server_id, service_name, log_paths):
+    # 构造用户-服务器唯一标识
     user_server_id = f"{session['user_id']}-{server_id}"
+    
+    # 停止已存在的同名服务监视器
     stop_log_watchers(server_id, service_name)
 
     # 不再清空历史记录，而是为每次启动创建唯一的启动ID
     startup_id = int(time.time() * 1000)  # 使用毫秒级时间戳作为启动ID
 
+    # 获取服务信息和启动检查配置
     service_info = next((s for s in services if s["name"] == service_name), None)
     startup_check = service_info.get("startup_check", {}) if service_info else {}
     tracker_key = f"{user_server_id}-{service_name}"
 
+    # 如果启用了启动检查，初始化启动跟踪器
     if startup_check.get("enabled"):
         startup_trackers[tracker_key] = {
             'keyword': startup_check.get('keyword', '启动成功'),
@@ -511,63 +753,110 @@ def start_log_watchers(server_id, service_name, log_paths):
         print(
             f"[STARTUP] Started timeout monitor for {service_name} (timeout: {startup_check.get('timeout')}s, startup_id: {startup_id})")
 
+    # 为每个日志文件启动监视线程
     for log_path in log_paths:
         if not log_path:
             continue
+        
+        # 构造监视器唯一标识
         watcher_id = f"{user_server_id}-{service_name}-{hash(log_path)}"
+        
+        # 创建监视器配置
         watcher = {
             'stop': False,
             'service_name': service_name,
             'log_path': log_path,
             'tracker_key': tracker_key if startup_check.get("enabled") else None
         }
+        
+        # 保存监视器配置
         log_watchers[watcher_id] = watcher
+        
+        # 启动日志监视线程
         thread = threading.Thread(target=watch_log, args=(user_server_id, watcher, log_path))
         thread.daemon = True
         thread.start()
         print(f"Started log watcher for {service_name}: {log_path}")
 
 
+# 停止日志监视器
+# 停止指定服务的所有日志监视线程
+# 参数: 
+#   server_id - 服务器ID
+#   service_name - 服务名称
 def stop_log_watchers(server_id, service_name):
+    # 构造用户-服务器唯一标识
     user_server_id = f"{session['user_id']}-{server_id}"
+    
+    # 构造监视器键名前缀
     prefix = f"{user_server_id}-{service_name}-"
+    
+    # 查找需要停止的监视器
     watchers_to_stop = [k for k in log_watchers if k.startswith(prefix)]
+    
+    # 设置停止标志并打印日志
     for watcher_key in watchers_to_stop:
         log_watchers[watcher_key]['stop'] = True
         print(f"Stopped log watcher: {watcher_key}")
 
 
+# 监控单个日志文件
+# 持续读取日志文件内容，检测错误模式和启动状态
+# 参数:
+#   user_server_id - 用户-服务器唯一标识
+#   watcher - 监视器配置
+#   log_path - 日志文件路径
 def watch_log(user_server_id, watcher, log_path):
+    # 获取SSH连接
     ssh = active_connections.get(user_server_id)
     if not ssh:
         return
+    
+    # 构造监视器唯一标识
     watcher_id = f"{user_server_id}-{watcher['service_name']}-{hash(log_path)}"
+    
     try:
+        # 打开SFTP连接
         sftp = ssh.open_sftp()
+        
+        # 加载错误模式配置
         error_patterns = []
         patterns_file = get_error_patterns_file()
         if os.path.exists(patterns_file):
             with open(patterns_file, 'r', encoding='utf-8') as f:
                 error_patterns = json.load(f)
+        
+        # 初始化错误记录列表
         detected_errors[watcher_id] = []
         print(f"Started watching log file at {time.strftime('%Y-%m-%d %H:%M:%S')}: {log_path}")
+        
+        # 初始化文件读取位置
         last_pos = 0
         file_opened = False
+        
+        # 持续监控日志文件
         while not watcher['stop']:
             try:
                 with sftp.open(log_path, 'rb') as f:
+                    # 如果文件尚未打开，定位到文件末尾
                     if not file_opened:
-                        f.seek(0, 2)
-                        last_pos = f.tell()
+                        f.seek(0, 2)  # 定位到文件末尾
+                        last_pos = f.tell()  # 记录当前位置
                         file_opened = True
                         print(f"Initialized log watcher at position {last_pos}: {log_path}")
                     else:
+                        # 定位到上次读取位置并读取新内容
                         f.seek(last_pos)
                         lines = f.readlines()
+                        
                         if lines:
+                            # 更新读取位置
                             last_pos = f.tell()
+                            
+                            # 处理每一行日志
                             for line in lines:
                                 line_str = decode_line(line)
+                                
                                 # 先检查启动跟踪器
                                 tracker_key = watcher.get('tracker_key')
                                 if tracker_key and tracker_key in startup_trackers:
@@ -576,9 +865,11 @@ def watch_log(user_server_id, watcher, log_path):
                                     tracker = startup_trackers[tracker_key]
                                     if tracker['keyword'] in line_str:
                                         continue
+                                
                                 # 检查错误模式
                                 for pattern in error_patterns:
                                     if pattern['keyword'] in line_str:
+                                        # 构造错误记录
                                         error_record = {
                                             'timestamp': time.strftime('%Y-%m-%d %H:%M:%S'),
                                             'service': watcher['service_name'],
@@ -617,30 +908,48 @@ def watch_log(user_server_id, watcher, log_path):
         print(f"Log watching error for {log_path}: {e}")
 
 
+# 获取配置文件列表接口
+# 获取服务器上所有服务的配置文件列表
 @api_bp.route('/config/files', methods=['GET'])
 @login_required
 def get_config_files():
+    # 获取请求参数
     server_id = request.args.get('server_id')
     ssh, err, code = get_ssh_client(server_id)
     if err:
         return err, code
     service_name = request.args.get('service')
+    
     try:
+        # 打开SFTP连接
         sftp = ssh.open_sftp()
         result = {}
+        
+        # 遍历所有服务
         for s in services:
+            # 如果指定了服务名，只处理该服务
             if service_name and s["name"] != service_name:
                 continue
+            
+            # 获取服务配置路径
             path = s["config_path"]
             if not path:
                 result[s["name"]] = []
                 continue
+            
             try:
+                # 列出目录中的所有项目
                 items = sftp.listdir_attr(path)
                 result[s["name"]] = []
+                
+                # 处理每个项目
                 for item in items:
+                    # 构造项目路径
                     item_path = os.path.join(path, item.filename).replace("\\", "/")
+                    
+                    # 判断是目录还是文件
                     if stat.S_ISDIR(item.st_mode):
+                        # 目录
                         result[s["name"]].append({
                             "name": item.filename,
                             "path": item_path,
@@ -649,6 +958,7 @@ def get_config_files():
                             "mtime": item.st_mtime
                         })
                     else:
+                        # 文件
                         result[s["name"]].append({
                             "name": item.filename,
                             "path": item_path,
@@ -657,30 +967,49 @@ def get_config_files():
                             "mtime": item.st_mtime
                         })
             except Exception:
+                # 处理异常情况
                 result[s["name"]] = []
+        
+        # 关闭SFTP连接并返回结果
         sftp.close()
         return jsonify(result)
     except Exception as e:
+        # 处理连接异常
         return jsonify({"error": format_ssh_error(e)}), 500
 
 
+# 列出目录内容接口
+# 列出服务器上指定目录的内容
 @api_bp.route('/config/files/list', methods=['GET'])
 @login_required
 def list_directory():
+    # 获取请求参数
     server_id = request.args.get('server_id')
     ssh, err, code = get_ssh_client(server_id)
     if err:
         return err, code
+    
+    # 获取路径参数
     path = request.args.get('path')
     if not path and path != "":
         return jsonify({"error": "缺少 path 参数"}), 400
+    
     try:
+        # 打开SFTP连接
         sftp = ssh.open_sftp()
+        
+        # 获取目录内容
         items = sftp.listdir_attr(path) if path else sftp.listdir_attr(".")
         result = []
+        
+        # 处理每个项目
         for item in items:
+            # 构造项目路径
             item_path = os.path.join(path, item.filename).replace("\\", "/") if path else item.filename
+            
+            # 判断是目录还是文件
             if stat.S_ISDIR(item.st_mode):
+                # 目录
                 result.append({
                     "name": item.filename,
                     "path": item_path,
@@ -689,6 +1018,7 @@ def list_directory():
                     "mtime": item.st_mtime
                 })
             else:
+                # 文件
                 result.append({
                     "name": item.filename,
                     "path": item_path,
@@ -696,104 +1026,161 @@ def list_directory():
                     "size": item.st_size,
                     "mtime": item.st_mtime
                 })
+        
+        # 关闭SFTP连接并返回结果
         sftp.close()
         return jsonify(result)
     except Exception as e:
+        # 处理连接异常
         return jsonify({"error": format_ssh_error(e)}), 500
 
 
+# 获取路径信息接口
+# 获取服务器上指定路径的信息（判断是文件还是目录）
 @api_bp.route('/config/path/info', methods=['GET'])
 @login_required
 def get_path_info():
+    # 获取请求参数
     server_id = request.args.get('server_id')
     ssh, err, code = get_ssh_client(server_id)
     if err:
         return err, code
+    
+    # 获取路径参数
     path = request.args.get('path')
     if not path:
         return jsonify({"error": "缺少 path 参数"}), 400
+    
     try:
+        # 打开SFTP连接
         sftp = ssh.open_sftp()
+        
+        # 获取路径状态信息
         stat_info = sftp.stat(path)
         sftp.close()
+        
+        # 判断是目录还是文件
         if stat.S_ISDIR(stat_info.st_mode):
             return jsonify({"path": path, "type": "directory"})
         else:
             return jsonify({"path": path, "type": "file"})
     except Exception as e:
+        # 处理连接异常
         return jsonify({"error": format_ssh_error(e)}), 500
 
 
+# 读取配置文件接口
+# 读取服务器上指定配置文件的内容
 @api_bp.route('/config/files/<path:file_path>', methods=['GET'])
 @login_required
 def read_config_file(file_path):
+    # 获取请求参数
     server_id = request.args.get('server_id')
     ssh, err, code = get_ssh_client(server_id)
     if err:
         return err, code
+    
     try:
+        # 打开SFTP连接
         sftp = ssh.open_sftp()
+        
+        # 读取文件内容
         with sftp.open('/' + file_path, 'r') as f:
             content = f.read().decode('utf-8', errors='ignore')
+        
+        # 关闭SFTP连接并返回文件内容
         sftp.close()
         return jsonify({"path": file_path, "content": content})
     except Exception as e:
+        # 处理连接异常
         return jsonify({"error": format_ssh_error(e)}), 500
 
 
+# 写入配置文件接口
+# 将内容写入服务器上指定的配置文件
 @api_bp.route('/config/files/<path:file_path>', methods=['POST'])
 @login_required
 def write_config_file(file_path):
+    # 获取请求参数
     server_id = request.args.get('server_id')
     ssh, err, code = get_ssh_client(server_id)
     if err:
         return err, code
+    
     try:
+        # 获取请求中的文件内容
         data = request.get_json()
         content = data.get('content', '')
+        
+        # 构造备份文件路径
         backup_path = f"/{file_path}.backup_{int(time.time())}"
+        
+        # 打开SFTP连接
         sftp = ssh.open_sftp()
+        
+        # 尝试备份原文件
         try:
             sftp.rename(f"/{file_path}", backup_path)
         except FileNotFoundError:
+            # 如果原文件不存在，跳过备份
             pass
+        
+        # 写入新内容到文件
         with sftp.open(f"/{file_path}", 'w') as f:
             f.write(content)
+        
+        # 关闭SFTP连接并返回成功信息
         sftp.close()
         return jsonify({
             "message": "文件保存成功",
             "backup_path": backup_path if 'backup_path' in locals() else None
         })
     except Exception as e:
+        # 处理连接异常
         return jsonify({"error": format_ssh_error(e)}), 500
 
 
+# 删除配置文件接口
+# 删除服务器上指定的配置文件
 @api_bp.route('/config/files/<path:file_path>', methods=['DELETE'])
 @login_required
 def delete_config_file(file_path):
+    # 获取请求参数
     server_id = request.args.get('server_id')
     ssh, err, code = get_ssh_client(server_id)
     if err:
         return err, code
+    
     try:
+        # 打开SFTP连接
         sftp = ssh.open_sftp()
+        
+        # 删除文件
         sftp.remove(f"/{file_path}")
+        
+        # 关闭SFTP连接并返回成功信息
         sftp.close()
         return jsonify({"message": f"文件 {file_path} 删除成功"})
     except FileNotFoundError:
+        # 文件不存在
         return jsonify({"error": "文件不存在"}), 404
     except Exception as e:
+        # 处理连接异常
         return jsonify({"error": format_ssh_error(e)}), 500
 
 
+# 获取服务错误日志接口
+# 获取指定服务的所有错误日志（来自所有日志文件）
 @api_bp.route('/services/<service_name>/errors', methods=['GET'])
 @login_required
 def get_service_errors(service_name):
     """获取服务的所有错误日志（来自所有日志文件）"""
+    # 获取请求参数
     server_id = request.args.get('server_id')
     if not server_id:
         return jsonify({"error": "缺少 server_id 参数"}), 400
 
+    # 构造用户-服务器唯一标识
     user_server_id = f"{session['user_id']}-{server_id}"
     prefix = f"{user_server_id}-{service_name}-"
     all_errors = []
@@ -819,13 +1206,20 @@ def get_service_errors(service_name):
     return jsonify(all_errors)
 
 
+# 获取服务日志文件列表接口
+# 获取指定服务的所有日志文件路径
 @api_bp.route('/services/<service_name>/log_files', methods=['GET'])
 @login_required
 def get_service_log_files(service_name):
+    # 查找服务信息
     service_info = next((s for s in services if s["name"] == service_name), None)
     if not service_info:
         return jsonify({"error": "服务不存在"}), 404
+    
+    # 获取日志文件路径列表
     log_paths = service_info.get("log_paths", [])
+    
+    # 返回服务信息和日志文件列表
     return jsonify({
         "service_name": service_name,
         "display_name": service_info.get("display_name", service_name),
@@ -833,29 +1227,45 @@ def get_service_log_files(service_name):
     })
 
 
+# 比较配置文件接口
+# 比较服务器上的文件与本地内容的差异
 @api_bp.route('/config/compare', methods=['POST'])
 @login_required
 def compare_files():
+    # 获取请求参数
     server_id = request.args.get('server_id')
     ssh, err, code = get_ssh_client(server_id)
     if err:
         return err, code
+    
     try:
+        # 获取请求中的文件路径和本地内容
         data = request.get_json()
         file_path = data.get('file_path')
         local_content = data.get('local_content')
+        
+        # 验证必要参数
         if not file_path or local_content is None:
             return jsonify({"error": "缺少必要参数: file_path, local_content"}), 400
+        
+        # 打开SFTP连接
         sftp = ssh.open_sftp()
+        
+        # 读取服务器上的文件内容
         try:
             with sftp.open('/' + file_path, 'r') as f:
                 server_content = f.read().decode('utf-8', errors='ignore')
         except FileNotFoundError:
+            # 如果文件不存在，设为空字符串
             server_content = ""
         finally:
             sftp.close()
+        
+        # 将内容按行分割
         server_lines = server_content.splitlines(keepends=True)
         local_lines = local_content.splitlines(keepends=True)
+        
+        # 生成统一差异格式的结果
         diff_result = list(unified_diff(
             server_lines,
             local_lines,
@@ -863,8 +1273,12 @@ def compare_files():
             tofile=f'本地: {file_path}',
             lineterm=''
         ))
+        
+        # 统计变更数量
         added_count = len([line for line in diff_result if line.startswith('+')])
         removed_count = len([line for line in diff_result if line.startswith('-')])
+        
+        # 返回比较结果
         return jsonify({
             "file_path": file_path,
             "server_content": server_content,
@@ -877,32 +1291,53 @@ def compare_files():
             }
         }), 200
     except Exception as e:
+        # 处理异常情况
         return jsonify({"error": str(e)}), 500
 
 
+# 获取错误模式配置接口
+# 获取所有错误日志匹配模式
 @api_bp.route('/config/error_patterns', methods=['GET'])
 def get_error_patterns():
     try:
+        # 获取错误模式配置文件路径
         patterns_file = get_error_patterns_file()
+        
+        # 读取错误模式配置
         if os.path.exists(patterns_file):
             with open(patterns_file, 'r', encoding='utf-8') as f:
                 patterns = json.load(f)
         else:
             patterns = []
+        
+        # 返回错误模式列表
         return jsonify(patterns)
     except Exception as e:
+        # 处理异常情况
         return jsonify({"error": str(e)}), 500
 
 
+# 保存错误模式配置接口
+# 保存错误日志匹配模式配置
 @api_bp.route('/config/error_patterns', methods=['POST'])
 @login_required
 def save_error_patterns():
     try:
+        # 获取请求中的模式配置
         patterns = request.json
+        
+        # 获取错误模式配置文件路径
         patterns_file = get_error_patterns_file()
+        
+        # 确保目录存在
         os.makedirs(os.path.dirname(patterns_file), exist_ok=True)
+        
+        # 保存错误模式配置到文件
         with open(patterns_file, 'w', encoding='utf-8') as f:
             json.dump(patterns, f, ensure_ascii=False, indent=4)
+        
+        # 返回保存成功信息
         return jsonify({"message": "保存成功"})
     except Exception as e:
+        # 处理异常情况
         return jsonify({"error": str(e)}), 500

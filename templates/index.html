@@ -1136,26 +1136,26 @@
                         <div>
                             ${service.has_config ? `
                                 <button class="btn btn-sm btn-outline-primary me-1 service-btn"
-                                        onclick="handleTooltipClick(this, () => openConfig('${service.name}'))"
+                                        onclick="handleTooltipClick(this, function() { openConfig('${service.name}'); })"
                                         data-bs-toggle="tooltip"
                                         title="打开配置文件">
                                     <i class="fas fa-file-alt"></i>
                                 </button>
                             ` : ''}
                             <button class="btn btn-sm btn-success me-1 service-btn"
-                                    onclick="handleTooltipClick(this, () => serviceAction('${service.name}', 'start'))"
+                                    onclick="handleTooltipClick(this, function() { serviceAction('${service.name}', 'start'); })"
                                     data-bs-toggle="tooltip"
                                     title="启动服务">
                                 <i class="fas fa-play"></i>
                             </button>
                             <button class="btn btn-sm btn-warning me-1 service-btn"
-                                    onclick="handleTooltipClick(this, () => serviceAction('${service.name}', 'restart'))"
+                                    onclick="handleTooltipClick(this, function() { serviceAction('${service.name}', 'restart'); })"
                                     data-bs-toggle="tooltip"
                                     title="重启服务">
                                 <i class="fas fa-redo"></i>
                             </button>
                             <button class="btn btn-sm btn-danger service-btn"
-                                    onclick="handleTooltipClick(this, () => serviceAction('${service.name}', 'stop'))"
+                                    onclick="handleTooltipClick(this, function() { serviceAction('${service.name}', 'stop'); })"
                                     data-bs-toggle="tooltip"
                                     title="停止服务">
                                 <i class="fas fa-stop"></i>
@@ -1557,7 +1557,7 @@ async function restoreBackupFile(backupPath) {
         serviceNode.appendChild(fileList);
         treeContainer.appendChild(serviceNode);
     } else {
-        treeContainer.innerHTML = '<li class="text-muted">该服务没有可用的配置文件</li>';
+        treeContainer.innerHTML = '<li class="text-muted">请选择服务打开配置文件</li>';
     }
 }
 
