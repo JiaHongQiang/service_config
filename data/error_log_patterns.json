@@ -4,10 +4,6 @@
         "name": "License过期"
     },
     {
-        "keyword": "start up",
-        "name": "启动成功"
-    },
-    {
         "keyword": "Permission denied",
         "name": "权限被拒绝"
     },

@@ -1390,8 +1390,8 @@ function handleTooltipClick(el, callback) {
 
         // 🔍 筛选出所有以当前文件名为前缀的备份文件
         const backups = serviceFiles
-            .filter(f => f.startsWith(dirPath) && f.includes(`${fileName}.backup_`))
-            .sort((a, b) => b.localeCompare(a)); // 按时间倒序
+            .filter(f => f.path && f.path.startsWith(dirPath) && f.path.includes(`${fileName}.backup_`))
+            .sort((a, b) => b.path.localeCompare(a.path)); // 按时间倒序
 
                 if (backups.length === 0) {
                     showToast('ℹ 提示', '没有找到备份文件', 'info');
@@ -1401,13 +1401,13 @@ function handleTooltipClick(el, callback) {
         // 🔹 生成备份文件列表
         const listHtml = backups
             .map(b => {
-                const shortName = b.split('/').pop();
+                const shortName = b.path.split('/').pop();
                 return `
                     <li class="list-group-item d-flex justify-content-between align-items-center">
                         <span>${shortName}</span>
                         <div>
-                            <button class="btn btn-sm btn-outline-primary me-1" onclick="loadFileContent('${b}')">查看</button>
-                            <button class="btn btn-sm btn-outline-success" onclick="restoreBackupFile('${b}')">恢复</button>
+                            <button class="btn btn-sm btn-outline-primary me-1" onclick="loadFileContent('${b.path}')">查看</button>
+                            <button class="btn btn-sm btn-outline-success" onclick="restoreBackupFile('${b.path}')">恢复</button>
                         </div>
                     </li>`;
             })
