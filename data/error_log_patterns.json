@@ -18,5 +18,9 @@
     {
         "keyword": "Out of memory",
         "name": "内存不足"
+    },
+    {
+        "keyword": "local license str not equal file license str !",
+        "name": "License过期"
     }
 ]

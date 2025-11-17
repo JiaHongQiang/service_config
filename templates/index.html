@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Linux服务管理工具</title>
+    <title>服务管理平台</title>
     <link rel="icon" href="/favicon.ico" type="image/x-icon">
     <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
     
@@ -1850,6 +1850,13 @@ async function deleteConfigFile(filePath, event) {
         
         // 定期获取所有服务的错误日志
         function startErrorLogRefresh() {
+            // 只有在连接到服务器且有服务时才启动轮询
+            const isConnected = !document.getElementById('connectionStatus').classList.contains('d-none');
+            if (!isConnected || services.length === 0) {
+                return;
+            }
+        
+            // 使用更长的轮询间隔（10秒）
             setInterval(() => {
                 // 获取当前选中的服务器ID
                 const serverId = document.getElementById('serverSelector').value;
@@ -1859,7 +1866,7 @@ async function deleteConfigFile(filePath, event) {
                         fetchServiceErrors(service.name);
                     });
                 }
-            }, 5000); // 每5秒刷新一次
+            }, 20000); // 每10秒刷新一次
         }
 
         // 清空操作记录

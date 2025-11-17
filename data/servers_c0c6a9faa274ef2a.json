@@ -7,5 +7,14 @@
         "username": "root",
         "auth_method": "password",
         "password": "huaiye2020**"
+    },
+    {
+        "id": "1763127820220",
+        "name": "巴展",
+        "host": "192.168.2.95",
+        "port": 22,
+        "username": "root",
+        "auth_method": "password",
+        "password": "huaiye2020**"
     }
 ]
