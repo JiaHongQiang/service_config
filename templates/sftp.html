@@ -301,22 +301,9 @@
       gap: 4px;
       flex-wrap: nowrap;
     }
-
-    /* 顶部连接区域 */
-    .top-connection {
-      display: flex;
-      justify-content: flex-end;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 20px;
-    }
-
-    /* 操作按钮样式 - 悬停显示 */
+    
+    /* 悬浮操作按钮容器 */
     .file-actions {
-      position: absolute;
-      right: 10px;
-      top: 50%;
-      transform: translateY(-50%);
       display: none;
       gap: 4px;
       background: rgba(255, 255, 255, 0.9);
@@ -324,6 +311,11 @@
       border-radius: 6px;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
       z-index: 10;
+      justify-content: center;
+      position: absolute;
+      right: 5px;
+      top: 50%;
+      transform: translateY(-50%);
     }
 
     .file-row:hover .file-actions {
@@ -332,6 +324,15 @@
 
     .file-row.renaming .file-actions {
       display: none !important;
+    }
+
+    /* 顶部连接区域 */
+    .top-connection {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 20px;
     }
 
     .file-action-btn {
@@ -365,8 +366,16 @@
     .file-action-btn.rename svg {
       color: var(--warning-color);
     }
+    
+    .file-action-btn.chown svg {
+      color: var(--info-color);
+    }
+    
+    .file-action-btn.permissions svg {
+      color: var(--tech-purple);
+    }
 
-    /* 文件名容器 - 确保有足够空间显示操作按钮 */
+    /* 文件名容器 */
     .filename-container {
       position: relative;
       display: flex;
@@ -379,7 +388,6 @@
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
-      padding-right: 110px;
       cursor: pointer;
     }
 
@@ -490,7 +498,7 @@
                     <th style="width:180px">文件名</th>
                     <th style="width:70px">大小</th>
                     <th style="width:140px">修改时间</th>
-                    <th style="width:80px">权限</th>
+                    <th style="width:120px">权限</th>
                     <th style="width:80px">用户:组</th>
                   </tr>
                 </thead>
@@ -865,9 +873,6 @@
           `<i class="fas fa-folder ${iconClass}"></i>` :
           `<i class="fas fa-file ${iconClass}"></i>`;
 
-        // 创建操作按钮（为文件夹和文件都创建操作按钮）
-        const operationButtons = createActionButtons(it);
-        
         // 构造用户和组信息显示
         let userGroupInfo = '-';
         if (it.user && it.group) {
@@ -876,6 +881,9 @@
           userGroupInfo = `${it.uid}:${it.gid}`;
         }
         
+        // 创建操作按钮（为文件夹和文件都创建操作按钮）
+        const operationButtons = createActionButtons(it);
+        
         tr.innerHTML = `
           <td>${iconElement}</td>
           <td>
@@ -883,12 +891,11 @@
               <span class="filename-text" data-bs-toggle="tooltip" data-bs-placement="top" title="${it.name}">
                 ${it.name}
               </span>
-              ${operationButtons}
             </div>
           </td>
           <td>${it.type==='directory' ? '-' : humanFileSize(it.size)}</td>
           <td>${formatDateTime(it.mtime)}</td>
-          <td>${formatFileMode(it.mode) || ''}</td>
+          <td class="position-relative">${formatFileMode(it.mode) || ''}<div class="file-actions">${operationButtons}</div></td>
           <td>${userGroupInfo}</td>
         `;
 
@@ -925,10 +932,19 @@
     function createActionButtons(item) {
       const encodedPath = encodeURIComponent(item.path);
       
+      // 合并权限和所有者设置功能
+      const permissionsButton = `
+        <div class="file-action-btn permissions" onclick="setPermissions('${encodedPath}', '${item.mode}', '${item.user}', '${item.group}', ${item.uid}, ${item.gid})" title="权限和所有者">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+            <path fill="currentColor" d="M8 1a7 7 0 0 0-7 7 7 7 0 0 0 7 7 7 7 0 0 0 7-7 7 7 0 0 0-7-7zM6 5a2 2 0 1 1 4 0 2 2 0 0 1-4 0zm4 7a3 3 0 0 1-4 0c0-1.5 2-2 2-2s2 .5 2 2z"/>
+          </svg>
+        </div>`;
+      
       if (item.type === 'directory') {
-        // 文件夹只有重命名和删除操作
+        // 文件夹操作按钮：权限/所有者、重命名、删除
         return `
           <div class="file-actions">
+            ${permissionsButton}
             <div class="file-action-btn rename" onclick="startRename('${encodedPath}', this)" title="重命名">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
                 <path fill="currentColor" d="m10.882 1.737 3.243 3.243.707-.707L11.59 1.03l-.707.707Zm-8.53 12.126 3.613-.722 7.298-7.298L10.019 2.6 2.722 9.897l-.723 3.613a.3.3 0 00.353.353Zm7.667-9.85 1.83 1.83-6.377 6.376-2.286.458.457-2.287 6.376-6.376Z"></path>
@@ -941,9 +957,10 @@
             </div>
           </div>`;
       } else {
-        // 文件有下载、重命名和删除操作
+        // 文件操作按钮：权限/所有者、下载、重命名、删除
         return `
           <div class="file-actions">
+            ${permissionsButton}
             <div class="file-action-btn" onclick="downloadPath('${encodedPath}')" title="下载">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
                 <path fill="currentColor" d="M11.955 6.723 8.496 10.18V1.488h-1v8.67L4.061 6.723l-.708.707 4.301 4.3a.5.5 0 001 0l4.3-4.3-.706-.707ZM1.75 14.512h12.5v-1H1.75v1Z" fill-rule="evenodd" clip-rule="evenodd"></path>
@@ -1283,6 +1300,306 @@
       console.log(`[${new Date().toLocaleTimeString()}] ${title}: ${details}`);
     }
 
+    // 修改文件所有者和组
+    async function changeOwner(encPath, currentUser, currentGroup, currentUid, currentGid) {
+      const path = decodeURIComponent(encPath);
+      
+      // 首先获取用户和组列表
+      let users = [];
+      let groups = [];
+      
+      try {
+        const resp = await fetch(`/api/sftp/users-groups?server_id=${encodeURIComponent(currentServerId)}`);
+        if (resp.ok) {
+          const data = await resp.json();
+          users = data.users;
+          groups = data.groups;
+        }
+      } catch (e) {
+        console.warn('无法获取用户和组列表:', e);
+      }
+      
+      // 创建模态框HTML
+      let userOptions = users.map(user => 
+        `<option value="${user.uid}" ${user.name === currentUser || user.uid == currentUid ? 'selected' : ''}>${user.name} (${user.uid})</option>`
+      ).join('');
+      
+      let groupOptions = groups.map(group => 
+        `<option value="${group.gid}" ${group.name === currentGroup || group.gid == currentGid ? 'selected' : ''}>${group.name} (${group.gid})</option>`
+      ).join('');
+      
+      // 如果没有获取到用户/组列表，使用输入框
+      const userControl = users.length > 0 ? 
+        `<select class="form-select" id="newUser">${userOptions}</select>` :
+        `<input type="text" class="form-control" id="newUser" placeholder="输入用户名或UID" value="${currentUser} (${currentUid})">`;
+        
+      const groupControl = groups.length > 0 ? 
+        `<select class="form-select" id="newGroup">${groupOptions}</select>` :
+        `<input type="text" class="form-control" id="newGroup" placeholder="输入组名或GID" value="${currentGroup} (${currentGid})">`;
+      
+      const modalHtml = `
+        <div class="modal fade" id="chownModal" tabindex="-1" aria-labelledby="chownModalLabel" aria-hidden="true">
+          <div class="modal-dialog">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title" id="chownModalLabel">修改文件所有者和组</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body">
+                <p>文件路径: ${path}</p>
+                <div class="mb-3">
+                  <label for="newUser" class="form-label">用户</label>
+                  ${userControl}
+                </div>
+                <div class="mb-3">
+                  <label for="newGroup" class="form-label">组</label>
+                  ${groupControl}
+                </div>
+                <div class="alert alert-info" role="alert">
+                  <small>提示: 选择或输入用户名/组名或数字ID</small>
+                </div>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" id="confirmChown">确认修改</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+      
+      // 添加模态框到页面
+      const modalContainer = document.createElement('div');
+      modalContainer.innerHTML = modalHtml;
+      document.body.appendChild(modalContainer);
+      
+      // 显示模态框
+      const modal = new bootstrap.Modal(document.getElementById('chownModal'));
+      modal.show();
+      
+      // 绑定确认按钮事件
+      document.getElementById('confirmChown').addEventListener('click', async function() {
+        let uid, gid;
+        
+        // 获取UID和GID
+        if (users.length > 0) {
+          uid = document.getElementById('newUser').value;
+        } else {
+          const userValue = document.getElementById('newUser').value;
+          uid = parseInt(userValue.includes('(') ? userValue.match(/\((\d+)\)/)[1] : userValue);
+        }
+        
+        if (groups.length > 0) {
+          gid = document.getElementById('newGroup').value;
+        } else {
+          const groupValue = document.getElementById('newGroup').value;
+          gid = parseInt(groupValue.includes('(') ? groupValue.match(/\((\d+)\)/)[1] : groupValue);
+        }
+        
+        if (isNaN(uid) || isNaN(gid)) {
+          alert('请输入有效的UID和GID');
+          return;
+        }
+        
+        try {
+          const resp = await fetch('/api/sftp/chown', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              server_id: currentServerId, 
+              path: path,
+              uid: parseInt(uid),
+              gid: parseInt(gid)
+            })
+          });
+          
+          if (resp.ok) {
+            addLog('修改所有者', `成功修改 ${path} 的所有者为 UID:${uid} GID:${gid}`);
+            modal.hide();
+            loadPath(currentPath); // 重新加载目录以显示更改
+          } else {
+            const j = await resp.json().catch(() => ({error: '修改失败'}));
+            alert(`修改失败: ${j.error || ''}`);
+          }
+        } catch (e) {
+          console.error(e);
+          alert('修改过程中出现错误');
+        }
+      });
+      
+      // 模态框关闭后清理DOM
+      document.getElementById('chownModal').addEventListener('hidden.bs.modal', function () {
+        document.body.removeChild(modalContainer);
+      });
+    }
+    
+    // 设置文件权限
+    async function setPermissions(encPath, currentMode, currentUser, currentGroup, currentUid, currentGid) {
+      const path = decodeURIComponent(encPath);
+      
+      // 解析当前权限
+      let mode = 0;
+      if (typeof currentMode === 'string' && currentMode.startsWith('0o')) {
+        mode = parseInt(currentMode.slice(2), 8);
+      } else if (typeof currentMode === 'number') {
+        mode = currentMode;
+      }
+      
+      // 将权限转换为rwx格式
+      const ownerRead = (mode & 0o400) !== 0;
+      const ownerWrite = (mode & 0o200) !== 0;
+      const ownerExecute = (mode & 0o100) !== 0;
+      const groupRead = (mode & 0o040) !== 0;
+      const groupWrite = (mode & 0o020) !== 0;
+      const groupExecute = (mode & 0o010) !== 0;
+      const publicRead = (mode & 0o004) !== 0;
+      const publicWrite = (mode & 0o002) !== 0;
+      const publicExecute = (mode & 0o001) !== 0;
+      
+      // 创建模态框HTML
+      const modalHtml = `
+        <div class="modal fade" id="chmodModal" tabindex="-1" aria-labelledby="chmodModalLabel" aria-hidden="true">
+          <div class="modal-dialog">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title" id="chmodModalLabel">权限设置</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body">
+                <p>文件路径: ${path}</p>
+                <div class="mb-3">
+                  <label class="form-label">所有者: ${currentUser} (${currentUid})</label>
+                  <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="checkbox" id="ownerRead" ${ownerRead ? 'checked' : ''}>
+                    <label class="form-check-label" for="ownerRead">读取</label>
+                  </div>
+                  <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="checkbox" id="ownerWrite" ${ownerWrite ? 'checked' : ''}>
+                    <label class="form-check-label" for="ownerWrite">写入</label>
+                  </div>
+                  <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="checkbox" id="ownerExecute" ${ownerExecute ? 'checked' : ''}>
+                    <label class="form-check-label" for="ownerExecute">执行</label>
+                  </div>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">用户组: ${currentGroup} (${currentGid})</label>
+                  <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="checkbox" id="groupRead" ${groupRead ? 'checked' : ''}>
+                    <label class="form-check-label" for="groupRead">读取</label>
+                  </div>
+                  <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="checkbox" id="groupWrite" ${groupWrite ? 'checked' : ''}>
+                    <label class="form-check-label" for="groupWrite">写入</label>
+                  </div>
+                  <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="checkbox" id="groupExecute" ${groupExecute ? 'checked' : ''}>
+                    <label class="form-check-label" for="groupExecute">执行</label>
+                  </div>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">公共组</label>
+                  <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="checkbox" id="publicRead" ${publicRead ? 'checked' : ''}>
+                    <label class="form-check-label" for="publicRead">读取</label>
+                  </div>
+                  <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="checkbox" id="publicWrite" ${publicWrite ? 'checked' : ''}>
+                    <label class="form-check-label" for="publicWrite">写入</label>
+                  </div>
+                  <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="checkbox" id="publicExecute" ${publicExecute ? 'checked' : ''}>
+                    <label class="form-check-label" for="publicExecute">执行</label>
+                  </div>
+                </div>
+                <div class="mb-3">
+                  <label for="modeValue" class="form-label">权限值</label>
+                  <input type="text" class="form-control" id="modeValue" value="${mode.toString(8).padStart(3, '0')}">
+                </div>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" id="confirmChmod">确定</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+      
+      // 添加模态框到页面
+      const modalContainer = document.createElement('div');
+      modalContainer.innerHTML = modalHtml;
+      document.body.appendChild(modalContainer);
+      
+      // 显示模态框
+      const modal = new bootstrap.Modal(document.getElementById('chmodModal'));
+      modal.show();
+      
+      // 更新权限值显示
+      function updateModeValue() {
+        const owner = (document.getElementById('ownerRead').checked ? 4 : 0) +
+                     (document.getElementById('ownerWrite').checked ? 2 : 0) +
+                     (document.getElementById('ownerExecute').checked ? 1 : 0);
+        const group = (document.getElementById('groupRead').checked ? 4 : 0) +
+                     (document.getElementById('groupWrite').checked ? 2 : 0) +
+                     (document.getElementById('groupExecute').checked ? 1 : 0);
+        const public_ = (document.getElementById('publicRead').checked ? 4 : 0) +
+                      (document.getElementById('publicWrite').checked ? 2 : 0) +
+                      (document.getElementById('publicExecute').checked ? 1 : 0);
+        const modeValue = `${owner}${group}${public_}`;
+        document.getElementById('modeValue').value = modeValue;
+      }
+      
+      // 为所有复选框绑定事件
+      const checkboxes = modalContainer.querySelectorAll('input[type="checkbox"]');
+      checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', updateModeValue);
+      });
+      
+      // 初始化权限值
+      updateModeValue();
+      
+      // 绑定确认按钮事件
+      document.getElementById('confirmChmod').addEventListener('click', async function() {
+        const modeValue = document.getElementById('modeValue').value;
+        const mode = parseInt(modeValue, 8);
+        
+        if (isNaN(mode)) {
+          alert('请输入有效的权限值');
+          return;
+        }
+        
+        try {
+          const resp = await fetch('/api/sftp/chmod', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              server_id: currentServerId, 
+              path: path,
+              mode: mode
+            })
+          });
+          
+          if (resp.ok) {
+            addLog('修改权限', `成功修改 ${path} 的权限为 ${modeValue}`);
+            modal.hide();
+            loadPath(currentPath); // 重新加载目录以显示更改
+          } else {
+            const j = await resp.json().catch(() => ({error: '修改失败'}));
+            alert(`修改失败: ${j.error || ''}`);
+          }
+        } catch (e) {
+          console.error(e);
+          alert('修改过程中出现错误');
+        }
+      });
+      
+      // 模态框关闭后清理DOM
+      document.getElementById('chmodModal').addEventListener('hidden.bs.modal', function () {
+        document.body.removeChild(modalContainer);
+      });
+    }
+
     // 添加文件行点击选中效果
     document.addEventListener('click', (e) => {
       if (e.target.closest('.file-row')) {
@@ -1294,6 +1611,298 @@
         }
       }
     });
+    
+    // 设置权限和所有者（合并功能）
+    async function setPermissions(encPath, currentMode, currentUser, currentGroup, currentUid, currentGid) {
+      // 创建一个包含权限和所有者设置的模态框
+      const path = decodeURIComponent(encPath);
+      
+      // 首先获取用户和组列表
+      let users = [];
+      let groups = [];
+      
+      try {
+        const resp = await fetch(`/api/sftp/users-groups?server_id=${encodeURIComponent(currentServerId)}`);
+        if (resp.ok) {
+          const data = await resp.json();
+          users = data.users;
+          groups = data.groups;
+        }
+      } catch (e) {
+        console.warn('无法获取用户和组列表:', e);
+      }
+      
+      // 解析当前权限
+      let mode = 0;
+      if (typeof currentMode === 'string' && currentMode.startsWith('0o')) {
+        mode = parseInt(currentMode.slice(2), 8);
+      } else if (typeof currentMode === 'number') {
+        mode = currentMode;
+      }
+      
+      // 将权限转换为rwx格式
+      const ownerRead = (mode & 0o400) !== 0;
+      const ownerWrite = (mode & 0o200) !== 0;
+      const ownerExecute = (mode & 0o100) !== 0;
+      const groupRead = (mode & 0o040) !== 0;
+      const groupWrite = (mode & 0o020) !== 0;
+      const groupExecute = (mode & 0o010) !== 0;
+      const publicRead = (mode & 0o004) !== 0;
+      const publicWrite = (mode & 0o002) !== 0;
+      const publicExecute = (mode & 0o001) !== 0;
+      
+      // 创建用户和组选项
+      let userOptions = users.map(user => 
+        `<option value="${user.uid}" ${user.name === currentUser || user.uid == currentUid ? 'selected' : ''}>${user.name} (${user.uid})</option>`
+      ).join('');
+      
+      let groupOptions = groups.map(group => 
+        `<option value="${group.gid}" ${group.name === currentGroup || group.gid == currentGid ? 'selected' : ''}>${group.name} (${group.gid})</option>`
+      ).join('');
+      
+      // 如果没有获取到用户/组列表，使用输入框
+      const userControl = users.length > 0 ? 
+        `<select class="form-select" id="newUser">${userOptions}</select>` :
+        `<input type="text" class="form-control" id="newUser" placeholder="输入用户名或UID" value="${currentUser} (${currentUid})">`;
+        
+      const groupControl = groups.length > 0 ? 
+        `<select class="form-select" id="newGroup">${groupOptions}</select>` :
+        `<input type="text" class="form-control" id="newGroup" placeholder="输入组名或GID" value="${currentGroup} (${currentGid})">`;
+      
+      // 创建模态框HTML
+      const modalHtml = `
+        <div class="modal fade" id="permissionModal" tabindex="-1" aria-labelledby="permissionModalLabel" aria-hidden="true">
+          <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title" id="permissionModalLabel">权限设置</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body">
+                <p>文件路径: ${path}</p>
+                
+                <div class="mb-4">
+                  <h6>所有者和组</h6>
+                  <div class="mb-3">
+                    <label for="newUser" class="form-label">用户</label>
+                    ${userControl}
+                  </div>
+                  <div class="mb-3">
+                    <label for="newGroup" class="form-label">组</label>
+                    ${groupControl}
+                  </div>
+                </div>
+                
+                <div class="mb-3">
+                  <h6>权限设置</h6>
+                  <div class="mb-3">
+                    <label class="form-label">所有者: ${currentUser} (${currentUid})</label>
+                    <div class="form-check form-check-inline">
+                      <input class="form-check-input" type="checkbox" id="ownerRead" ${ownerRead ? 'checked' : ''}>
+                      <label class="form-check-label" for="ownerRead">读取</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                      <input class="form-check-input" type="checkbox" id="ownerWrite" ${ownerWrite ? 'checked' : ''}>
+                      <label class="form-check-label" for="ownerWrite">写入</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                      <input class="form-check-input" type="checkbox" id="ownerExecute" ${ownerExecute ? 'checked' : ''}>
+                      <label class="form-check-label" for="ownerExecute">执行</label>
+                    </div>
+                  </div>
+                  <div class="mb-3">
+                    <label class="form-label">用户组: ${currentGroup} (${currentGid})</label>
+                    <div class="form-check form-check-inline">
+                      <input class="form-check-input" type="checkbox" id="groupRead" ${groupRead ? 'checked' : ''}>
+                      <label class="form-check-label" for="groupRead">读取</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                      <input class="form-check-input" type="checkbox" id="groupWrite" ${groupWrite ? 'checked' : ''}>
+                      <label class="form-check-label" for="groupWrite">写入</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                      <input class="form-check-input" type="checkbox" id="groupExecute" ${groupExecute ? 'checked' : ''}>
+                      <label class="form-check-label" for="groupExecute">执行</label>
+                    </div>
+                  </div>
+                  <div class="mb-3">
+                    <label class="form-label">公共组</label>
+                    <div class="form-check form-check-inline">
+                      <input class="form-check-input" type="checkbox" id="publicRead" ${publicRead ? 'checked' : ''}>
+                      <label class="form-check-label" for="publicRead">读取</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                      <input class="form-check-input" type="checkbox" id="publicWrite" ${publicWrite ? 'checked' : ''}>
+                      <label class="form-check-label" for="publicWrite">写入</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                      <input class="form-check-input" type="checkbox" id="publicExecute" ${publicExecute ? 'checked' : ''}>
+                      <label class="form-check-label" for="publicExecute">执行</label>
+                    </div>
+                  </div>
+                  <div class="mb-3">
+                    <label for="modeValue" class="form-label">权限值</label>
+                    <input type="text" class="form-control" id="modeValue" value="${mode.toString(8).padStart(3, '0')}" maxlength="4">
+                  </div>
+                </div>
+                <div class="alert alert-info" role="alert">
+                  <small>提示: 选择或输入用户名/组名或数字ID</small>
+                </div>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" id="confirmPermission">确定</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+      
+      // 添加模态框到页面
+      const modalContainer = document.createElement('div');
+      modalContainer.innerHTML = modalHtml;
+      document.body.appendChild(modalContainer);
+      
+      // 显示模态框
+      const modal = new bootstrap.Modal(document.getElementById('permissionModal'));
+      modal.show();
+      
+      // 更新权限值显示
+      function updateModeValue() {
+        const owner = (document.getElementById('ownerRead').checked ? 4 : 0) +
+                     (document.getElementById('ownerWrite').checked ? 2 : 0) +
+                     (document.getElementById('ownerExecute').checked ? 1 : 0);
+        const group = (document.getElementById('groupRead').checked ? 4 : 0) +
+                     (document.getElementById('groupWrite').checked ? 2 : 0) +
+                     (document.getElementById('groupExecute').checked ? 1 : 0);
+        const public_ = (document.getElementById('publicRead').checked ? 4 : 0) +
+                      (document.getElementById('publicWrite').checked ? 2 : 0) +
+                      (document.getElementById('publicExecute').checked ? 1 : 0);
+        const modeValue = `${owner}${group}${public_}`;
+        document.getElementById('modeValue').value = modeValue;
+      }
+      
+      // 为所有复选框绑定事件
+      const checkboxes = modalContainer.querySelectorAll('input[type="checkbox"]');
+      checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', updateModeValue);
+      });
+      
+      // 为权限值输入框绑定事件
+      document.getElementById('modeValue').addEventListener('input', function() {
+        const modeValue = this.value;
+        if (modeValue.length === 3) {
+          // 解析权限值并更新复选框
+          const owner = parseInt(modeValue[0]);
+          const group = parseInt(modeValue[1]);
+          const public_ = parseInt(modeValue[2]);
+          
+          document.getElementById('ownerRead').checked = (owner & 4) !== 0;
+          document.getElementById('ownerWrite').checked = (owner & 2) !== 0;
+          document.getElementById('ownerExecute').checked = (owner & 1) !== 0;
+          document.getElementById('groupRead').checked = (group & 4) !== 0;
+          document.getElementById('groupWrite').checked = (group & 2) !== 0;
+          document.getElementById('groupExecute').checked = (group & 1) !== 0;
+          document.getElementById('publicRead').checked = (public_ & 4) !== 0;
+          document.getElementById('publicWrite').checked = (public_ & 2) !== 0;
+          document.getElementById('publicExecute').checked = (public_ & 1) !== 0;
+        }
+      });
+      
+      // 初始化权限值
+      updateModeValue();
+      
+      // 绑定确认按钮事件
+      document.getElementById('confirmPermission').addEventListener('click', async function() {
+        // 获取权限
+        const modeValue = document.getElementById('modeValue').value;
+        const mode = parseInt(modeValue, 8);
+        
+        if (isNaN(mode)) {
+          alert('请输入有效的权限值');
+          return;
+        }
+        
+        // 获取所有者和组
+        let uid, gid;
+        
+        if (users.length > 0) {
+          uid = document.getElementById('newUser').value;
+        } else {
+          const userValue = document.getElementById('newUser').value;
+          uid = parseInt(userValue.includes('(') ? userValue.match(/\((\d+)\)/)[1] : userValue);
+        }
+        
+        if (groups.length > 0) {
+          gid = document.getElementById('newGroup').value;
+        } else {
+          const groupValue = document.getElementById('newGroup').value;
+          gid = parseInt(groupValue.includes('(') ? groupValue.match(/\((\d+)\)/)[1] : groupValue);
+        }
+        
+        if (isNaN(uid) || isNaN(gid)) {
+          alert('请输入有效的UID和GID');
+          return;
+        }
+        
+        // 并行执行两个操作
+        const chmodPromise = fetch('/api/sftp/chmod', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            server_id: currentServerId, 
+            path: path,
+            mode: mode
+          })
+        });
+        
+        const chownPromise = fetch('/api/sftp/chown', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            server_id: currentServerId, 
+            path: path,
+            uid: parseInt(uid),
+            gid: parseInt(gid)
+          })
+        });
+        
+        try {
+          const [chmodResp, chownResp] = await Promise.all([chmodPromise, chownPromise]);
+          
+          let success = true;
+          let errorMsg = '';
+          
+          if (!chmodResp.ok) {
+            success = false;
+            const errorData = await chmodResp.json().catch(() => ({error: '权限修改失败'}));
+            errorMsg += `权限修改失败: ${errorData.error || ''}\n`;
+          }
+          
+          if (!chownResp.ok) {
+            success = false;
+            const errorData = await chownResp.json().catch(() => ({error: '所有者修改失败'}));
+            errorMsg += `所有者修改失败: ${errorData.error || ''}\n`;
+          }
+          
+          if (success) {
+            addLog('修改权限和所有者', `成功修改 ${path} 的权限为 ${modeValue}，所有者为 UID:${uid} GID:${gid}`);
+            modal.hide();
+            loadPath(currentPath);
+          } else {
+            alert(errorMsg);
+          }
+        } catch (e) {
+          console.error(e);
+          alert('修改过程中出现错误');
+        }
+      });
+      
+      // 模态框关闭后清理DOM
+      document.getElementById('permissionModal').addEventListener('hidden.bs.modal', function () {
+        document.body.removeChild(modalContainer);
+      });
+    }
   </script>
 </body>
 </html>

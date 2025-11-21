@@ -1523,6 +1523,143 @@ def sftp_rename():
                 pass
 
 
+# 获取系统用户和组列表
+@api_bp.route('/api/sftp/users-groups', methods=['GET'])
+@login_required
+def sftp_get_users_groups():
+    """
+    获取系统用户和组列表
+    请求参数:
+      - server_id (query)
+    返回: { users: [{name, uid}], groups: [{name, gid}] }
+    """
+    server_id = request.args.get('server_id')
+    if not server_id:
+        return jsonify({"error": "缺少 server_id 参数"}), 400
+    
+    ssh, err, code = get_ssh_client(server_id, active_connections)
+    if err:
+        return err, code
+    
+    try:
+        # 获取用户列表
+        stdin, stdout, stderr = ssh.exec_command("getent passwd")
+        users_output = stdout.read().decode('utf-8', errors='ignore')
+        
+        # 获取组列表
+        stdin, stdout, stderr = ssh.exec_command("getent group")
+        groups_output = stdout.read().decode('utf-8', errors='ignore')
+        
+        # 解析用户
+        users = []
+        for line in users_output.strip().split('\n'):
+            if line:
+                parts = line.split(':')
+                if len(parts) >= 3:
+                    users.append({
+                        "name": parts[0],
+                        "uid": int(parts[2])
+                    })
+        
+        # 解析组
+        groups = []
+        for line in groups_output.strip().split('\n'):
+            if line:
+                parts = line.split(':')
+                if len(parts) >= 3:
+                    groups.append({
+                        "name": parts[0],
+                        "gid": int(parts[2])
+                    })
+        
+        return jsonify({
+            "users": sorted(users, key=lambda x: x["name"]),
+            "groups": sorted(groups, key=lambda x: x["name"])
+        })
+    except Exception as e:
+        return jsonify({"error": format_ssh_error(e)}), 500
+
+
+# 修改文件权限
+@api_bp.route('/api/sftp/chmod', methods=['POST'])
+@login_required
+def sftp_chmod():
+    """
+    修改文件权限
+    请求 body (json):
+      - server_id
+      - path
+      - mode
+    """
+    data = request.get_json()
+    server_id = data.get('server_id')
+    path = data.get('path')
+    mode = data.get('mode')
+    
+    if not server_id or not path or mode is None:
+        return jsonify({"error": "缺少必要参数: server_id, path, mode"}), 400
+    
+    ssh, err, code = get_ssh_client(server_id, active_connections)
+    if err:
+        return err, code
+    
+    sftp = None
+    try:
+        sftp = ssh.open_sftp()
+        # 使用chmod方法修改文件权限
+        sftp.chmod(path, mode)
+        return jsonify({"message": "文件权限修改成功"})
+    except Exception as e:
+        return jsonify({"error": format_ssh_error(e)}), 500
+    finally:
+        if sftp:
+            try:
+                sftp.close()
+            except:
+                pass
+
+
+# 修改文件所有者和组
+@api_bp.route('/api/sftp/chown', methods=['POST'])
+@login_required
+def sftp_chown():
+    """
+    修改文件所有者和组
+    请求 body (json):
+      - server_id
+      - path
+      - uid
+      - gid
+    """
+    data = request.get_json()
+    server_id = data.get('server_id')
+    path = data.get('path')
+    uid = data.get('uid')
+    gid = data.get('gid')
+    
+    if not server_id or not path or uid is None or gid is None:
+        return jsonify({"error": "缺少必要参数: server_id, path, uid, gid"}), 400
+    
+    ssh, err, code = get_ssh_client(server_id, active_connections)
+    if err:
+        return err, code
+    
+    sftp = None
+    try:
+        sftp = ssh.open_sftp()
+        # 使用chown方法修改文件所有者和组
+        sftp.chown(path, uid, gid)
+        return jsonify({"message": "文件所有者和组修改成功"})
+    except Exception as e:
+        return jsonify({"error": format_ssh_error(e)}), 500
+    finally:
+        if sftp:
+            try:
+                sftp.close()
+            except:
+                pass
+
+
 @api_bp.route('/sftp_page')
 @login_required
 def sftp_page():
