@@ -468,6 +468,17 @@ def connect_server(server_id):
     if not target:
         return jsonify({"error": "服务器不存在"}), 404
     
+    # 构造用户-服务器唯一标识
+    user_server_id = f"{session['user_id']}-{server_id}"
+    
+    # 如果已经存在到该服务器的连接，先关闭它
+    if user_server_id in active_connections:
+        try:
+            active_connections[user_server_id].close()
+            del active_connections[user_server_id]
+        except Exception as e:
+            print(f"关闭现有连接时出错: {e}")
+    
     try:
         # 创建SSH客户端
         ssh = paramiko.SSHClient()
@@ -482,8 +493,7 @@ def connect_server(server_id):
             timeout=8
         )
         
-        # 构造用户-服务器唯一标识并保存连接
-        user_server_id = f"{session['user_id']}-{server_id}"
+        # 保存连接
         active_connections[user_server_id] = ssh
         
         # 返回连接成功响应
