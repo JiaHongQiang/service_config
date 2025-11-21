@@ -1079,10 +1079,9 @@
                     servers.forEach(server => {
                         const option = document.createElement('option');
                         option.value = server.id;
-                        option.textContent = `${server.name} (${server.host})`;
+                        option.textContent = `${server.name} (${server.host}) [${server.username}]`;
                         selector.appendChild(option);
                     });
-                } else {
                     console.error('加载服务器列表失败，HTTP状态码：', response.status);
                 }
             } catch (error) {
@@ -1720,34 +1719,42 @@ async function deleteConfigFile(filePath, event) {
         return;
     }
 
-    if (!confirm(`确定要删除文件 ${filePath} 吗？`)) return;
+    // 获取文件类型（根据调用此函数的按钮来判断）
+    const button = event.target.closest('button');
+    const isDirectory = button && 
+        button.previousElementSibling && 
+        button.previousElementSibling.querySelector && 
+        button.previousElementSibling.querySelector('i') && 
+        button.previousElementSibling.querySelector('i').classList.contains('fa-folder');
+    
+    const type = isDirectory ? '文件夹' : '文件';
+    const message = `确定要删除${type} "${filePath}" 吗？\n\n删除后将无法恢复，请确认！`;
+    
+    if (!confirm(message)) return;
 
     try {
         const response = await fetch(`/config/files/${encodeURIComponent(filePath)}?server_id=${serverId}`, {
             method: 'DELETE'
-  });
+        });
 
-                if (response.ok) {
-                    showToast('✓ 删除成功', `文件已删除: ${filePath.split('/').pop()}`, 'success');
-                    addOperationLog('删除文件', `文件已删除: ${filePath}`);
-                    if (currentServiceName) {
-                        loadFileTree(currentServiceName);
-                    }
-                } else {
-                    const err = await response.json();
-
-
-
-
-                    showToast('✗ 删除失败', err.error, 'error');
-                    addOperationLog('删除文件', `文件删除失败: ${filePath} - ${err.error}`);
-                }
-            } catch (error) {
-                console.error('删除文件失败:', error);
-                showToast('✗ 删除失败', error.message, 'error');
-                addOperationLog('删除文件', `文件删除失败: ${filePath} - ${error.message}`);
+        if (response.ok) {
+            showToast('✓ 删除成功', `${type}已删除: ${filePath.split('/').pop()}`, 'success');
+            addOperationLog('删除文件', `${type}已删除: ${filePath}`);
+            if (currentServiceName) {
+                loadFileTree(currentServiceName);
             }
+        } else {
+            const errorData = await response.json().catch(() => ({}));
+            const errorMsg = errorData.error || '未知错误';
+            showToast('✗ 删除失败', errorMsg, 'error');
+            addOperationLog('删除文件', `删除${type}失败: ${filePath} - ${errorMsg}`);
         }
+    } catch (error) {
+        console.error('删除文件失败:', error);
+        showToast('✗ 删除失败', error.message, 'error');
+        addOperationLog('删除文件', `删除${type}失败: ${filePath} - ${error.message}`);
+    }
+}
 
 
         // 加载文件内容
@@ -1759,6 +1766,8 @@ async function deleteConfigFile(filePath, event) {
                     showToast('⚠ 选择服务器', '未选择服务器', 'warning');
                     return;
                 }
+
+
 
                 const response = await fetch(`/config/files/${encodeURIComponent(normalizedPath)}?server_id=${serverId}`);
 
@@ -1783,6 +1792,8 @@ async function deleteConfigFile(filePath, event) {
         // ✅ 清除上次保存时间
         const timeEl = document.getElementById('lastSavedTime');
         if (timeEl) timeEl.textContent = '';
+
+
 
         // ✅ 启用按钮
         const saveBtn = document.getElementById('saveFileBtn');

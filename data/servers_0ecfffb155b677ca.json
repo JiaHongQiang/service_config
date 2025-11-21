@@ -1,7 +1,7 @@
 [
     {
         "id": "1762839981909",
-        "name": "2.36",
+        "name": "密话",
         "host": "192.168.2.36",
         "port": 22,
         "username": "root",
@@ -10,7 +10,7 @@
     },
     {
         "id": "1762858653516",
-        "name": "2.108",
+        "name": "密信",
         "host": "192.168.2.108",
         "port": 50932,
         "username": "hy",
@@ -28,7 +28,7 @@
     },
     {
         "id": "1763107014345",
-        "name": "巴展",
+        "name": "2.77",
         "host": "192.168.2.77",
         "port": 22,
         "username": "root",
@@ -37,11 +37,20 @@
     },
     {
         "id": "1763114637596",
-        "name": "2.95",
+        "name": "巴展",
         "host": "192.168.2.95",
         "port": 22,
         "username": "root",
         "auth_method": "password",
         "password": "huaiye2020**"
+    },
+    {
+        "id": "1763704626697",
+        "name": "云主机",
+        "host": "122.51.5.201",
+        "port": 22,
+        "username": "root",
+        "auth_method": "password",
+        "password": "358321"
     }
 ]

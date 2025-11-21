@@ -858,61 +858,100 @@ def get_config_files():
         return jsonify({"error": format_ssh_error(e)}), 500
 
 
-# 列出目录内容接口
-# 列出服务器上指定目录的内容
-@api_bp.route('/config/files/list', methods=['GET'])
+# 列出目录内容
+@api_bp.route('/api/sftp/list', methods=['GET'])
 @login_required
-def list_directory():
-    # 获取请求参数
+def sftp_list():
+    """
+    请求参数:
+      - server_id (query) 必需
+      - path (query) 可选, 默认为 '/'
+    返回: JSON 列表: [{name, path, type, size, mtime, mode}, ...]
+    """
     server_id = request.args.get('server_id')
+    path = request.args.get('path', '/')
+    if not server_id:
+        return jsonify({"error": "缺少 server_id 参数"}), 400
+
     ssh, err, code = get_ssh_client(server_id, active_connections)
     if err:
         return err, code
-    
-    # 获取路径参数
-    path = request.args.get('path')
-    if not path and path != "":
-        return jsonify({"error": "缺少 path 参数"}), 400
-    
+
     try:
-        # 打开SFTP连接
         sftp = ssh.open_sftp()
-        
-        # 获取目录内容
-        items = sftp.listdir_attr(path) if path else sftp.listdir_attr(".")
+        # 如果 path 是空，设为根
+        try:
+            items = sftp.listdir_attr(path)
+        except IOError as e:
+            # 目录不存在或无法访问，返回空列表
+            sftp.close()
+            return jsonify({"error": "无法访问目录: " + str(e)}), 500
+
         result = []
-        
-        # 处理每个项目
+
+        # ==================== 新增代码开始 ====================
+        # 批量获取用户名和组名映射（一次性执行）
+        uid_to_user = {}
+        gid_to_group = {}
+
+        # 收集所有唯一的 UID 和 GID
+        unique_uids = set(item.st_uid for item in items)
+        unique_gids = set(item.st_gid for item in items)
+
+        # 批量查询用户名
+        if unique_uids:
+            try:
+                uid_list = ' '.join(str(uid) for uid in unique_uids)
+                cmd = f"getent passwd {uid_list} 2>/dev/null || true"
+                stdin, stdout, stderr = ssh.exec_command(cmd)
+                for line in stdout.read().decode('utf-8', errors='ignore').splitlines():
+                    parts = line.split(':')
+                    if len(parts) >= 3:
+                        uid_to_user[int(parts[2])] = parts[0]
+            except:
+                pass
+
+        # 批量查询组名
+        if unique_gids:
+            try:
+                gid_list = ' '.join(str(gid) for gid in unique_gids)
+                cmd = f"getent group {gid_list} 2>/dev/null || true"
+                stdin, stdout, stderr = ssh.exec_command(cmd)
+                for line in stdout.read().decode('utf-8', errors='ignore').splitlines():
+                    parts = line.split(':')
+                    if len(parts) >= 3:
+                        gid_to_group[int(parts[2])] = parts[0]
+            except:
+                pass
+        # ==================== 新增代码结束 ====================
+
         for item in items:
-            # 构造项目路径
-            item_path = os.path.join(path, item.filename).replace("\\", "/") if path else item.filename
-            
-            # 判断是目录还是文件
-            if stat.S_ISDIR(item.st_mode):
-                # 目录
-                result.append({
-                    "name": item.filename,
-                    "path": item_path,
-                    "type": "directory",
-                    "size": item.st_size,
-                    "mtime": item.st_mtime
-                })
-            else:
-                # 文件
-                result.append({
-                    "name": item.filename,
-                    "path": item_path,
-                    "type": "file",
-                    "size": item.st_size,
-                    "mtime": item.st_mtime
-                })
-        
-        # 关闭SFTP连接并返回结果
+            item_path = os.path.join(path, item.filename).replace("\\", "/")
+
+            # ==================== 修改这里 ====================
+            # 使用映射获取用户名和组名，如果找不到则使用数字ID
+            user_name = uid_to_user.get(item.st_uid, str(item.st_uid))
+            group_name = gid_to_group.get(item.st_gid, str(item.st_gid))
+            # ==================== 修改结束 ====================
+
+            result.append({
+                "name": item.filename,
+                "path": item_path,
+                "type": "directory" if stat.S_ISDIR(item.st_mode) else "file",
+                "size": item.st_size,
+                "mtime": item.st_mtime,
+                "mode": oct(item.st_mode & 0o777),
+                "uid": item.st_uid,
+                "gid": item.st_gid,
+                "user": user_name,
+                "group": group_name
+            })
         sftp.close()
         return jsonify(result)
     except Exception as e:
-        # 处理连接异常
-        return jsonify({"error": format_ssh_error(e)}), 500
+        # 添加更详细的错误信息
+        error_msg = format_ssh_error(e)
+        return jsonify({"error": "读取目录失败: " + error_msg}), 500
 
 
 # 获取路径信息接口
@@ -1230,52 +1269,7 @@ def save_error_patterns():
 from io import BytesIO
 from flask import send_file
 
-# 列出目录内容
-@api_bp.route('/api/sftp/list', methods=['GET'])
-@login_required
-def sftp_list():
-    """
-    请求参数:
-      - server_id (query) 必需
-      - path (query) 可选, 默认为 '/'
-    返回: JSON 列表: [{name, path, type, size, mtime, mode}, ...]
-    """
-    server_id = request.args.get('server_id')
-    path = request.args.get('path', '/')
-    if not server_id:
-        return jsonify({"error": "缺少 server_id 参数"}), 400
 
-    ssh, err, code = get_ssh_client(server_id, active_connections)
-    if err:
-        return err, code
-
-    try:
-        sftp = ssh.open_sftp()
-        # 如果 path 是空，设为根
-        try:
-            items = sftp.listdir_attr(path)
-        except IOError as e:
-            # 目录不存在或无法访问，返回空列表
-            sftp.close()
-            return jsonify({"error": "无法访问目录: " + str(e)}), 500
-
-        result = []
-        for item in items:
-            item_path = os.path.join(path, item.filename).replace("\\", "/")
-            result.append({
-                "name": item.filename,
-                "path": item_path,
-                "type": "directory" if stat.S_ISDIR(item.st_mode) else "file",
-                "size": item.st_size,
-                "mtime": item.st_mtime,
-                "mode": oct(item.st_mode & 0o777)
-            })
-        sftp.close()
-        return jsonify(result)
-    except Exception as e:
-        # 添加更详细的错误信息
-        error_msg = format_ssh_error(e)
-        return jsonify({"error": "读取目录失败: " + error_msg}), 500
 
 
 # 上传文件（multipart/form-data）

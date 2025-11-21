@@ -1,0 +1,1299 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>SFTP 文件管理</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --tech-blue: #007bff;
+      --tech-light: #00d4ff;
+      --tech-purple: #7c3aed;
+      --tech-cyan: #00d9ff;
+      --tech-dark: #0a1628;
+      --tech-light-bg: #e0f4ff;
+      --glass-bg: rgba(255, 255, 255, 0.25);
+      --card-bg: rgba(255, 255, 255, 0.85);
+      --success-color: #28a745;
+      --error-color: #dc3545;
+      --warning-color: #ffc107;
+      --info-color: #0d6efd;
+      --unknown-color: #6c757d;
+    }
+
+    body {
+      padding: 20px;
+      background: linear-gradient(135deg, #cfe9ff 0%, #e7f6ff 50%, #bde0fe 100%);
+      background-attachment: fixed;
+      min-height: 100vh;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    .container {
+      max-width: 100%;
+    }
+
+    /* 卡片样式 */
+    .glass-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      transition: all 0.3s ease;
+      overflow: hidden;
+    }
+
+    .glass-card:hover {
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+      transform: translateY(-2px);
+    }
+
+    .card-header {
+      background: linear-gradient(135deg, var(--tech-blue), var(--tech-light));
+      color: white;
+      border-bottom: none;
+      padding: 12px 16px;
+      font-weight: 600;
+    }
+
+    .table-responsive {
+      border-radius: 0 0 12px 12px;
+      position: relative;
+    }
+
+    .table {
+      margin-bottom: 0;
+      font-size: 0.85rem;
+      table-layout: fixed;
+    }
+
+    /* 固定表头样式 - 不透明 */
+    .table thead {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .table th {
+      background-color: #f8f9fa;
+      border-bottom: 2px solid #dee2e6;
+      font-weight: 600;
+      font-size: 0.8rem;
+      padding: 10px 8px;
+      position: sticky;
+      top: 0;
+      z-index: 11;
+    }
+
+    .table td {
+      padding: 8px;
+      vertical-align: middle;
+      overflow: hidden;
+    }
+
+    .file-row {
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+    }
+
+    .file-row:hover {
+      background-color: rgba(67, 97, 238, 0.05);
+    }
+
+    .path-breadcrumb {
+      font-family: 'Courier New', monospace;
+      font-size: 0.9rem;
+      background: rgba(255, 255, 255, 0.7);
+      padding: 4px 8px;
+      border-radius: 6px;
+      margin-top: 5px;
+      display: inline-block;
+    }
+
+    /* 文件名显示优化 */
+    .filename-cell {
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      position: relative;
+      width: 100%;
+      max-width: 180px;
+      cursor: pointer;
+    }
+
+    /* 按钮样式 */
+    .btn {
+      border-radius: 8px;
+      font-weight: 500;
+      transition: all 0.3s ease;
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    }
+
+    .btn-sm {
+      padding: 4px 8px;
+      font-size: 0.75rem;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--tech-blue), var(--tech-light));
+      border: none;
+    }
+
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #0069d9, #00b8e6);
+      box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+    }
+
+    .btn-success {
+      background: linear-gradient(135deg, var(--success-color), #20c997);
+      border: none;
+    }
+
+    .btn-success:hover {
+      background: linear-gradient(135deg, #218838, #1ea085);
+      box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+    }
+
+    .btn-outline-primary {
+      border-color: var(--tech-blue);
+      color: var(--tech-blue);
+    }
+
+    .btn-outline-primary:hover {
+      background-color: var(--tech-blue);
+      border-color: var(--tech-blue);
+      color: white;
+    }
+
+    .btn-outline-secondary {
+      border-color: var(--unknown-color);
+      color: var(--unknown-color);
+    }
+
+    .btn-outline-secondary:hover {
+      background-color: var(--unknown-color);
+      border-color: var(--unknown-color);
+      color: white;
+    }
+
+    .btn-outline-danger {
+      border-color: var(--error-color);
+      color: var(--error-color);
+    }
+
+    .btn-outline-danger:hover {
+      background-color: var(--error-color);
+      border-color: var(--error-color);
+      color: white;
+    }
+
+    .progress {
+      height: 8px;
+      border-radius: 4px;
+      background-color: rgba(0, 123, 255, 0.1);
+    }
+
+    .progress-bar {
+      background: linear-gradient(90deg, var(--tech-blue), var(--tech-light));
+      border-radius: 4px;
+      transition: width 0.3s ease;
+    }
+
+    .badge {
+      font-size: 0.75rem;
+      padding: 4px 8px;
+      border-radius: 10px;
+    }
+
+    .form-control, .form-select {
+      border-radius: 8px;
+      border: 1px solid rgba(0, 123, 255, 0.2);
+      font-size: 0.85rem;
+      transition: all 0.3s ease;
+    }
+
+    .form-control:focus, .form-select:focus {
+      border-color: var(--tech-blue);
+      box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+    }
+
+    /* 拖拽区域样式 */
+    .drop-zone {
+      transition: all 0.3s ease;
+    }
+
+    .drop-zone.dragover {
+      border-color: #007bff;
+      background-color: rgba(0, 123, 255, 0.1);
+    }
+
+    /* 文件类型图标 */
+    .file-icon {
+      width: 20px;
+      text-align: center;
+      margin-right: 8px;
+    }
+
+    .folder-icon {
+      color: #ffa500;
+    }
+
+    .file-icon-text {
+      color: var(--unknown-color);
+    }
+
+    .file-icon-image {
+      color: var(--info-color);
+    }
+
+    .file-icon-code {
+      color: var(--tech-purple);
+    }
+
+    .file-icon-pdf {
+      color: var(--error-color);
+    }
+
+    /* 自定义滚动条 */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.05);
+      border-radius: 10px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: rgba(0, 123, 255, 0.3);
+      border-radius: 10px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(0, 123, 255, 0.5);
+    }
+
+    /* 响应式调整 */
+    @media (max-width: 768px) {
+      .card-body.p-0 .table-responsive {
+        max-height: 40vh;
+      }
+    }
+
+    /* 选中效果 */
+    .selected {
+      background: linear-gradient(90deg, rgba(0, 123, 255, 0.1), rgba(0, 212, 255, 0.1)) !important;
+    }
+
+    /* 操作按钮容器 */
+    .action-buttons {
+      display: flex;
+      gap: 4px;
+      flex-wrap: nowrap;
+    }
+
+    /* 顶部连接区域 */
+    .top-connection {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    /* 操作按钮样式 - 悬停显示 */
+    .file-actions {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      display: none;
+      gap: 4px;
+      background: rgba(255, 255, 255, 0.9);
+      padding: 4px;
+      border-radius: 6px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+      z-index: 10;
+    }
+
+    .file-row:hover .file-actions {
+      display: flex;
+    }
+
+    .file-row.renaming .file-actions {
+      display: none !important;
+    }
+
+    .file-action-btn {
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      background: rgba(255, 255, 255, 0.7);
+      border: 1px solid rgba(0, 0, 0, 0.1);
+    }
+
+    .file-action-btn:hover {
+      background: rgba(0, 123, 255, 0.1);
+      transform: translateY(-1px);
+    }
+
+    .file-action-btn svg {
+      width: 14px;
+      height: 14px;
+      color: var(--tech-blue);
+    }
+
+    .file-action-btn.delete svg {
+      color: var(--error-color);
+    }
+
+    .file-action-btn.rename svg {
+      color: var(--warning-color);
+    }
+
+    /* 文件名容器 - 确保有足够空间显示操作按钮 */
+    .filename-container {
+      position: relative;
+      display: flex;
+      align-items: center;
+      width: 100%;
+    }
+
+    .filename-text {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      padding-right: 110px;
+      cursor: pointer;
+    }
+
+    /* Tooltip 样式 */
+    .tooltip {
+      position: absolute;
+      z-index: 1070;
+      display: block;
+      margin: 0;
+      font-style: normal;
+      font-weight: 400;
+      line-height: 1.5;
+      text-align: left;
+      text-decoration: none;
+      text-shadow: none;
+      text-transform: none;
+      letter-spacing: normal;
+      word-break: normal;
+      word-spacing: normal;
+      white-space: normal;
+      line-break: auto;
+      font-size: 0.875rem;
+      word-wrap: break-word;
+      opacity: 0;
+    }
+
+    .tooltip.show {
+      opacity: 0.9;
+    }
+
+    .tooltip .tooltip-arrow {
+      position: absolute;
+      display: block;
+      width: 0.8rem;
+      height: 0.4rem;
+    }
+
+    .tooltip .tooltip-arrow::before {
+      position: absolute;
+      content: "";
+      border-color: transparent;
+      border-style: solid;
+    }
+
+    .bs-tooltip-top .tooltip-arrow {
+      bottom: 0;
+    }
+
+    .bs-tooltip-top .tooltip-arrow::before {
+      top: -1px;
+      border-width: 0.4rem 0.4rem 0;
+      border-top-color: #000;
+    }
+
+    .bs-tooltip-bottom .tooltip-arrow {
+      top: 0;
+    }
+
+    .bs-tooltip-bottom .tooltip-arrow::before {
+      bottom: -1px;
+      border-width: 0 0.4rem 0.4rem;
+      border-bottom-color: #000;
+    }
+
+    .tooltip-inner {
+      max-width: 200px;
+      padding: 0.25rem 0.5rem;
+      color: #fff;
+      text-align: center;
+      background-color: #000;
+      border-radius: 0.375rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- 顶部连接区域 -->
+    <div class="top-connection">
+      <!-- 移除了顶部显示当前用户的元素，因为用户希望在每个服务器选项中显示用户名 -->
+      <select id="sftpServerSelector" class="form-select form-select-sm" style="width:200px;">
+        <option value="">请选择服务器</option>
+      </select>
+      <button id="connectSftpBtn" class="btn btn-sm btn-primary">连接服务器</button>
+      <button id="refreshListBtn" class="btn btn-sm btn-outline-secondary">刷新</button>
+      <span class="badge bg-secondary" id="sftpStatus">未连接</span>
+    </div>
+
+    <div class="row">
+      <!-- 左：文件列表 - 调整为更小的宽度 -->
+      <div class="col-md-8">
+        <div class="glass-card mb-3">
+          <div class="card-header d-flex align-items-center justify-content-between">
+            <div>
+              <strong>文件列表</strong>
+              <div class="path-breadcrumb" id="currentPath">/</div>
+            </div>
+            <div>
+              <button id="btnUp" class="btn btn-sm btn-outline-secondary">上级</button>
+              <button id="btnNewFolder" class="btn btn-sm btn-success">新建目录</button>
+            </div>
+          </div>
+          <div class="card-body p-0">
+            <div class="table-responsive" style="max-height:60vh; overflow:auto;">
+              <table class="table table-hover mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th style="width:40px">类型</th>
+                    <th style="width:180px">文件名</th>
+                    <th style="width:70px">大小</th>
+                    <th style="width:140px">修改时间</th>
+                    <th style="width:80px">权限</th>
+                    <th style="width:80px">用户:组</th>
+                  </tr>
+                </thead>
+                <tbody id="fileTableBody">
+                  <tr><td colspan="6" class="text-center text-muted">请选择服务器并连接后查看文件</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 右：操作面板 - 增加宽度 -->
+      <div class="col-md-4">
+        <div class="glass-card mb-3">
+          <div class="card-header d-flex align-items-center justify-content-between">
+            <strong>上传文件</strong>
+          </div>
+          <div class="card-body">
+            <div class="mb-3">
+              <label class="form-label">上传至：</label>
+              <div class="input-group">
+                <input id="uploadPath" class="form-control form-control-sm" value="/" />
+              </div>
+              
+              <!-- 添加拖拽上传区域 -->
+              <div id="dropZone" class="drop-zone border rounded p-3 text-center mt-2" style="border: 2px dashed #ccc; cursor: pointer;">
+                <p class="mb-1">拖拽文件到此处</p>
+                <div id="dropZoneFileList" class="text-start mt-2" style="display: none;">
+                  <small class="fw-bold">已选择文件:</small>
+                  <ul id="dropZoneFileListItems" class="mb-0 ps-3 small"></ul>
+                </div>
+                <small class="text-muted">支持多文件拖拽上传</small>
+              </div>
+              
+              <div class="d-flex gap-1 mt-2">
+                <input id="fileInput" type="file" multiple class="d-none" />
+                <button id="pickFilesBtn" class="btn btn-sm btn-outline-primary flex-fill">选择文件</button>
+                <button id="uploadBtn" class="btn btn-sm btn-success flex-fill">上传</button>
+              </div>
+              <div id="uploadProgressContainer" class="mt-2"></div>
+            </div>
+
+            <div class="mt-3">
+              <small class="text-muted">说明：上传会由后端中转到目标服务器（使用已连接的 SSH）。</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    // ===== 页面状态 =====
+    let currentPath = '/';
+    let currentServerId = '';
+    let fileList = []; // 当前目录文件数组
+    let draggedFiles = null; // 存储拖拽的文件
+
+    document.addEventListener('DOMContentLoaded', () => {
+      initServerSelector();
+      bindUI();
+      initDragAndDrop(); // 初始化拖拽功能
+    });
+
+    // 初始化服务器下拉（从 /servers 接口获取）
+    async function initServerSelector() {
+      try {
+        const resp = await fetch('/servers');
+        if (!resp.ok) return;
+        const servers = await resp.json();
+        const sel = document.getElementById('sftpServerSelector');
+        sel.innerHTML = '<option value="">请选择服务器</option>';
+        servers.forEach(s => {
+          const opt = document.createElement('option');
+          opt.value = s.id;
+          opt.textContent = `${s.name} (${s.host}) [${s.username}]`;
+          sel.appendChild(opt);
+        });
+      } catch (e) {
+        console.error('加载服务器失败', e);
+      }
+    }
+
+    // 初始化拖拽功能
+    function initDragAndDrop() {
+      const dropZone = document.getElementById('dropZone');
+      
+      ['dragenter', 'dragover'].forEach(eventName => {
+        dropZone.addEventListener(eventName, preventDefaults, false);
+        document.body.addEventListener(eventName, preventDefaults, false);
+      });
+      
+      ['dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, preventDefaults, false);
+        document.body.addEventListener(eventName, preventDefaults, false);
+      });
+      
+      dropZone.addEventListener('dragover', highlight, false);
+      dropZone.addEventListener('dragenter', highlight, false);
+      dropZone.addEventListener('dragleave', unhighlight, false);
+      dropZone.addEventListener('drop', handleDrop, false);
+    }
+    
+    function preventDefaults(e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    function highlight() {
+      const dropZone = document.getElementById('dropZone');
+      dropZone.style.borderColor = '#007bff';
+      dropZone.style.backgroundColor = 'rgba(0, 123, 255, 0.1)';
+    }
+    
+    function unhighlight() {
+      const dropZone = document.getElementById('dropZone');
+      dropZone.style.borderColor = '#ccc';
+      dropZone.style.backgroundColor = '';
+    }
+    
+    function handleDrop(e) {
+      const dt = e.dataTransfer;
+      const files = dt.files;
+      
+      handleFiles(files);
+      unhighlight();
+    }
+    
+    function handleFiles(files) {
+      // 直接将文件存储在全局变量中，供上传使用
+      draggedFiles = files;
+      
+      // 显示文件名列表
+      const fileNamesList = document.getElementById('dropZoneFileListItems');
+      const fileListContainer = document.getElementById('dropZoneFileList');
+      
+      // 清空之前的列表
+      fileNamesList.innerHTML = '';
+      
+      // 添加每个文件到列表
+      Array.from(files).forEach(file => {
+        const li = document.createElement('li');
+        li.textContent = `${file.name} (${formatFileSize(file.size)})`;
+        fileNamesList.appendChild(li);
+      });
+      
+      // 显示文件列表区域
+      fileListContainer.style.display = files.length > 0 ? 'block' : 'none';
+      
+      addLog('拖拽文件', `已选择 ${files.length} 个文件`);
+    }
+
+    function bindUI() {
+      document.getElementById('sftpServerSelector').addEventListener('change', e => {
+        currentServerId = e.target.value;
+        updateStatus();
+      });
+      document.getElementById('connectSftpBtn').addEventListener('click', connectServerFromSelector);
+      document.getElementById('refreshListBtn').addEventListener('click', () => loadPath(currentPath));
+      document.getElementById('btnUp').addEventListener('click', () => {
+        if (currentPath === '/' || !currentPath) return;
+        const parent = currentPath.replace(/\/+$/, '').split('/').slice(0,-1).join('/') || '/';
+        loadPath(parent);
+      });
+
+      document.getElementById('pickFilesBtn').addEventListener('click', () => document.getElementById('fileInput').click());
+      document.getElementById('fileInput').addEventListener('change', e => {
+        // 简单展示选中文件名
+        const names = Array.from(e.target.files).map(f => f.name).join(', ');
+        addLog('选择文件', names || '无');
+        draggedFiles = e.target.files; // 将选择的文件存储到draggedFiles变量中
+      });
+      document.getElementById('uploadBtn').addEventListener('click', uploadSelectedFiles);
+      document.getElementById('btnNewFolder').addEventListener('click', () => {
+        const name = prompt('请输入新目录名：');
+        if (name) createDirectory(currentPath.endsWith('/') ? currentPath + name : currentPath + '/' + name);
+      });
+    }
+
+    function updateStatus() {
+      const badge = document.getElementById('sftpStatus');
+      if (!currentServerId) {
+        badge.textContent = '未选择';
+        badge.className = 'badge bg-secondary';
+        return;
+      }
+      // 判断是否已连接（调用你的 /auth/status 或直接尝试 list）
+      // 这里简单尝试读取根目录来验证连接
+      showLoading(true);
+      fetch(`/api/sftp/list?server_id=${encodeURIComponent(currentServerId)}&path=/`).then(r => {
+        if (r.ok) {
+          badge.textContent = '在线';
+          badge.className = 'badge bg-success';
+          loadPath('/');
+        }
+        else {
+          badge.textContent = '未连接或无权限';
+          badge.className = 'badge bg-warning text-dark';
+        }
+        showLoading(false);
+      }).catch((e) => {
+        console.error(e);
+        badge.textContent = '未连接';
+        badge.className = 'badge bg-secondary';
+        showLoading(false);
+      });
+    }
+
+    async function connectServerFromSelector() {
+      const sid = document.getElementById('sftpServerSelector').value;
+      if (!sid) { alert('请选择服务器'); return; }
+      try {
+        // 触发后端 connect（你的 /servers/<id>/connect），以便建立 active_connections
+        const resp = await fetch(`/servers/${sid}/connect`, { method: 'POST' });
+        if (resp.ok) {
+          addLog('连接服务器', `已连接 ${sid}`);
+          currentServerId = sid;
+          updateStatus();
+        } else {
+          const err = await resp.json().catch(()=>({error:'连接失败'}));
+          alert(`连接失败: ${err.error || '未知错误'}`);
+        }
+      } catch (e) {
+        console.error(e);
+        alert('连接异常，请检查控制台');
+      }
+    }
+
+    // 加载目录
+    async function loadPath(path) {
+      if (!currentServerId) { alert('请选择服务器并连接'); return; }
+      const target = path || '/';
+      try {
+        showLoading(true);
+        const resp = await fetch(`/api/sftp/list?server_id=${encodeURIComponent(currentServerId)}&path=${encodeURIComponent(target)}`);
+        if (!resp.ok) {
+          const errorData = await resp.json().catch(() => ({ error: '无法读取目录' }));
+          alert(`无法读取目录: ${errorData.error || '未知错误'}`);
+          showLoading(false);
+          return;
+        }
+        const arr = await resp.json();
+        currentPath = target;
+        document.getElementById('currentPath').textContent = currentPath;
+        document.getElementById('uploadPath').value = currentPath;
+
+        // 排序文件列表：文件夹在前，按字母排序
+        const sortedItems = sortFileList(arr);
+        renderFileTable(sortedItems);
+        showLoading(false);
+      } catch (e) {
+        console.error(e);
+        alert(`读取失败: ${e.message}`);
+        showLoading(false);
+      }
+    }
+    
+    function showLoading(show) {
+      const tbody = document.getElementById('fileTableBody');
+      if (show) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center"><div class="spinner-border spinner-border-sm" role="status"><span class="visually-hidden">加载中...</span></div></td></tr>';
+      }
+    }
+
+    // 文件列表排序函数
+    function sortFileList(items) {
+      if (!items || items.length === 0) return [];
+
+      // 分离文件夹和文件
+      const folders = items.filter(item => item.type === 'directory');
+      const files = items.filter(item => item.type !== 'directory');
+
+      // 分别按名称排序（不区分大小写）
+      folders.sort((a, b) => a.name.localeCompare(b.name, 'zh-CN', { sensitivity: 'base' }));
+      files.sort((a, b) => a.name.localeCompare(b.name, 'zh-CN', { sensitivity: 'base' }));
+
+      // 合并结果：文件夹在前，文件在后
+      return [...folders, ...files];
+    }
+
+    // 格式化时间函数
+    function formatDateTime(timestamp) {
+      if (!timestamp) return '';
+
+      const date = new Date(timestamp * 1000);
+
+      // 确保两位数格式
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      const seconds = String(date.getSeconds()).padStart(2, '0');
+
+      return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+    }
+
+    // 格式化文件权限显示
+    function formatFileMode(mode) {
+      if (!mode) return '';
+      
+      // 如果是数字格式的权限（如 0o775），转换为 rwx 格式
+      if (typeof mode === 'string' && mode.startsWith('0o')) {
+        try {
+          const octal = mode.slice(2); // 去掉 "0o" 前缀
+          const perms = parseInt(octal, 8);
+          return formatOctalMode(perms);
+        } catch (e) {
+          console.error('权限格式化错误:', e);
+          return mode; // 如果转换失败，返回原始值
+        }
+      }
+      
+      // 如果是数字（如 33261），直接转换
+      if (typeof mode === 'number') {
+        return formatOctalMode(mode);
+      }
+      
+      // 如果已经是 rwx 格式，直接返回
+      if (typeof mode === 'string' && mode.match(/^([r-][w-][x-]){3}$/)) {
+        return mode;
+      }
+      
+      return mode; // 其他情况返回原始值
+    }
+    
+    // 将八进制权限数字转换为 rwx 格式字符串
+    function formatOctalMode(mode) {
+      const perms = [
+        (mode & 0o400) ? 'r' : '-',
+        (mode & 0o200) ? 'w' : '-',
+        (mode & 0o100) ? 'x' : '-',
+        (mode & 0o040) ? 'r' : '-',
+        (mode & 0o020) ? 'w' : '-',
+        (mode & 0o010) ? 'x' : '-',
+        (mode & 0o004) ? 'r' : '-',
+        (mode & 0o002) ? 'w' : '-',
+        (mode & 0o001) ? 'x' : '-'
+      ];
+      return perms.join('');
+    }
+
+    // 渲染文件表格
+    function renderFileTable(items) {
+      fileList = items || [];
+      const tbody = document.getElementById('fileTableBody');
+      tbody.innerHTML = '';
+      if (!items || items.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">空目录</td></tr>';
+        return;
+      }
+      
+      items.forEach(it => {
+        const tr = document.createElement('tr');
+        tr.className = 'file-row';
+
+        // 根据文件类型选择图标
+        let iconClass = 'file-icon-text';
+        if (it.type === 'directory') {
+          iconClass = 'folder-icon';
+        } else if (it.name.match(/\.(jpg|jpeg|png|gif|bmp|webp)$/i)) {
+          iconClass = 'file-icon-image';
+        } else if (it.name.match(/\.(pdf)$/i)) {
+          iconClass = 'file-icon-pdf';
+        } else if (it.name.match(/\.(js|py|java|c|cpp|html|css|json|xml|sql)$/i)) {
+          iconClass = 'file-icon-code';
+        }
+
+        const iconElement = it.type === 'directory' ?
+          `<i class="fas fa-folder ${iconClass}"></i>` :
+          `<i class="fas fa-file ${iconClass}"></i>`;
+
+        // 创建操作按钮（为文件夹和文件都创建操作按钮）
+        const operationButtons = createActionButtons(it);
+        
+        // 构造用户和组信息显示
+        let userGroupInfo = '-';
+        if (it.user && it.group) {
+          userGroupInfo = `${it.user}:${it.group}`;
+        } else if (it.uid !== undefined && it.gid !== undefined) {
+          userGroupInfo = `${it.uid}:${it.gid}`;
+        }
+        
+        tr.innerHTML = `
+          <td>${iconElement}</td>
+          <td>
+            <div class="filename-container">
+              <span class="filename-text" data-bs-toggle="tooltip" data-bs-placement="top" title="${it.name}">
+                ${it.name}
+              </span>
+              ${operationButtons}
+            </div>
+          </td>
+          <td>${it.type==='directory' ? '-' : humanFileSize(it.size)}</td>
+          <td>${formatDateTime(it.mtime)}</td>
+          <td>${formatFileMode(it.mode) || ''}</td>
+          <td>${userGroupInfo}</td>
+        `;
+
+        // 为文件名添加点击事件
+        const filenameSpan = tr.querySelector('.filename-text');
+        filenameSpan.addEventListener('click', () => {
+          // 隐藏所有已显示的tooltip
+          const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+          tooltipTriggerList.map(function (tooltipTriggerEl) {
+            const tooltip = bootstrap.Tooltip.getInstance(tooltipTriggerEl);
+            if (tooltip) {
+              tooltip.hide();
+            }
+          });
+          
+          if (it.type === 'directory') {
+            loadPath(it.path);
+          } else {
+            document.getElementById('newNameInput').value = it.name;
+          }
+        });
+
+        tbody.appendChild(tr);
+      });
+
+      // 重新初始化 Tooltip
+      const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+      tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+      });
+    }
+    
+    // 创建操作按钮的函数，提高代码复用性
+    function createActionButtons(item) {
+      const encodedPath = encodeURIComponent(item.path);
+      
+      if (item.type === 'directory') {
+        // 文件夹只有重命名和删除操作
+        return `
+          <div class="file-actions">
+            <div class="file-action-btn rename" onclick="startRename('${encodedPath}', this)" title="重命名">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+                <path fill="currentColor" d="m10.882 1.737 3.243 3.243.707-.707L11.59 1.03l-.707.707Zm-8.53 12.126 3.613-.722 7.298-7.298L10.019 2.6 2.722 9.897l-.723 3.613a.3.3 0 00.353.353Zm7.667-9.85 1.83 1.83-6.377 6.376-2.286.458.457-2.287 6.376-6.376Z"></path>
+              </svg>
+            </div>
+            <div class="file-action-btn delete" onclick="deletePath('${encodedPath}')" title="删除">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+                <path fill="currentColor" d="M6.5 2h3a.5.5 0 01.5.5V3h-4v-.5a.5.5 0 01.5-.5zM4 3.5V3h8v.5a.5.5 0 01-.5.5h-7a.5.5 0 01-.5-.5zm-.5 1v9a1 1 0 001 1h7a1 1 0 001-1v-9h-9zm2 2v6.5a.5.5 0 001 0V6.5a.5.5 0 00-1 0zm3 0v6.5a.5.5 0 001 0V6.5a.5.5 0 00-1 0zm3 0v6.5a.5.5 0 001 0V6.5a.5.5 0 00-1 0z"></path>
+              </svg>
+            </div>
+          </div>`;
+      } else {
+        // 文件有下载、重命名和删除操作
+        return `
+          <div class="file-actions">
+            <div class="file-action-btn" onclick="downloadPath('${encodedPath}')" title="下载">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+                <path fill="currentColor" d="M11.955 6.723 8.496 10.18V1.488h-1v8.67L4.061 6.723l-.708.707 4.301 4.3a.5.5 0 001 0l4.3-4.3-.706-.707ZM1.75 14.512h12.5v-1H1.75v1Z" fill-rule="evenodd" clip-rule="evenodd"></path>
+              </svg>
+            </div>
+            <div class="file-action-btn rename" onclick="startRename('${encodedPath}', this)" title="重命名">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+                <path fill="currentColor" d="m10.882 1.737 3.243 3.243.707-.707L11.59 1.03l-.707.707Zm-8.53 12.126 3.613-.722 7.298-7.298L10.019 2.6 2.722 9.897l-.723 3.613a.3.3 0 00.353.353Zm7.667-9.85 1.83 1.83-6.377 6.376-2.286.458.457-2.287 6.376-6.376Z"></path>
+              </svg>
+            </div>
+            <div class="file-action-btn delete" onclick="deletePath('${encodedPath}')" title="删除">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+                <path fill="currentColor" d="M6.5 2h3a.5.5 0 01.5.5V3h-4v-.5a.5.5 0 01.5-.5zM4 3.5V3h8v.5a.5.5 0 01-.5.5h-7a.5.5 0 01-.5-.5zm-.5 1v9a1 1 0 001 1h7a1 1 0 001-1v-9h-9zm2 2v6.5a.5.5 0 001 0V6.5a.5.5 0 00-1 0zm3 0v6.5a.5.5 0 001 0V6.5a.5.5 0 00-1 0zm3 0v6.5a.5.5 0 001 0V6.5a.5.5 0 00-1 0z"></path>
+              </svg>
+            </div>
+          </div>`;
+      }
+    }
+
+    // 添加文件大小格式化函数
+    function formatFileSize(bytes) {
+      if (bytes === 0) return '0 B';
+      const k = 1024;
+      const sizes = ['B', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    // 简单文件大小格式化
+    function humanFileSize(bytes) {
+      if (bytes === 0) return '0 B';
+      const sizes = ['B','KB','MB','GB','TB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(1024));
+      return (bytes / Math.pow(1024, i)).toFixed(2) + ' ' + sizes[i];
+    }
+
+    // 上传实现：使用 XMLHttpRequest 以获得上传进度
+    function uploadSelectedFiles() {
+      if (!currentServerId) { alert('请选择服务器'); return; }
+      
+      // 获取文件（优先使用拖拽的文件，其次使用选择的文件）
+      const files = draggedFiles || document.getElementById('fileInput').files;
+      
+      if (!files || files.length === 0) { alert('请选择文件'); return; }
+      const target = document.getElementById('uploadPath').value || currentPath || '/';
+      const form = new FormData();
+      for (let i=0;i<files.length;i++) form.append('files', files[i]);
+      form.append('path', target);
+      form.append('server_id', currentServerId);
+      // 使用 XMLHttpRequest 以获得进度条
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', `/api/sftp/upload?server_id=${encodeURIComponent(currentServerId)}&path=${encodeURIComponent(target)}`, true);
+      // 进度
+      const progressContainer = document.getElementById('uploadProgressContainer');
+      progressContainer.innerHTML = '';
+      const progressBar = document.createElement('div');
+      progressBar.className = 'progress';
+      progressBar.innerHTML = '<div class="progress-bar" role="progressbar" style="width:0%"></div>';
+      progressContainer.appendChild(progressBar);
+      xhr.upload.onprogress = function(ev) {
+        if (ev.lengthComputable) {
+          const percent = Math.round((ev.loaded / ev.total) * 100);
+          progressBar.querySelector('.progress-bar').style.width = percent + '%';
+        }
+      };
+      xhr.onload = function() {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          addLog('上传完成', xhr.responseText);
+          loadPath(currentPath);
+        } else {
+          alert(`上传失败: ${xhr.responseText}`);
+        }
+        // 清理进度条
+        setTimeout(()=>progressContainer.innerHTML='', 1500);
+        
+        // 重置文件选择
+        draggedFiles = null;
+        document.getElementById('fileInput').value = '';
+        // 重置拖拽区域文本
+        const dropZone = document.getElementById('dropZone');
+        if (dropZone) {
+          dropZone.innerHTML = `<p class="mb-1">拖拽文件到此处</p>
+          <div id="dropZoneFileList" class="text-start mt-2" style="display: none;">
+          <small class="fw-bold">已选择文件:</small>
+          <ul id="dropZoneFileListItems" class="mb-0 ps-3 small"></ul>
+          </div>
+          <small class="text-muted">支持多文件拖拽上传</small>`;
+        }
+      };
+      xhr.onerror = function() {
+        alert('上传出错');
+        progressContainer.innerHTML = '';
+      };
+      xhr.send(form);
+      addLog('开始上传', `${files.length} 个文件 -> ${target}`);
+    }
+
+    // 开始重命名过程
+    function startRename(encPath, buttonElement) {
+      const path = decodeURIComponent(encPath);
+      const fileListItems = fileList || [];
+      const item = fileListItems.find(it => it.path === path);
+      
+      if (!item) return;
+      
+      // 找到对应的文件名span元素
+      const row = buttonElement.closest('.file-row');
+      const filenameSpan = row.querySelector('.filename-text');
+      const originalName = filenameSpan.textContent.trim();
+      
+      // 隐藏悬浮操作按钮
+      const fileActions = row.querySelector('.file-actions');
+      if (fileActions) {
+        fileActions.style.display = 'none';
+      }
+      
+      // 添加重命名状态类，防止hover显示操作按钮
+      row.classList.add('renaming');
+      
+      // 创建输入框替换文件名显示
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.className = 'form-control form-control-sm rename-input';
+      input.value = originalName;
+      input.style.display = 'inline-block';
+      input.style.width = 'auto';
+      input.style.height = '24px';
+      input.style.padding = '0 4px';
+      
+      // 创建确认和取消按钮容器
+      const buttonGroup = document.createElement('div');
+      buttonGroup.className = 'rename-buttons';
+      buttonGroup.style.display = 'inline-block';
+      buttonGroup.style.marginLeft = '8px';
+      
+      const confirmBtn = document.createElement('button');
+      confirmBtn.className = 'btn btn-sm btn-success';
+      confirmBtn.innerHTML = '<i class="fas fa-check"></i>';
+      confirmBtn.style.padding = '0 6px';
+      confirmBtn.style.minWidth = '24px';
+      
+      const cancelBtn = document.createElement('button');
+      cancelBtn.className = 'btn btn-sm btn-secondary';
+      cancelBtn.innerHTML = '<i class="fas fa-times"></i>';
+      cancelBtn.style.padding = '0 6px';
+      cancelBtn.style.minWidth = '24px';
+      cancelBtn.style.marginLeft = '4px';
+      
+      buttonGroup.appendChild(confirmBtn);
+      buttonGroup.appendChild(cancelBtn);
+      
+      // 创建包装容器
+      const wrapper = document.createElement('div');
+      wrapper.style.display = 'flex';
+      wrapper.style.alignItems = 'center';
+      wrapper.appendChild(input);
+      wrapper.appendChild(buttonGroup);
+      
+      // 保存原始操作按钮的引用，以便后续恢复
+      wrapper.originalActions = fileActions;
+      wrapper.row = row;
+      
+      // 替换文件名显示为输入框
+      filenameSpan.parentNode.replaceChild(wrapper, filenameSpan);
+      
+      // 聚焦到输入框，将光标放在文件名末尾，但不选中任何内容
+      input.focus();
+      input.setSelectionRange(input.value.length, input.value.length);
+      
+      // 绑定确认事件
+      confirmBtn.addEventListener('click', function() {
+        finishRename(path, input.value, originalName, wrapper);
+      });
+      
+      // 绑定取消事件
+      cancelBtn.addEventListener('click', function() {
+        cancelRename(wrapper, originalName);
+      });
+      
+      // 绑定回车确认事件
+      input.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+          finishRename(path, input.value, originalName, wrapper);
+        }
+      });
+      
+      // 绑定ESC取消事件
+      input.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+          cancelRename(wrapper, originalName);
+        }
+      });
+    }
+    
+    // 完成重命名
+    function finishRename(path, newName, originalName, wrapperElement) {
+      // 验证输入
+      if (!newName || newName === originalName) {
+        // 如果名称为空或未更改，取消重命名
+        cancelRename(wrapperElement, originalName);
+        return;
+      }
+      
+      // 执行重命名
+      const newPath = path.split('/').slice(0, -1).concat([newName]).join('/');
+      performRename(path, newPath);
+      
+      // 恢复原始显示
+      const filenameSpan = document.createElement('span');
+      filenameSpan.className = 'filename-text';
+      filenameSpan.setAttribute('data-bs-toggle', 'tooltip');
+      filenameSpan.setAttribute('data-bs-placement', 'top');
+      filenameSpan.title = newName;
+      filenameSpan.textContent = newName;
+      
+      wrapperElement.parentNode.replaceChild(filenameSpan, wrapperElement);
+      
+      // 恢复操作按钮显示
+      if (wrapperElement.originalActions) {
+        wrapperElement.originalActions.style.display = 'flex';
+      }
+      
+      // 移除重命名状态类名
+      if (wrapperElement.row) {
+        wrapperElement.row.classList.remove('renaming');
+      }
+    }
+    
+    // 取消重命名
+    function cancelRename(wrapperElement, originalName) {
+      const filenameSpan = document.createElement('span');
+      filenameSpan.className = 'filename-text';
+      filenameSpan.setAttribute('data-bs-toggle', 'tooltip');
+      filenameSpan.setAttribute('data-bs-placement', 'top');
+      filenameSpan.title = originalName;
+      filenameSpan.textContent = originalName;
+      
+      wrapperElement.parentNode.replaceChild(filenameSpan, wrapperElement);
+      
+      // 恢复操作按钮显示
+      if (wrapperElement.originalActions) {
+        wrapperElement.originalActions.style.display = 'flex';
+      }
+      
+      // 移除重命名状态类名
+      if (wrapperElement.row) {
+        wrapperElement.row.classList.remove('renaming');
+      }
+    }
+
+    // 执行重命名
+    async function performRename(oldPath, newPath) {
+      try {
+        const resp = await fetch('/api/sftp/rename', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ server_id: currentServerId, old_path: oldPath, new_path: newPath })
+        });
+        if (resp.ok) {
+          addLog('重命名', `${oldPath} -> ${newPath}`);
+          loadPath(currentPath);
+        } else {
+          const j = await resp.json().catch(()=>({error:'重命名失败'}));
+          alert(`重命名失败: ${j.error||''}`);
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    // 删除路径（文件或文件夹）
+    async function deletePath(encPath) {
+      const path = decodeURIComponent(encPath);
+      
+      // 确定路径类型以在确认信息中显示
+      const fileListItems = fileList || [];
+      const item = fileListItems.find(it => it.path === path);
+      const type = item && item.type === 'directory' ? '文件夹' : '文件';
+      
+      const message = `确认删除${type} "${path}" 吗？\n\n删除后将无法恢复，请确认！`;
+      if (!confirm(message)) return;
+      
+      try {
+        const resp = await fetch(`/api/sftp/delete?server_id=${encodeURIComponent(currentServerId)}&path=${encodeURIComponent(path)}`, { method: 'DELETE' });
+        if (resp.ok) {
+          addLog('删除', path);
+          loadPath(currentPath);
+        } else {
+          const j = await resp.json().catch(()=>({error:'删除失败'}));
+          alert(`删除失败: ${j.error||''}`);
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    // 下载文件
+    function downloadPath(encPath) {
+      const path = decodeURIComponent(encPath);
+      // 直接触发后端下载接口
+      const url = `/api/sftp/download?server_id=${encodeURIComponent(currentServerId)}&path=${encodeURIComponent(path)}`;
+      // 使用 a 标签下载
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = ''; // 让浏览器提示下载
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      addLog('下载', path);
+    }
+
+    // 下载选中的多个（顺序触发）
+    function downloadSelected() {
+      const selected = Array.from(document.querySelectorAll('.file-row.selected'));
+      if (selected.length === 0) { alert('请选择文件'); return; }
+      for (const row of selected) {
+        const path = row.querySelector('.filename-text').getAttribute('title');
+        downloadPath(encodeURIComponent(path));
+      }
+    }
+
+    // 创建目录
+    async function createDirectory(path) {
+      try {
+        const resp = await fetch('/api/sftp/mkdir', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ server_id: currentServerId, path })
+        });
+        if (resp.ok) { addLog('新建目录', path); loadPath(currentPath); }
+        else { const j = await resp.json().catch(()=>({error:'创建失败'})); alert(`创建失败:${j.error||''}`); }
+      } catch (e) { console.error(e); }
+    }
+
+    // 简单日志
+    function addLog(title, details) {
+      console.log(`[${new Date().toLocaleTimeString()}] ${title}: ${details}`);
+    }
+
+    // 添加文件行点击选中效果
+    document.addEventListener('click', (e) => {
+      if (e.target.closest('.file-row')) {
+        const row = e.target.closest('.file-row');
+        if (row.classList.contains('selected')) {
+          row.classList.remove('selected');
+        } else {
+          row.classList.add('selected');
+        }
+      }
+    });
+  </script>
+</body>
+</html>
