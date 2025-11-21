@@ -55,6 +55,10 @@ def format_ssh_error(error) -> str:
         return "网络不可达"
     elif "Connection refused" in error_msg:
         return "连接被拒绝"
+    elif "Authentication failed" in error_msg:
+        return "身份验证失败"
+    elif "timed out" in error_msg.lower():
+        return "连接超时"
     else:
         # 未识别的错误类型，返回原始错误信息
         return error_msg

@@ -1221,3 +1221,317 @@ def save_error_patterns():
     except Exception as e:
         # 处理异常情况
         return jsonify({"error": str(e)}), 500
+
+# ==========================
+# SFTP 管理接口（Flask + Paramiko）
+# 说明：与已有的 get_ssh_client / active_connections 集成
+# 路径前缀：/api/sftp/...
+# ==========================
+from io import BytesIO
+from flask import send_file
+
+# 列出目录内容
+@api_bp.route('/api/sftp/list', methods=['GET'])
+@login_required
+def sftp_list():
+    """
+    请求参数:
+      - server_id (query) 必需
+      - path (query) 可选, 默认为 '/'
+    返回: JSON 列表: [{name, path, type, size, mtime, mode}, ...]
+    """
+    server_id = request.args.get('server_id')
+    path = request.args.get('path', '/')
+    if not server_id:
+        return jsonify({"error": "缺少 server_id 参数"}), 400
+
+    ssh, err, code = get_ssh_client(server_id, active_connections)
+    if err:
+        return err, code
+
+    try:
+        sftp = ssh.open_sftp()
+        # 如果 path 是空，设为根
+        try:
+            items = sftp.listdir_attr(path)
+        except IOError as e:
+            # 目录不存在或无法访问，返回空列表
+            sftp.close()
+            return jsonify({"error": "无法访问目录: " + str(e)}), 500
+
+        result = []
+        for item in items:
+            item_path = os.path.join(path, item.filename).replace("\\", "/")
+            result.append({
+                "name": item.filename,
+                "path": item_path,
+                "type": "directory" if stat.S_ISDIR(item.st_mode) else "file",
+                "size": item.st_size,
+                "mtime": item.st_mtime,
+                "mode": oct(item.st_mode & 0o777)
+            })
+        sftp.close()
+        return jsonify(result)
+    except Exception as e:
+        # 添加更详细的错误信息
+        error_msg = format_ssh_error(e)
+        return jsonify({"error": "读取目录失败: " + error_msg}), 500
+
+
+# 上传文件（multipart/form-data）
+@api_bp.route('/api/sftp/upload', methods=['POST'])
+@login_required
+def sftp_upload():
+    """
+    上传文件到远程服务器
+    FormData:
+      - files: file input (可多个)
+      - path (query or form) 上传到的目录（必需）
+      - overwrite (form) 可选，若为 'true' 则覆盖已存在文件
+      - server_id (query/form) 必需或通过连接使用 active_connections
+    返回: { uploaded: [...], errors: [...] , path: '/target/path' }
+    """
+    server_id = request.args.get('server_id') or request.form.get('server_id')
+    if not server_id:
+        return jsonify({"error": "缺少 server_id 参数"}), 400
+
+    target_path = request.args.get('path') or request.form.get('path') or '/'
+    overwrite = (request.form.get('overwrite', 'false').lower() == 'true')
+
+    # files 支持多个（前端使用 input multiple）
+    files = request.files.getlist('files')
+    if not files:
+        return jsonify({"error": "没有上传的文件"}), 400
+
+    ssh, err, code = get_ssh_client(server_id, active_connections)
+    if err:
+        return err, code
+
+    sftp = None
+    uploaded = []
+    errors = []
+    try:
+        sftp = ssh.open_sftp()
+
+        # 确保目标目录存在：若不存在尝试创建（仅创建一层，不做递归复杂逻辑）
+        try:
+            sftp.listdir(target_path)
+        except IOError:
+            try:
+                sftp.mkdir(target_path)
+            except Exception:
+                # 如果创建失败，继续尝试写文件（有些环境允许直接写）
+                pass
+
+        for f in files:
+            filename = f.filename
+            remote_file_path = os.path.join(target_path, filename).replace("\\", "/")
+            try:
+                # 如果已存在且不允许覆盖，报错
+                try:
+                    sftp.stat(remote_file_path)
+                    exists = True
+                except IOError:
+                    exists = False
+
+                if exists and not overwrite:
+                    errors.append({"file": filename, "error": "目标已存在 (设置 overwrite=true 可覆盖)"})
+                    continue
+
+                # 写入远程文件（以二进制）
+                # 使用 sftp.open 以便设置模式
+                with sftp.open(remote_file_path, 'wb') as remote_f:
+                    # Flask 的 FileStorage 已经是流式，可以直接读取
+                    chunk = f.stream.read(64 * 1024)
+                    while chunk:
+                        remote_f.write(chunk)
+                        chunk = f.stream.read(64 * 1024)
+                uploaded.append({"file": filename, "path": remote_file_path})
+            except Exception as ef:
+                errors.append({"file": filename, "error": format_ssh_error(ef)})
+    except Exception as e:
+        return jsonify({"error": format_ssh_error(e)}), 500
+    finally:
+        if sftp:
+            try:
+                sftp.close()
+            except:
+                pass
+
+    return jsonify({"uploaded": uploaded, "errors": errors, "path": target_path})
+
+
+# 下载文件（将远程文件流式返回）
+@api_bp.route('/api/sftp/download', methods=['GET'])
+@login_required
+def sftp_download():
+    """
+    请求参数:
+      - server_id (query) 必需
+      - path (query) 远程文件完整路径，必需
+    返回: flask send_file 流
+    """
+    server_id = request.args.get('server_id')
+    remote_path = request.args.get('path')
+    if not server_id or not remote_path:
+        return jsonify({"error": "缺少 server_id 或 path 参数"}), 400
+
+    ssh, err, code = get_ssh_client(server_id, active_connections)
+    if err:
+        return err, code
+
+    sftp = None
+    try:
+        sftp = ssh.open_sftp()
+
+        # 读取远程文件到内存（对大文件需谨慎，可改为分块流）
+        remote_file = sftp.open(remote_path, 'rb')
+        buf = BytesIO()
+        chunk = remote_file.read(64 * 1024)
+        while chunk:
+            buf.write(chunk)
+            chunk = remote_file.read(64 * 1024)
+        remote_file.close()
+        buf.seek(0)
+
+        filename = os.path.basename(remote_path)
+        return send_file(buf, as_attachment=True, download_name=filename)
+    except FileNotFoundError:
+        return jsonify({"error": "文件不存在"}), 404
+    except Exception as e:
+        return jsonify({"error": format_ssh_error(e)}), 500
+    finally:
+        if sftp:
+            try:
+                sftp.close()
+            except:
+                pass
+
+
+# 删除文件或空目录
+@api_bp.route('/api/sftp/delete', methods=['DELETE'])
+@login_required
+def sftp_delete():
+    """
+    请求参数:
+      - server_id (query) 必需
+      - path (query) 要删除的文件或目录路径，必需
+      - type (query) 可选 'file' or 'dir'，默认根据 stat 判断
+    """
+    server_id = request.args.get('server_id')
+    path = request.args.get('path')
+    if not server_id or not path:
+        return jsonify({"error": "缺少 server_id 或 path 参数"}), 400
+
+    ssh, err, code = get_ssh_client(server_id, active_connections)
+    if err:
+        return err, code
+
+    sftp = None
+    try:
+        sftp = ssh.open_sftp()
+        try:
+            st = sftp.stat(path)
+        except IOError:
+            return jsonify({"error": "路径不存在"}), 404
+
+        if stat.S_ISDIR(st.st_mode):
+            # 仅删除空目录
+            try:
+                sftp.rmdir(path)
+                return jsonify({"message": "目录已删除"})
+            except Exception as e:
+                return jsonify({"error": format_ssh_error(e)}), 500
+        else:
+            try:
+                sftp.remove(path)
+                return jsonify({"message": "文件已删除"})
+            except Exception as e:
+                return jsonify({"error": format_ssh_error(e)}), 500
+    except Exception as e:
+        return jsonify({"error": format_ssh_error(e)}), 500
+    finally:
+        if sftp:
+            try:
+                sftp.close()
+            except:
+                pass
+
+
+# 新建目录
+@api_bp.route('/api/sftp/mkdir', methods=['POST'])
+@login_required
+def sftp_mkdir():
+    """
+    请求参数:
+      - server_id (query or form) 必需
+      - path (form/json) 要创建的目录路径，必需
+    """
+    server_id = request.args.get('server_id') or request.form.get('server_id')
+    path = request.json.get('path') if request.is_json else request.form.get('path')
+    if not server_id or not path:
+        return jsonify({"error": "缺少 server_id 或 path 参数"}), 400
+
+    ssh, err, code = get_ssh_client(server_id, active_connections)
+    if err:
+        return err, code
+
+    sftp = None
+    try:
+        sftp = ssh.open_sftp()
+        try:
+            sftp.mkdir(path)
+            return jsonify({"message": "目录创建成功", "path": path})
+        except Exception as e:
+            return jsonify({"error": format_ssh_error(e)}), 500
+    finally:
+        if sftp:
+            try:
+                sftp.close()
+            except:
+                pass
+
+
+# 重命名 / 移动
+@api_bp.route('/api/sftp/rename', methods=['POST'])
+@login_required
+def sftp_rename():
+    """
+    请求 body (json 或 form):
+      - server_id
+      - old_path
+      - new_path
+    """
+    data = request.get_json() or request.form
+    server_id = data.get('server_id')
+    old_path = data.get('old_path')
+    new_path = data.get('new_path')
+    if not server_id or not old_path or not new_path:
+        return jsonify({"error": "缺少参数: server_id, old_path, new_path"}), 400
+
+    ssh, err, code = get_ssh_client(server_id, active_connections)
+    if err:
+        return err, code
+
+    sftp = None
+    try:
+        sftp = ssh.open_sftp()
+        try:
+            sftp.rename(old_path, new_path)
+            return jsonify({"message": "重命名/移动成功", "old": old_path, "new": new_path})
+        except Exception as e:
+            return jsonify({"error": format_ssh_error(e)}), 500
+    finally:
+        if sftp:
+            try:
+                sftp.close()
+            except:
+                pass
+
+
+@api_bp.route('/sftp_page')
+@login_required
+def sftp_page():
+    # 如果你使用 Jinja2，可将 servers 列表传过去渲染
+    servers = load_servers()
+    return render_template('sftp.html', servers=servers)

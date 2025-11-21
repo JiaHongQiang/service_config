@@ -472,6 +472,9 @@
                     </button>
                     <span class="badge bg-success d-none" id="connectionStatus">已连接</span>
                     <span class="badge text-dark" style="background-color:#d6d8db;" id="disconnectedStatus">未连接</span>
+                    <button class="btn btn-sm btn-outline-light" id="sftpBtn" style="white-space: nowrap;">
+                        <i class="fas fa-folder-open"></i> SFTP
+                    </button>
                     <button class="btn btn-sm btn-outline-light" id="logoutBtn" style="white-space: nowrap;">
                         <i class="fas fa-sign-out-alt"></i> 登出
                     </button>
@@ -795,6 +798,7 @@
                     document.getElementById('refreshFilesBtn').addEventListener('click', loadFileTree);
                     document.getElementById('saveFileBtn').addEventListener('click', saveCurrentFile);
                     document.getElementById('submitAddErrorPattern').addEventListener('click', addErrorPattern);
+                    document.getElementById('sftpBtn').addEventListener('click', openSFTPPage);
 
                     // 在这里绑定 serverSelector 的事件
                     document.getElementById('serverSelector').addEventListener('change', handleServerSelection);
@@ -858,6 +862,53 @@
                 console.error('登出请求失败:', error);
                 showToast('登出失败', '请检查网络连接', 'error');
             }
+        }
+
+        // 打开SFTP页面
+        function openSFTPPage() {
+            const serverId = document.getElementById('serverSelector').value;
+            if (!serverId) {
+                showToast('⚠ 选择服务器', '请先选择服务器', 'warning');
+                return;
+            }
+            
+            // 在当前页面中以iframe方式嵌入SFTP页面
+            showSFTPPanel(serverId);
+        }
+
+        // 在模态框中显示SFTP面板
+        function showSFTPPanel(serverId) {
+            // 创建模态框
+            let modal = document.getElementById('sftpModal');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'sftpModal';
+                modal.className = 'modal fade';
+                modal.tabIndex = -1;
+                modal.innerHTML = `
+                <div class="modal-dialog modal-xl">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">SFTP 文件管理</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body p-0">
+                            <iframe src="/sftp_page?server_id=${encodeURIComponent(serverId)}" 
+                                style="width:100%;height:80vh;border:none;"></iframe>
+                        </div>
+                    </div>
+                </div>
+                `;
+                document.body.appendChild(modal);
+            } else {
+                // 更新iframe的src
+                const iframe = modal.querySelector('iframe');
+                iframe.src = `/sftp_page?server_id=${encodeURIComponent(serverId)}`;
+            }
+            
+            // 显示模态框
+            const modalInstance = new bootstrap.Modal(modal);
+            modalInstance.show();
         }
 
         // 启用所有 Bootstrap Tooltips
