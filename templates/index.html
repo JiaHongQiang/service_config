@@ -472,9 +472,9 @@
                     </button>
                     <span class="badge bg-success d-none" id="connectionStatus">已连接</span>
                     <span class="badge text-dark" style="background-color:#d6d8db;" id="disconnectedStatus">未连接</span>
-                    <button class="btn btn-sm btn-outline-light" id="sftpBtn" style="white-space: nowrap;">
+                    <!-- <button class="btn btn-sm btn-outline-light" id="sftpBtn" style="white-space: nowrap;">
                         <i class="fas fa-folder-open"></i> SFTP
-                    </button>
+                    </button> -->
                     <button class="btn btn-sm btn-outline-light" id="logoutBtn" style="white-space: nowrap;">
                         <i class="fas fa-sign-out-alt"></i> 登出
                     </button>
@@ -502,6 +502,9 @@
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h5 class="mb-0">配置文件编辑</h5>
             <div>
+                <button class="btn btn-sm btn-outline-primary me-1" id="toggleSftpBtn" onclick="toggleSftpView()">
+                    <i class="fas fa-folder-open"></i> SFTP文件管理
+                </button>
                 <button class="btn btn-sm btn-outline-secondary me-1" id="refreshFilesBtn">
                     <i class="fas fa-sync-alt"></i> 刷新
                 </button>
@@ -511,39 +514,57 @@
             </div>
         </div>
 
-        <div class="row">
-            <div class="col-md-4">
-                <div class="card">
-                    <div class="card-header py-2">
-                        <h6 class="mb-0">文件导航</h6>
-                    </div>
-                    <div class="card-body p-2 file-tree">
-                        <ul class="list-unstyled" id="fileTree">
-                            <!-- 文件树将通过JS动态加载 -->
-                        </ul>
-                    </div>
+        <!-- SFTP文件管理区域 (默认隐藏) -->
+        <div id="sftpContainer" class="d-none">
+            <div class="card mb-3">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0">SFTP文件管理</h6>
+                    <button class="btn btn-sm btn-outline-secondary" id="closeSftpBtn" onclick="toggleSftpView()">
+                        <i class="fas fa-times"></i> 关闭
+                    </button>
+                </div>
+                <div class="card-body p-0">
+                    <iframe id="sftpIframe" src="" style="width: 100%; height: 600px; border: none;"></iframe>
                 </div>
             </div>
-            <div class="col-md-8">
-                <div class="card">
-                    <div class="card-header py-2 d-flex justify-content-between align-items-center">
-                        <h6 class="mb-0" id="currentFileName">请选择文件</h6>
-                        <small class="text-muted" id="lastSavedTime"></small>
-                    </div>
-                    <div class="card-body p-0">
-                        <div class="editor-container">
-                            <div id="editor"></div>
+        </div>
+
+        <!-- 配置文件编辑区域 -->
+        <div id="configEditorContainer">
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-header py-2">
+                            <h6 class="mb-0">文件导航</h6>
+                        </div>
+                        <div class="card-body p-2 file-tree">
+                            <ul class="list-unstyled" id="fileTree">
+                                <!-- 文件树将通过JS动态加载 -->
+                            </ul>
                         </div>
                     </div>
                 </div>
+                <div class="col-md-8">
+                    <div class="card">
+                        <div class="card-header py-2 d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0" id="currentFileName">请选择文件</h6>
+                            <small class="text-muted" id="lastSavedTime"></small>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="editor-container">
+                                <div id="editor"></div>
+                            </div>
+                        </div>
+                    </div>
 
-                <div class="d-flex justify-content-end mt-2 gap-2">
-                    <button class="btn btn-sm btn-outline-primary" id="compareBtn" onclick="compareWithServer()" disabled>
-                        <i class="fas fa-copy"></i> 对比
-                    </button>
-                    <button class="btn btn-sm btn-info" id="backupListBtn" onclick="showBackupHistory()" disabled>
-                        <i class="fas fa-history"></i> 备份历史
-                    </button>
+                    <div class="d-flex justify-content-end mt-2 gap-2">
+                        <button class="btn btn-sm btn-outline-primary" id="compareBtn" onclick="compareWithServer()" disabled>
+                            <i class="fas fa-copy"></i> 对比
+                        </button>
+                        <button class="btn btn-sm btn-info" id="backupListBtn" onclick="showBackupHistory()" disabled>
+                            <i class="fas fa-history"></i> 备份历史
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -813,6 +834,16 @@
                     if (refreshBtn) {
                         refreshBtn.addEventListener('click', refreshServiceStatus);
                     }
+                    
+                    // 使用事件委托处理SFTP按钮点击
+                    document.addEventListener('click', function(event) {
+                        if (event.target.id === 'toggleSftpBtn' || event.target.closest('#toggleSftpBtn')) {
+                            toggleSftpView();
+                        }
+                        if (event.target.id === 'closeSftpBtn' || event.target.closest('#closeSftpBtn')) {
+                            toggleSftpView();
+                        }
+                    });
                 }, 500);
                 
                 // 启动错误日志刷新
@@ -830,6 +861,51 @@
                 }
             });
         });
+        
+        // 切换SFTP视图
+        function toggleSftpView() {
+            const sftpContainer = document.getElementById('sftpContainer');
+            const configEditorContainer = document.getElementById('configEditorContainer');
+            const serverId = document.getElementById('serverSelector').value;
+            const isConnected = !document.getElementById('connectionStatus').classList.contains('d-none');
+            
+            if (!sftpContainer || !configEditorContainer) {
+                console.error('无法找到SFTP容器元素');
+                return;
+            }
+            
+            if (sftpContainer.classList.contains('d-none')) {
+                // 切换到SFTP视图
+                if (!serverId) {
+                    showToast('⚠ 选择服务器', '请先选择服务器', 'warning');
+                    return;
+                }
+                
+                if (!isConnected) {
+                    showToast('⚠ 未连接服务器', '请先连接服务器', 'warning');
+                    return;
+                }
+                
+                sftpContainer.classList.remove('d-none');
+                configEditorContainer.classList.add('d-none');
+                
+                // 设置iframe的src
+                const iframe = document.getElementById('sftpIframe');
+                if (iframe) {
+                    iframe.src = `/sftp_page?server_id=${encodeURIComponent(serverId)}`;
+                }
+            } else {
+                // 切换回配置文件编辑视图
+                sftpContainer.classList.add('d-none');
+                configEditorContainer.classList.remove('d-none');
+                
+                // 清空iframe的src以停止其中的活动
+                const iframe = document.getElementById('sftpIframe');
+                if (iframe) {
+                    iframe.src = '';
+                }
+            }
+        }
 
         // 检查用户登录状态
         async function checkLoginStatus() {
@@ -872,8 +948,8 @@
                 return;
             }
             
-            // 在当前页面中以iframe方式嵌入SFTP页面
-            showSFTPPanel(serverId);
+            // 切换到SFTP视图
+            toggleSftpView();
         }
 
         // 在模态框中显示SFTP面板
