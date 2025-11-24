@@ -893,6 +893,8 @@
                 const iframe = document.getElementById('sftpIframe');
                 if (iframe) {
                     iframe.src = `/sftp_page?server_id=${encodeURIComponent(serverId)}`;
+                    // 保存当前选择的服务器到 sessionStorage
+                    sessionStorage.setItem('lastSelectedServer', serverId);
                 }
             } else {
                 // 切换回配置文件编辑视图
