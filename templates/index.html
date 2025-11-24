@@ -1632,12 +1632,13 @@ async function browseDirectory(dirPath) {
     }
 
     try {
-        const response = await fetch(`/config/files/list?server_id=${serverId}&path=${encodeURIComponent(dirPath)}`);
+        const response = await fetch(`/api/sftp/list?server_id=${serverId}&path=${encodeURIComponent(dirPath)}`);
         if (response.ok) {
             const items = await response.json();
             renderDirectoryContents(items, dirPath);
         } else {
-            showToast('✗ 加载失败', '无法加载目录内容', 'error');
+            const errorData = await response.json();
+            showToast('✗ 加载失败', errorData.error || '无法加载目录内容', 'error');
         }
     } catch (error) {
         console.error('加载目录内容失败:', error);
@@ -2222,36 +2223,3 @@ async function deleteConfigFile(filePath, event) {
 
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -882,6 +882,10 @@ def sftp_list():
     path = request.args.get('path', '/')
     if not server_id:
         return jsonify({"error": "缺少 server_id 参数"}), 400
+    
+    # 如果 path 是空字符串，设为根目录
+    if not path:
+        path = '/'
 
     ssh, err, code = get_ssh_client(server_id, active_connections)
     if err:
@@ -889,7 +893,6 @@ def sftp_list():
 
     try:
         sftp = ssh.open_sftp()
-        # 如果 path 是空，设为根
         try:
             items = sftp.listdir_attr(path)
         except IOError as e:
