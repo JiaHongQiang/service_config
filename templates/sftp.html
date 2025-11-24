@@ -302,55 +302,30 @@
       flex-wrap: nowrap;
     }
     
-    /* 文件操作按钮容器 */
+    /* 悬浮操作按钮容器 */
     .file-actions {
+      display: none;
+      gap: 4px;
+      background: rgba(255, 255, 255, 0.9);
+      padding: 4px;
+      border-radius: 6px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+      z-index: 10;
+      justify-content: center;
       position: absolute;
       right: 5px;
       top: 50%;
       transform: translateY(-50%);
-      display: none;
-      gap: 2px;
-      background: rgba(255, 255, 255, 0.9);
-      padding: 2px;
-      border-radius: 4px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
-    
-    /* 当鼠标悬停在时间单元格上时显示操作按钮 */
-    td:hover .file-actions {
+
+    .file-row:hover .file-actions {
       display: flex;
     }
-    
-    /* 文件操作按钮 */
-    .file-action-btn {
-      width: 24px;
-      height: 24px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      border-radius: 3px;
-      transition: all 0.2s ease;
-      color: #495057;
+
+    .file-row.renaming .file-actions {
+      display: none !important;
     }
-    
-    .file-action-btn:hover {
-      background-color: #e9ecef;
-      color: #0d6efd;
-    }
-    
-    .file-action-btn.permissions:hover {
-      color: #28a745;
-    }
-    
-    .file-action-btn.rename:hover {
-      color: #ffc107;
-    }
-    
-    .file-action-btn.delete:hover {
-      color: #dc3545;
-    }
-    
+
     /* 顶部连接区域 */
     .top-connection {
       display: flex;
@@ -938,8 +913,8 @@
             </div>
           </td>
           <td>${it.type==='directory' ? '-' : humanFileSize(it.size)}</td>
-          <td class="position-relative">${formatDateTime(it.mtime)}<div class="file-actions">${operationButtons}</div></td>
-          <td>${formatFileMode(it.mode) || ''}</td>
+          <td>${formatDateTime(it.mtime)}</td>
+          <td class="position-relative">${formatFileMode(it.mode) || ''}<div class="file-actions">${operationButtons}</div></td>
           <td>${userGroupInfo}</td>
         `;
 
