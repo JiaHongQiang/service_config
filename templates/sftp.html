@@ -818,7 +818,7 @@
         // 触发后端 connect（你的 /servers/<id>/connect），以便建立 active_connections
         const resp = await fetch(`/servers/${sid}/connect`, { method: 'POST' });
         if (resp.ok) {
-          addLog('连接服务器', `已连接 ${sid}`);
+          addLog('连接文件服务器', `已连接 ${sid}`);
           currentServerId = sid;
           // 保存到 sessionStorage
           sessionStorage.setItem('lastSelectedServer', sid);
@@ -1386,6 +1386,15 @@
     // 简单日志
     function addLog(title, details) {
       console.log(`[${new Date().toLocaleTimeString()}] ${title}: ${details}`);
+      // 同时将日志发送到父窗口（index页面）
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage({
+          type: 'sftp_operation_log',
+          operation: title,
+          details: details,
+          timestamp: new Date().toLocaleString('zh-CN')
+        }, '*');
+      }
     }
 
     // 设置权限和所有者（合并功能）

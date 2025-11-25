@@ -582,7 +582,7 @@
                             <button class="btn btn-sm btn-outline-primary me-1" id="addErrorPatternBtn" data-bs-toggle="modal" data-bs-target="#addErrorPatternModal">
                                 <i class="fas fa-plus"></i>
                             </button>
-                            <button class="btn btn-sm btn-outline-secondary clear-service-log-btn" id="clearServiceLogBtn">
+                            <button class="btn btn-sm btn-outline-secondary clear-service-log-btn" id="clearServiceLogBtn" onclick="clearServiceLogs()">
                                 <i class="fas fa-trash-alt"></i>
                             </button>
                         </div>
@@ -600,7 +600,7 @@
                 <div class="card h-100 d-flex flex-column">
                     <div class="card-header py-2 d-flex justify-content-between align-items-center">
                         <h6 class="mb-0">操作记录</h6>
-                        <button class="btn btn-sm btn-outline-secondary clear-operation-log-btn" id="clearOperationLogBtn">
+                        <button class="btn btn-sm btn-outline-secondary clear-operation-log-btn" id="clearOperationLogBtn" onclick="clearOperationLog()">
                             <i class="fas fa-trash-alt"></i>
                         </button>
                     </div>
@@ -826,8 +826,23 @@
 
                     document.getElementById('submitAddServer').addEventListener('click', addServer);
                     document.getElementById('authMethod').addEventListener('change', toggleAuthFields);
-                    document.getElementById('clearOperationLogBtn').addEventListener('click', clearOperationLog);
-                    document.getElementById('clearServiceLogBtn').addEventListener('click', clearServiceLogs);
+                    
+                    // 确保操作记录清除按钮正确绑定事件
+                    const clearOperationLogBtn = document.getElementById('clearOperationLogBtn');
+                    if (clearOperationLogBtn) {
+                        clearOperationLogBtn.addEventListener('click', clearOperationLog);
+                    } else {
+                        console.error('无法找到操作记录清除按钮');
+                    }
+                    
+                    // 确保服务日志清除按钮正确绑定事件
+                    const clearServiceLogBtn = document.getElementById('clearServiceLogBtn');
+                    if (clearServiceLogBtn) {
+                        clearServiceLogBtn.addEventListener('click', clearServiceLogs);
+                    } else {
+                        console.error('无法找到服务日志清除按钮');
+                    }
+                    
                     document.getElementById('logoutBtn').addEventListener('click', logout);
 
                     const refreshBtn = document.getElementById('refreshServicesBtn');
@@ -860,6 +875,15 @@
                     });
                 }
             });
+        });
+        
+        // 监听来自SFTP页面的消息
+        window.addEventListener('message', function(event) {
+            // 检查消息类型是否为SFTP操作日志
+            if (event.data && event.data.type === 'sftp_operation_log') {
+                // 添加到操作日志中
+                addOperationLog(event.data.operation, event.data.details);
+            }
         });
         
         // 切换SFTP视图
@@ -2184,6 +2208,11 @@ async function deleteConfigFile(filePath, event) {
         function renderServiceLogs() {
             // 获取所有日志条目并渲染到日志模块
             const logContainer = document.querySelector('.right-sidebar .row .col-12:first-child .card-body .operation-log');
+            
+            if (!logContainer) {
+                console.error('无法找到服务日志容器');
+                return;
+            }
             
             if (serviceLogs.length === 0) {
                 logContainer.innerHTML = '<li class="text-muted">暂无日志记录</li>';
