@@ -6,46 +6,39 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>服务管理平台</title>
     <link rel="icon" href="/favicon.ico" type="image/x-icon">
-    <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
-    
-    <!-- ✅ Bootstrap & FontAwesome -->
+
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 
     <style>
         :root {
-            --left-sidebar-width: 320px;
-            --right-sidebar-width: 350px;
-            --header-height: 60px;
-            --tech-blue: #007bff;
-            --tech-light: #00d4ff;
-            --glass-bg: rgba(255, 255, 255, 0.25);
+            --header-height: 64px;
+            --sidebar-width: 300px;
+            --right-sidebar-width: 340px;
+
+            --primary-color: #3b82f6;
+            --primary-hover: #2563eb;
+            --bg-color: #f3f4f6;
+            --text-main: #1f2937;
+            --text-secondary: #6b7280;
+            --border-color: rgba(229, 231, 235, 0.8);
+
+            --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
         }
 
-        /* 🌌 背景渐变科技风 */
         body {
-            margin: 0;
-            font-family: "Segoe UI", sans-serif;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-color);
+            background-image:
+                radial-gradient(at 0% 0%, hsla(253,16%,7%,0) 0, hsla(253,16%,7%,0) 50%),
+                radial-gradient(at 50% 0%, hsla(225,39%,30%,0.05) 0, hsla(225,39%,30%,0) 50%),
+                radial-gradient(at 100% 0%, hsla(339,49%,30%,0) 0, hsla(339,49%,30%,0) 50%);
+            color: var(--text-main);
             padding-top: var(--header-height);
-            background: linear-gradient(135deg, #cfe9ff, #e7f6ff, #bde0fe);
-            background-attachment: fixed;
-            overflow-x: hidden;
-        }
-
-        /* 简化重复样式 */
-        .btn-primary, .btn-success, .btn-info, .btn-warning, .btn-danger {
-            border: none;
-            transition: 0.3s;
-        }
-        
-        .btn-primary:hover,
-        .btn-success:hover,
-        .btn-info:hover,
-        .btn-warning:hover,
-        .btn-danger:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 0 12px rgba(0,123,255,0.4);
+            overflow: hidden;
+            height: 100vh;
         }
 
         /* 🔹 顶部导航 */
@@ -55,558 +48,433 @@
             top: 0;
             left: 0;
             right: 0;
-            z-index: 1000;
-            backdrop-filter: blur(8px);
-            background: linear-gradient(90deg, rgba(0, 122, 255, 0.85), rgba(0, 212, 255, 0.85));
-            color: white;
-            box-shadow: 0 2px 10px rgba(0,0,0,.2);
+            z-index: 1050;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+            display: flex;
+            align-items: center;
         }
 
         .header h4 {
-            font-weight: 600;
-            letter-spacing: 1px;
+            font-weight: 700;
+            font-size: 1.15rem;
+            color: #111827;
+            letter-spacing: -0.025em;
+            margin-bottom: 0;
         }
 
-        /* 顶部按钮清晰显示 */
-        .header .btn {
-            color: #ffffff !important;
-            border-color: rgba(255,255,255,0.8) !important;
-            background: rgba(255,255,255,0.1);
-            transition: 0.3s;
-        }
-        .header .btn:hover {
-            background: rgba(255,255,255,0.3);
-            color: #fff !important;
-            box-shadow: 0 0 10px rgba(255,255,255,0.6);
-        }
-        .header select.form-select {
-            background-color: rgba(255,255,255,0.2);
-            color: #fff;
-            border-color: rgba(255,255,255,0.5);
-        }
-        .header select.form-select option {
-            color: #000;
-        }
-        #connectionStatus {
-            background-color: #00ffae !important;
-            color: #003c28;
-            font-weight: 600;
-        }
-        #disconnectedStatus {
-            background-color: rgba(255,255,255,0.3) !important;
-            color: #fff;
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
 
-        /* 🧊 左侧服务面板 */
-        .left-sidebar {
-            width: var(--left-sidebar-width);
+        .no-wrap { white-space: nowrap; }
+
+        /* 🧊 侧边栏通用样式 */
+        .sidebar-common {
             position: fixed;
             top: var(--header-height);
             bottom: 0;
-            left: 0;
+            background: #fff;
             overflow-y: auto;
-            border-right: 1px solid rgba(255,255,255,0.2);
-            backdrop-filter: blur(10px);
-            background: var(--glass-bg);
-            box-shadow: 4px 0 10px rgba(0,0,0,0.05);
+            z-index: 100;
             padding: 20px;
+            border-color: rgba(0,0,0,0.05);
         }
 
-        /* 🧊 右侧操作记录面板 */
+        .left-sidebar {
+            width: var(--sidebar-width);
+            left: 0;
+            border-right: 1px solid var(--border-color);
+        }
+
         .right-sidebar {
             width: var(--right-sidebar-width);
-            position: fixed;
-            top: var(--header-height);
-            bottom: 0;
             right: 0;
-            overflow-y: auto;
-            border-left: 1px solid rgba(255,255,255,0.2);
-            backdrop-filter: blur(10px);
-            background: var(--glass-bg);
-            box-shadow: -4px 0 10px rgba(0,0,0,0.05);
-            padding: 20px;
+            border-left: 1px solid var(--border-color);
+            background: #f9fafb;
         }
 
         /* 📄 中间主体内容 */
         .main-content {
-            margin-left: var(--left-sidebar-width);
+            margin-left: var(--sidebar-width);
             margin-right: var(--right-sidebar-width);
-            padding: 20px;
-            min-height: calc(100vh - var(--header-height));
-        }
-
-        /* 🧠 卡片玻璃风 */
-        .card {
-            background: var(--glass-bg);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255,255,255,0.3);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-            border-radius: 12px;
-        }
-
-        /* ✨ 按钮科技高亮 */
-        .btn-outline-primary {
-            border-color: var(--tech-blue);
-            color: var(--tech-blue);
-            transition: 0.3s;
-        }
-        .btn-outline-primary:hover {
-            background: var(--tech-blue);
-            color: white;
-            box-shadow: 0 0 10px var(--tech-blue);
-        }
-
-        /* ⚙️ 文件树样式 */
-        .file-tree {
-            max-height: 400px;
+            padding: 24px;
+            height: calc(100vh - var(--header-height));
             overflow-y: auto;
         }
 
-        /* 💻 编辑器自适应高度 */
-        .editor-container {
-            height: calc(100vh - 280px);
-            min-height: 480px;
-            display: flex;
-            flex-direction: column;
-            border: 1px solid rgba(255,255,255,0.3);
-            border-radius: 8px;
-            background: rgba(255,255,255,0.4);
-            backdrop-filter: blur(6px);
-        }
-        #editor {
-            flex: 1;
-            min-height: 460px;
+        /* 🧠 通用卡片优化 */
+        .card {
+            background: #fff;
+            border: 1px solid rgba(229, 231, 235, 1);
+            border-radius: 12px;
+            box-shadow: var(--card-shadow);
+            transition: all 0.2s ease;
+            margin-bottom: 16px;
         }
 
-        /* 📎 服务卡片 */
+        .card-header {
+            background: transparent;
+            border-bottom: 1px solid #f3f4f6;
+            padding: 12px 16px;
+            font-weight: 600;
+            color: #374151;
+            font-size: 0.9rem;
+        }
+
+        /* 📎 服务卡片 - 紧凑版优化 */
         .service-card {
-            transition: transform 0.2s, box-shadow 0.2s;
-            margin-bottom: 12px;
-        }
-        .service-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 6px 12px rgba(0,0,0,.2);
+            border: 1px solid #e5e7eb;
+            background: white;
+            border-radius: 8px;
+            padding: 0;
+            overflow: hidden;
+            transition: all 0.2s;
+            margin-bottom: 10px; /* 紧凑间距 */
+            box-shadow: 0 1px 2px rgba(0,0,0,0.02);
         }
 
-        /* 🔵 状态圆点 */
+        .service-card:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            border-color: var(--primary-color);
+        }
+
+        .service-card .card-body {
+            padding: 10px 12px; /* 紧凑内边距 */
+        }
+
+        .service-card .service-footer {
+            margin-top: 8px;
+            padding-top: 8px;
+            /* 移除原有实线边框，改用透明或极淡的颜色，减少分割感 */
+            border-top: 1px solid transparent;
+        }
+
+        /* 🔵 状态指示器 */
         .status-indicator {
-            width: 12px;
-            height: 12px;
+            width: 8px;
+            height: 8px;
             border-radius: 50%;
             display: inline-block;
-            margin-right: 8px;
+            margin-right: 6px;
         }
-        .status-running { background-color: #28a745; }
-        .status-stopped { background-color: #dc3545; }
-        .status-unknown { background-color: #6c757d; }
+        .status-running { background-color: #10b981; box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.15); }
+        .status-stopped { background-color: #ef4444; box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.15); }
+        .status-unknown { background-color: #9ca3af; }
 
-        /* 📂 文件树删除按钮 */
-        .file-tree button {
-            border-radius: 6px !important;
+        /* ⚙️ 文件树 - 彻底隐藏滚动条但保留功能 */
+        .file-tree-container {
+            max-height: calc(100vh - var(--header-height) - 180px);
+            min-height: 300px;
+            overflow-y: auto; /* 功能保留 */
+            padding-right: 0;
+
+            /* 视觉隐藏 */
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none; /* IE/Edge */
+        }
+        /* Chrome/Safari/Webkit 隐藏滚动条 */
+        .file-tree-container::-webkit-scrollbar {
+            display: none;
+            width: 0;
+            background: transparent;
         }
 
-        /* 🧊 模态框玻璃风 */
-        .modal-content {
-            background: rgba(255,255,255,0.9);
-            backdrop-filter: blur(10px);
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-        }
-        .modal-header {
-            background: linear-gradient(90deg, #007bff, #00d4ff);
-            color: white;
-            border-bottom: none;
-        }
-
-        /* 操作记录样式 */
-        .operation-log {
-            max-height: calc(50vh - 120px);
-            overflow-y: auto;
+        .file-tree ul { padding-left: 0; margin-bottom: 0; }
+        .file-tree li {
             font-size: 0.85rem;
+            border-bottom: 1px solid #fcfcfc;
+            padding: 5px 8px;
+            border-radius: 4px;
+            transition: background 0.1s;
+            cursor: pointer;
+        }
+        .file-tree li:hover { background-color: #eff6ff; color: var(--primary-color); }
+        .file-tree i.fa-folder { color: #f59e0b; }
+        .file-tree i.fa-file { color: #9ca3af; }
+
+        /* 💻 编辑器容器 */
+        .editor-container {
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #fff;
+            height: 600px;
+            display: flex;
+            flex-direction: column;
+        }
+        #editor { flex: 1; height: 100%; }
+
+        /* 📝 日志区域 */
+        .operation-log {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
         }
         .operation-log li {
-            padding: 8px;
-            margin-bottom: 8px;
-            border-radius: 6px;
-            background: rgba(255,255,255,0.5);
-            border-left: 3px solid var(--tech-blue);
+            background: white;
+            border-bottom: 1px solid #f1f5f9;
+            border-left: 2px solid transparent;
+            padding: 6px 10px;
+            margin-bottom: 0;
         }
+        .operation-log li:last-child { border-bottom: none; }
+        .operation-log li:hover { background: #f8fafc; }
 
-        /* 滚动条美化 */
-        .left-sidebar::-webkit-scrollbar,
-        .right-sidebar::-webkit-scrollbar,
-        .file-tree::-webkit-scrollbar,
-        .operation-log::-webkit-scrollbar {
-            width: 8px;
-        }
-        .left-sidebar::-webkit-scrollbar-thumb,
-        .right-sidebar::-webkit-scrollbar-thumb,
-        .file-tree::-webkit-scrollbar-thumb,
-        .operation-log::-webkit-scrollbar-thumb {
-            background: rgba(0,123,255,0.4);
-            border-radius: 4px;
-        }
-        .left-sidebar::-webkit-scrollbar-track,
-        .right-sidebar::-webkit-scrollbar-track,
-        .file-tree::-webkit-scrollbar-track,
-        .operation-log::-webkit-scrollbar-track {
-            background: rgba(255,255,255,0.2);
-        }
-
-        /* 🎉 Toast 容器 */
+        /* 🎨 Toast */
         .toast-container {
             position: fixed;
-            bottom: 20px;
-            right: 20px;
-            z-index: 2000;
+            bottom: 30px;
+            right: 30px;
+            z-index: 9999;
             display: flex;
             flex-direction: column;
             gap: 10px;
         }
 
-        /* 🎨 Toast 样式 */
         .custom-toast {
-            min-width: 320px;
-            max-width: 400px;
+            min-width: 300px;
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(10px);
-            border: 1px solid rgba(0, 0, 0, 0.1);
-            border-radius: 12px;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-            padding: 16px;
-            animation: slideIn 0.3s ease-out;
-        }
-
-        @keyframes slideIn {
-            from {
-                transform: translateX(400px);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
-        }
-
-        @keyframes slideOut {
-            from {
-                transform: translateX(0);
-                opacity: 1;
-            }
-            to {
-                transform: translateX(400px);
-                opacity: 0;
-            }
-        }
-
-        .custom-toast.closing {
-            animation: slideOut 0.3s ease-in forwards;
-        }
-
-        /* 成功状态 */
-        .toast-success {
-            border-left: 4px solid #28a745;
-        }
-
-        .toast-success .toast-icon {
-            color: #28a745;
-            background: rgba(40, 167, 69, 0.1);
-        }
-
-        /* 错误状态 */
-        .toast-error {
-            border-left: 4px solid #dc3545;
-        }
-
-        .toast-error .toast-icon {
-            color: #dc3545;
-            background: rgba(220, 53, 69, 0.1);
-        }
-
-        /* 信息状态 */
-        .toast-info {
-            border-left: 4px solid #0d6efd;
-        }
-
-        .toast-info .toast-icon {
-            color: #0d6efd;
-            background: rgba(13, 110, 253, 0.1);
-        }
-
-        /* 警告状态 */
-        .toast-warning {
-            border-left: 4px solid #ffc107;
-        }
-
-        .toast-warning .toast-icon {
-            color: #ffc107;
-            background: rgba(255, 193, 7, 0.1);
-        }
-
-        .toast-content {
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            border: 1px solid rgba(0,0,0,0.05);
+            padding: 14px;
+            overflow: hidden;
+            position: relative;
+            animation: slideInRight 0.3s ease-out;
             display: flex;
-            gap: 12px;
+            align-items: flex-start;
         }
 
-        .toast-icon {
-            width: 40px;
-            height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 6px;
-            flex-shrink: 0;
-            font-size: 18px;
-        }
+        .toast-info { border-left: 4px solid #3b82f6; }
+        .toast-success { border-left: 4px solid #10b981; }
+        .toast-error { border-left: 4px solid #ef4444; }
+        .toast-warning { border-left: 4px solid #f59e0b; }
 
-        .toast-body {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
+        .toast-content { flex: 1; }
+        .toast-title { font-weight: 600; font-size: 0.9rem; margin-bottom: 2px; color: #1f2937; }
+        .toast-message { font-size: 0.8rem; color: #6b7280; line-height: 1.4; }
 
-        .toast-title {
-            font-weight: 600;
-            color: #333;
-            font-size: 14px;
-        }
-
-        .toast-message {
-            color: #666;
-            font-size: 13px;
-            word-break: break-all;
-        }
+        .toast-icon { font-size: 1.1rem; margin-right: 12px; margin-top: 1px; }
+        .toast-success .toast-icon { color: #10b981; }
+        .toast-error .toast-icon { color: #ef4444; }
+        .toast-info .toast-icon { color: #3b82f6; }
+        .toast-warning .toast-icon { color: #f59e0b; }
 
         .toast-close {
             background: none;
             border: none;
-            color: #999;
+            color: #9ca3af;
             cursor: pointer;
-            font-size: 18px;
             padding: 0;
-            transition: color 0.2s;
+            margin-left: 10px;
+            font-size: 1rem;
+        }
+        .toast-close:hover { color: #4b5563; }
+
+        @keyframes slideInRight {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
         }
 
-        .toast-close:hover {
-            color: #333;
-        }
+        /* 滚动条美化 */
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
-        .toast-progress {
-            height: 3px;
-            background: rgba(0, 0, 0, 0.1);
-            border-radius: 2px;
-            margin-top: 8px;
-            overflow: hidden;
-        }
+        /* 连接状态徽章 */
+        #connectionStatus { background-color: #dcfce7 !important; color: #166534; border: 1px solid #bbf7d0; }
+        #disconnectedStatus { background-color: #f3f4f6 !important; color: #6b7280; border: 1px solid #e5e7eb; }
 
-        .toast-progress-bar {
-            height: 100%;
-            animation: progress 3s linear forwards;
-        }
-
-        .toast-success .toast-progress-bar {
-            background: #28a745;
-        }
-
-        .toast-error .toast-progress-bar {
-            background: #dc3545;
-        }
-
-        .toast-info .toast-progress-bar {
-            background: #0d6efd;
-        }
-
-        .toast-warning .toast-progress-bar {
-            background: #ffc107;
-        }
-
-        @keyframes progress {
-            from {
-                width: 100%;
-            }
-            to {
-                width: 0%;
-            }
-        }
-
-        /* 响应式调整 */
-        @media (max-width: 1400px) {
-            :root {
-                --left-sidebar-width: 280px;
-                --right-sidebar-width: 260px;
-            }
-        }
-
-        @media (max-width: 768px) {
-            .custom-toast {
-                min-width: 280px;
-                max-width: 95vw;
-            }
-            .toast-container {
-                left: 10px;
-                right: 10px;
-                bottom: 10px;
-            }
-        }
+        /* 模态框修正 */
+        .modal-backdrop { z-index: 1040; }
+        .modal { z-index: 1050; }
     </style>
 </head>
 <body>
-    <!-- 导航栏 -->
-    <header class="header bg-white border-bottom">
-        <div class="container-fluid h-100 px-3">
-            <div class="d-flex align-items-center justify-content-between h-100">
-                <h4 class="mb-0">服务管理平台</h4>
-                <div class="d-flex align-items-center gap-2" style="white-space: nowrap;">
-                    <select class="form-select form-select-sm" id="serverSelector" style="min-width: 150px; max-width: 200px;">
-                        <option value="">选择服务器</option>
-                    </select>
-                    <button class="btn btn-sm btn-outline-secondary" id="addServerBtn" data-bs-toggle="modal" data-bs-target="#addServerModal" style="white-space: nowrap;">
-                        <i class="fas fa-plus"></i> 添加
-                    </button>
-                    <button class="btn btn-sm btn-outline-primary" id="connectBtn" style="white-space: nowrap;">
-                        <i class="fas fa-plug"></i> 连接
-                    </button>
-                    <button class="btn btn-sm btn-outline-danger" id="deleteServerBtn" style="white-space: nowrap;">
-                        <i class="fas fa-trash-alt"></i> 删除
-                    </button>
-                    <span class="badge bg-success d-none" id="connectionStatus">已连接</span>
-                    <span class="badge text-dark" style="background-color:#d6d8db;" id="disconnectedStatus">未连接</span>
-                    <!-- <button class="btn btn-sm btn-outline-light" id="sftpBtn" style="white-space: nowrap;">
-                        <i class="fas fa-folder-open"></i> SFTP
-                    </button> -->
-                    <button class="btn btn-sm btn-outline-light" id="logoutBtn" style="white-space: nowrap;">
-                        <i class="fas fa-sign-out-alt"></i> 登出
-                    </button>
+    <header class="header">
+        <div class="container-fluid h-100 px-4">
+            <div class="d-flex align-items-center justify-content-between h-100 w-100">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="rounded-circle bg-primary d-flex align-items-center justify-content-center text-white" style="width: 32px; height: 32px;">
+                        <i class="fas fa-server" style="font-size: 0.9rem;"></i>
+                    </div>
+                    <h4 class="mb-0">服务管理平台</h4>
+                </div>
+
+                <div class="header-actions">
+                    <div class="input-group input-group-sm">
+                        <select class="form-select border-secondary-subtle" id="serverSelector" style="min-width: 200px;">
+                            <option value="">选择服务器...</option>
+                        </select>
+                        <button class="btn btn-outline-secondary" id="addServerBtn" data-bs-toggle="modal" data-bs-target="#addServerModal" title="添加服务器">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </div>
+
+                    <div class="vr mx-2 text-secondary opacity-25"></div>
+
+                    <div class="d-flex align-items-center gap-2 bg-light rounded-pill border px-2 py-1">
+                        <button class="btn btn-sm btn-primary rounded-pill px-3 shadow-sm no-wrap" id="connectBtn">
+                            <i class="fas fa-plug me-1"></i> 连接
+                        </button>
+
+                        <span class="badge rounded-pill fw-medium d-none px-3 py-2 no-wrap" id="connectionStatus">
+                            <i class="fas fa-circle fa-xs me-1 text-success"></i> 已连接
+                        </span>
+                        <span class="badge rounded-pill fw-medium px-3 py-2 no-wrap" id="disconnectedStatus">
+                            <i class="fas fa-circle fa-xs me-1 text-secondary"></i> 未连接
+                        </span>
+                    </div>
+
+                    <div class="dropdown ms-2">
+                        <button class="btn btn-sm btn-outline-light text-dark border rounded-circle" type="button" data-bs-toggle="dropdown" style="width: 32px; height: 32px;">
+                            <i class="fas fa-cog"></i>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2 p-2 rounded-3">
+                            <li><button class="dropdown-item rounded-2 text-danger small" id="deleteServerBtn"><i class="fas fa-trash-alt me-2"></i>删除当前服务器</button></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><button class="dropdown-item rounded-2 small" id="logoutBtn"><i class="fas fa-sign-out-alt me-2"></i>退出登录</button></li>
+                        </ul>
+                    </div>
                 </div>
             </div>
         </div>
     </header>
 
-    <!-- 左侧服务面板 -->
-    <div class="left-sidebar">
+    <div class="left-sidebar sidebar-common shadow-sm">
         <div class="d-flex justify-content-between align-items-center mb-3">
-            <h5 class="mb-0">服务管理</h5>
-            <button class="btn btn-sm btn-outline-secondary" id="refreshServicesBtn">
+            <h6 class="text-uppercase text-secondary fw-bold small mb-0" style="letter-spacing: 0.5px;">服务列表</h6>
+            <button class="btn btn-sm btn-link text-decoration-none p-0 text-secondary" id="refreshServicesBtn" title="刷新服务">
                 <i class="fas fa-sync-alt"></i>
             </button>
         </div>
         <div id="serviceContainer">
-            <!-- 服务卡片将通过JS动态加载 -->
+            <div class="text-center text-muted mt-5 small">
+                <i class="fas fa-server fa-2x mb-3 opacity-25"></i>
+                <p>暂无服务或未连接</p>
+             </div>
         </div>
     </div>
 
-    <!-- 中间内容区域 -->
     <div class="main-content">
-        <!-- 配置文件编辑 -->
         <div class="d-flex justify-content-between align-items-center mb-3">
-            <h5 class="mb-0">配置文件编辑</h5>
             <div>
-                <button class="btn btn-sm btn-outline-primary me-1" id="toggleSftpBtn" onclick="toggleSftpView()">
-                    <i class="fas fa-folder-open"></i> SFTP文件管理
-                </button>
-                <button class="btn btn-sm btn-outline-secondary me-1" id="refreshFilesBtn">
-                    <i class="fas fa-sync-alt"></i> 刷新
-                </button>
-                <button class="btn btn-sm btn-success" id="saveFileBtn" disabled>
-                    <i class="fas fa-save"></i> 保存
-                </button>
+                <h5 class="mb-1 fw-bold text-dark">配置管理</h5>
+                <small class="text-muted">管理服务配置文件与系统参数</small>
             </div>
-        </div>
-
-        <!-- SFTP文件管理区域 (默认隐藏) -->
-        <div id="sftpContainer" class="d-none">
-            <div class="card mb-3">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h6 class="mb-0">SFTP文件管理</h6>
-                    <button class="btn btn-sm btn-outline-secondary" id="closeSftpBtn" onclick="toggleSftpView()">
-                        <i class="fas fa-times"></i> 关闭
+            <div class="d-flex gap-2">
+                <button class="btn btn-sm btn-white border shadow-sm text-primary" type="button" id="toggleSftpBtn">
+                    <i class="fas fa-folder-open me-1"></i> 文件管理
+                </button>
+                <div class="btn-group">
+                    <button class="btn btn-sm btn-white border shadow-sm" id="refreshFilesBtn" title="刷新文件">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                    <button class="btn btn-sm btn-success shadow-sm" id="saveFileBtn" disabled>
+                        <i class="fas fa-save me-1"></i> 保存更改
                     </button>
                 </div>
-                <div class="card-body p-0">
-                    <iframe id="sftpIframe" src="" style="width: 100%; height: 600px; border: none;"></iframe>
+            </div>
+        </div>
+
+        <div id="sftpContainer" class="d-none h-100 pb-5">
+            <div class="card h-100 border-0 shadow-sm overflow-hidden">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center py-2">
+                    <span class="fw-bold text-primary"><i class="fas fa-network-wired me-2"></i>远程文件管理</span>
+                    <button class="btn btn-sm btn-close" type="button" id="closeSftpBtn"></button>
+                </div>
+                <div class="card-body p-0 h-100">
+                    <iframe id="sftpIframe" src="" style="width: 100%; height: 100%; border: none;"></iframe>
                 </div>
             </div>
         </div>
 
-        <!-- 配置文件编辑区域 -->
         <div id="configEditorContainer">
-            <div class="row">
-                <div class="col-md-4">
-                    <div class="card">
-                        <div class="card-header py-2">
-                            <h6 class="mb-0">文件导航</h6>
+            <div class="row g-4">
+                <div class="col-md-3">
+                    <div class="card h-100 border-0 shadow-sm">
+                        <div class="card-header bg-white border-bottom py-2">
+                            <h6 class="mb-0 small fw-bold text-uppercase text-muted">文件导航</h6>
                         </div>
-                        <div class="card-body p-2 file-tree">
-                            <ul class="list-unstyled" id="fileTree">
-                                <!-- 文件树将通过JS动态加载 -->
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-8">
-                    <div class="card">
-                        <div class="card-header py-2 d-flex justify-content-between align-items-center">
-                            <h6 class="mb-0" id="currentFileName">请选择文件</h6>
-                            <small class="text-muted" id="lastSavedTime"></small>
-                        </div>
-                        <div class="card-body p-0">
-                            <div class="editor-container">
-                                <div id="editor"></div>
+                        <div class="card-body p-2 bg-white rounded-bottom">
+                            <div class="file-tree-container file-tree">
+                                <ul class="list-unstyled mb-0" id="fileTree">
+                                    <li class="text-center text-muted small mt-4">暂无文件</li>
+                                </ul>
                             </div>
                         </div>
                     </div>
+                </div>
+                <div class="col-md-9">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-white border-bottom py-2 d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-file-code text-primary me-2"></i>
+                                <span class="fw-medium small text-dark" id="currentFileName">未选择文件</span>
+                            </div>
+                            <small class="text-muted font-monospace" style="font-size: 0.75rem;" id="lastSavedTime"></small>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="editor-container border-0 rounded-0">
+                                <div id="editor"></div>
+                            </div>
 
-                    <div class="d-flex justify-content-end mt-2 gap-2">
-                        <button class="btn btn-sm btn-outline-primary" id="compareBtn" onclick="compareWithServer()" disabled>
-                            <i class="fas fa-copy"></i> 对比
-                        </button>
-                        <button class="btn btn-sm btn-info" id="backupListBtn" onclick="showBackupHistory()" disabled>
-                            <i class="fas fa-history"></i> 备份历史
-                        </button>
+                            <div class="p-2 bg-light border-top d-flex justify-content-end gap-2">
+                                <button class="btn btn-sm btn-white border shadow-sm text-secondary" id="compareBtn" onclick="compareWithServer()" disabled>
+                                    <i class="fas fa-columns me-1"></i> 对比差异
+                                </button>
+                                <button class="btn btn-sm btn-white border shadow-sm text-info" id="backupListBtn" onclick="showBackupHistory()" disabled>
+                                    <i class="fas fa-history me-1"></i> 历史版本
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- 右侧操作记录面板 -->
-    <div class="right-sidebar">
-        <div class="row h-100">
-            <!-- 日志模块 -->
-            <div class="col-12 mb-3" style="height: 50%;">
-                <div class="card h-100 d-flex flex-column">
-                    <div class="card-header py-2 d-flex justify-content-between align-items-center">
-                        <h6 class="mb-0">日志模块</h6>
-                        <div>
-                            <button class="btn btn-sm btn-outline-primary me-1" id="addErrorPatternBtn" data-bs-toggle="modal" data-bs-target="#addErrorPatternModal">
-                                <i class="fas fa-plus"></i>
-                            </button>
-                            <button class="btn btn-sm btn-outline-secondary clear-service-log-btn" id="clearServiceLogBtn" onclick="clearServiceLogs()">
-                                <i class="fas fa-trash-alt"></i>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="card-body p-2 h-100 overflow-auto">
-                        <ul class="list-unstyled mb-0 operation-log">
-                            <li class="text-muted">暂无日志记录</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- 操作记录 -->
-            <div class="col-12" style="height: 50%;">
-                <div class="card h-100 d-flex flex-column">
-                    <div class="card-header py-2 d-flex justify-content-between align-items-center">
-                        <h6 class="mb-0">操作记录</h6>
-                        <button class="btn btn-sm btn-outline-secondary clear-operation-log-btn" id="clearOperationLogBtn" onclick="clearOperationLog()">
+    <div class="right-sidebar sidebar-common shadow-sm">
+        <div class="d-flex flex-column h-100">
+            <div class="mb-3 flex-grow-1 d-flex flex-column" style="height: 50%;">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h6 class="text-uppercase text-secondary fw-bold small mb-0">错误日志监控</h6>
+                    <div>
+                        <button class="btn btn-sm btn-link p-0 me-2 text-primary" id="addErrorPatternBtn" data-bs-toggle="modal" data-bs-target="#addErrorPatternModal" title="添加规则">
+                            <i class="fas fa-plus-circle"></i>
+                        </button>
+                        <button class="btn btn-sm btn-link p-0 text-secondary" id="clearServiceLogBtn" onclick="clearServiceLogs()" title="清空">
                             <i class="fas fa-trash-alt"></i>
                         </button>
                     </div>
-                    <div class="card-body p-2 h-100 overflow-auto">
+                </div>
+                <div class="card border border-light bg-light shadow-none flex-grow-1 overflow-hidden mb-0">
+                    <div class="card-body p-0 h-100 overflow-auto">
+                        <ul class="list-unstyled mb-0 operation-log">
+                            <li class="text-muted small text-center mt-4">暂无错误日志</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex-grow-1 d-flex flex-column" style="height: 50%;">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h6 class="text-uppercase text-secondary fw-bold small mb-0">审计记录</h6>
+                    <button class="btn btn-sm btn-link p-0 text-secondary" id="clearOperationLogBtn" onclick="clearOperationLog()" title="清空">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                </div>
+                <div class="card border border-light bg-light shadow-none flex-grow-1 overflow-hidden mb-0">
+                    <div class="card-body p-0 h-100 overflow-auto">
                         <ul class="list-unstyled mb-0 operation-log" id="operationLog">
-                            <li class="text-muted">暂无操作记录</li>
+                            <li class="text-muted small text-center mt-4">暂无操作记录</li>
                         </ul>
                     </div>
                 </div>
@@ -614,93 +482,84 @@
         </div>
     </div>
 
-    <!-- Toast 容器 -->
     <div class="toast-container" id="toastContainer"></div>
 
-    <!-- 添加服务器模态框 -->
-    <div class="modal fade" id="addServerModal" tabindex="-1" aria-labelledby="addServerModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
+    <div class="modal fade" id="addServerModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="addServerModalLabel">添加服务器</h5>
+                    <h5 class="modal-title fw-bold">添加新服务器</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <form id="addServerForm">
                         <div class="mb-3">
-                            <label class="form-label">服务器名称</label>
-                            <input type="text" class="form-control" id="serverName" required>
+                            <label class="form-label small fw-bold text-secondary">服务器名称</label>
+                            <input type="text" class="form-control" id="serverName" placeholder="例如: 生产环境-01" required>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">主机地址</label>
-                            <input type="text" class="form-control" id="serverHost" required>
+                            <label class="form-label small fw-bold text-secondary">主机地址 (IP)</label>
+                            <input type="text" class="form-control font-monospace" id="serverHost" placeholder="192.168.1.1" required>
                         </div>
-                        <div class="row">
-                            <div class="col-6 mb-3">
-                                <label class="form-label">端口</label>
-                                <input type="number" class="form-control" id="serverPort" value="22" required>
+                        <div class="row g-3">
+                            <div class="col-4">
+                                <label class="form-label small fw-bold text-secondary">端口</label>
+                                <input type="number" class="form-control font-monospace" id="serverPort" value="22" required>
                             </div>
-                            <div class="col-6 mb-3">
-                                <label class="form-label">用户名</label>
-                                <input type="text" class="form-control" id="serverUsername" required>
+                            <div class="col-8">
+                                <label class="form-label small fw-bold text-secondary">SSH 用户名</label>
+                                <input type="text" class="form-control font-monospace" id="serverUsername" placeholder="root" required>
                             </div>
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label">认证方式</label>
+                        <div class="my-3">
+                            <label class="form-label small fw-bold text-secondary">认证方式</label>
                             <select class="form-select" id="authMethod">
-                                <option value="password">密码</option>
-                                <option value="key">密钥</option>
+                                <option value="password">密码认证</option>
+                                <option value="key">密钥认证</option>
                             </select>
                         </div>
                         <div class="mb-3" id="passwordField">
-                            <label class="form-label">密码</label>
+                            <label class="form-label small fw-bold text-secondary">密码</label>
                             <input type="password" class="form-control" id="serverPassword">
                         </div>
                         <div class="mb-3 d-none" id="keyField">
-                            <label class="form-label">私钥文件</label>
+                            <label class="form-label small fw-bold text-secondary">私钥文件</label>
                             <input type="file" class="form-control" id="privateKey">
                         </div>
                     </form>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
-                    <button type="button" class="btn btn-primary" id="submitAddServer">添加</button>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-light text-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary px-4" id="submitAddServer">确认添加</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- 添加错误信息模态框 -->
-    <div class="modal fade" id="addErrorPatternModal" tabindex="-1" aria-labelledby="addErrorPatternModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
+    <div class="modal fade" id="addErrorPatternModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="addErrorPatternModalLabel">添加错误信息</h5>
+                    <h5 class="modal-title fw-bold">添加日志监控规则</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <form id="addErrorPatternForm">
                         <div class="mb-3">
-                            <label class="form-label">关键字</label>
-                            <input type="text" class="form-control" id="errorKeyword" required>
-                            <div class="form-text">输入用于匹配日志的关键字</div>
+                            <label class="form-label small fw-bold text-secondary">匹配关键字</label>
+                            <input type="text" class="form-control font-monospace" id="errorKeyword" placeholder="例如: Exception" required>
+                            <div class="form-text small text-muted">当日志包含此关键字时触发记录</div>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">错误名称</label>
-                            <input type="text" class="form-control" id="errorName" required>
-                            <div class="form-text">输入该错误的显示名称</div>
+                            <label class="form-label small fw-bold text-secondary">规则名称</label>
+                            <input type="text" class="form-control" id="errorName" placeholder="例如: 数据库连接错误" required>
                         </div>
                     </form>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
-                    <button type="button" class="btn btn-primary" id="submitAddErrorPattern">添加</button>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-light text-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary px-4" id="submitAddErrorPattern">添加规则</button>
                 </div>
-            </div>
-        </div>
-    </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
             </div>
         </div>
     </div>
@@ -708,18 +567,9 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.34.1/min/vs/loader.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/diff@5.0.0/dist/diff.min.js"></script>
+
     <script>
-        // 全局变量
-        let editor;
-        let currentFilePath = '';
-        let servers = [];
-        let services = [];
-        let currentServiceName = '';
-        let operationLog = [];
-        let currentUser = null;
-        let serviceLogs = [];  // 用于存储从后端获取的服务日志
-        
-        // ========== Toast 提示系统 ==========
+        // Toast 类
         class ToastNotification {
             constructor(title, message, type = 'info', duration = 3000) {
                 this.title = title;
@@ -731,12 +581,9 @@
 
             create() {
                 const container = document.getElementById('toastContainer');
-
-                // 创建 Toast 元素
                 const toast = document.createElement('div');
                 toast.className = `custom-toast toast-${this.type}`;
 
-                // 图标映射
                 const icons = {
                     success: 'fas fa-check-circle',
                     error: 'fas fa-exclamation-circle',
@@ -745,191 +592,166 @@
                 };
 
                 toast.innerHTML = `
+                    <div class="toast-icon">
+                        <i class="${icons[this.type]}"></i>
+                    </div>
                     <div class="toast-content">
-                        <div class="toast-icon">
-                            <i class="${icons[this.type]}"></i>
-                        </div>
-                        <div class="toast-body">
-                            <div class="toast-title">${this.title}</div>
-                            <div class="toast-message">${this.message}</div>
-                        </div>
-                        <button class="toast-close">
-                            <i class="fas fa-times"></i>
-                        </button>
+                        <div class="toast-title">${this.title}</div>
+                        <div class="toast-message">${this.message}</div>
                     </div>
-                    <div class="toast-progress">
-                        <div class="toast-progress-bar"></div>
-                    </div>
+                    <button class="toast-close">
+                        <i class="fas fa-times"></i>
+                    </button>
                 `;
 
                 container.appendChild(toast);
 
-                // 关闭按钮事件
                 toast.querySelector('.toast-close').addEventListener('click', () => {
                     this.close(toast);
                 });
 
-                // 自动消失
                 setTimeout(() => {
-                    if (toast.parentNode) {
-                        this.close(toast);
-                    }
+                    if (toast.parentNode) this.close(toast);
                 }, this.duration);
-
-                return toast;
             }
 
             close(toast) {
-                toast.classList.add('closing');
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(100%)';
+                toast.style.transition = 'all 0.3s ease';
                 setTimeout(() => {
-                    if (toast.parentNode) {
-                        toast.parentNode.removeChild(toast);
-                    }
+                    if (toast.parentNode) toast.parentNode.removeChild(toast);
                 }, 300);
             }
         }
 
-        // 快捷方法
         function showToast(title, message, type = 'info', duration = 3000) {
             return new ToastNotification(title, message, type, duration);
         }
 
+        // 全局变量
+        let editor;
+        let currentFilePath = '';
+        let servers = [];
+        let services = [];
+        let currentServiceName = '';
+        let operationLog = [];
+        let currentUser = null;
+        let serviceLogs = [];
+
+        // 快捷方法
+        function handleTooltipClick(el, callback) {
+            try {
+                const tooltip = bootstrap.Tooltip.getInstance(el);
+                if (tooltip) { tooltip.hide(); tooltip.dispose(); }
+                const tooltipElements = document.querySelectorAll('.tooltip');
+                tooltipElements.forEach(t => t.remove());
+                setTimeout(() => { if (typeof callback === 'function') callback(); }, 150);
+            } catch (err) {
+                if (typeof callback === 'function') callback();
+            }
+        }
+
+        // 专门用于清理所有遮罩层元素的函数
+        function removeAllBackdropElements() {
+            document.querySelectorAll('.modal-backdrop').forEach(backdrop => backdrop.remove());
+            document.body.classList.remove('modal-open');
+            document.body.style.overflow = '';
+            document.body.style.paddingRight = '';
+        }
+
         // ========== 应用初始化 ==========
         document.addEventListener('DOMContentLoaded', function() {
-            // 检查用户登录状态
             checkLoginStatus().then(loggedIn => {
                 if (!loggedIn) {
                     window.location.href = '/login';
                     return;
                 }
 
-                // 检查Diff库是否加载成功
-                if (typeof Diff === 'undefined') {
-                    console.error('Diff库未正确加载');
-                }
+                if (typeof Diff === 'undefined') console.error('Diff库未正确加载');
 
                 initializeEditor();
                 loadServers();
                 loadOperationLog();
 
-                // 确保在 loadServers() 之后再绑定事件
                 setTimeout(() => {
                     document.getElementById('deleteServerBtn').addEventListener('click', deleteSelectedServer);
                     document.getElementById('connectBtn').addEventListener('click', connectToServer);
-                    document.getElementById('refreshFilesBtn').addEventListener('click', loadFileTree);
+                    document.getElementById('refreshFilesBtn').addEventListener('click', () => loadFileTree(currentServiceName));
                     document.getElementById('saveFileBtn').addEventListener('click', saveCurrentFile);
                     document.getElementById('submitAddErrorPattern').addEventListener('click', addErrorPattern);
-                    document.getElementById('sftpBtn').addEventListener('click', openSFTPPage);
 
-                    // 在这里绑定 serverSelector 的事件
                     document.getElementById('serverSelector').addEventListener('change', handleServerSelection);
-
                     document.getElementById('submitAddServer').addEventListener('click', addServer);
                     document.getElementById('authMethod').addEventListener('change', toggleAuthFields);
-                    
-                    // 确保操作记录清除按钮正确绑定事件
-                    const clearOperationLogBtn = document.getElementById('clearOperationLogBtn');
-                    if (clearOperationLogBtn) {
-                        clearOperationLogBtn.addEventListener('click', clearOperationLog);
-                    } else {
-                        console.error('无法找到操作记录清除按钮');
-                    }
-                    
-                    // 确保服务日志清除按钮正确绑定事件
-                    const clearServiceLogBtn = document.getElementById('clearServiceLogBtn');
-                    if (clearServiceLogBtn) {
-                        clearServiceLogBtn.addEventListener('click', clearServiceLogs);
-                    } else {
-                        console.error('无法找到服务日志清除按钮');
-                    }
-                    
+
+                    const clearOpBtn = document.getElementById('clearOperationLogBtn');
+                    if (clearOpBtn) clearOpBtn.addEventListener('click', clearOperationLog);
+
+                    const clearSvcBtn = document.getElementById('clearServiceLogBtn');
+                    if (clearSvcBtn) clearSvcBtn.addEventListener('click', clearServiceLogs);
+
                     document.getElementById('logoutBtn').addEventListener('click', logout);
 
                     const refreshBtn = document.getElementById('refreshServicesBtn');
-                    if (refreshBtn) {
-                        refreshBtn.addEventListener('click', refreshServiceStatus);
-                    }
-                    
-                    // 使用事件委托处理SFTP按钮点击
-                    document.addEventListener('click', function(event) {
-                        if (event.target.id === 'toggleSftpBtn' || event.target.closest('#toggleSftpBtn')) {
-                            toggleSftpView();
-                        }
-                        if (event.target.id === 'closeSftpBtn' || event.target.closest('#closeSftpBtn')) {
-                            toggleSftpView();
-                        }
-                    });
+                    if (refreshBtn) refreshBtn.addEventListener('click', refreshServiceStatus);
+
+                    // ✅ 修复：直接绑定事件，确保 toggleSftpView 能被触发
+                    const toggleBtn = document.getElementById('toggleSftpBtn');
+                    if(toggleBtn) toggleBtn.addEventListener('click', toggleSftpView);
+
+                    const closeSftp = document.getElementById('closeSftpBtn');
+                    if(closeSftp) closeSftp.addEventListener('click', toggleSftpView);
+
                 }, 500);
-                
-                // 启动错误日志刷新
+
                 startErrorLogRefresh();
-                
-                // 添加模态框事件监听器来正确处理遮罩层
+
                 const addServerModal = document.getElementById('addServerModal');
                 if (addServerModal) {
                     addServerModal.addEventListener('hidden.bs.modal', function () {
-                        // 确保在模态框完全隐藏后清理所有相关的遮罩层
-                        setTimeout(() => {
-                            removeAllBackdropElements();
-                        }, 100);
+                        setTimeout(() => removeAllBackdropElements(), 100);
                     });
                 }
             });
         });
-        
+
         // 监听来自SFTP页面的消息
         window.addEventListener('message', function(event) {
-            // 检查消息类型是否为SFTP操作日志
             if (event.data && event.data.type === 'sftp_operation_log') {
-                // 添加到操作日志中
                 addOperationLog(event.data.operation, event.data.details);
             }
         });
-        
+
         // 切换SFTP视图
         function toggleSftpView() {
             const sftpContainer = document.getElementById('sftpContainer');
             const configEditorContainer = document.getElementById('configEditorContainer');
             const serverId = document.getElementById('serverSelector').value;
             const isConnected = !document.getElementById('connectionStatus').classList.contains('d-none');
-            
+
             if (!sftpContainer || !configEditorContainer) {
-                console.error('无法找到SFTP容器元素');
+                console.error('Container not found');
                 return;
             }
-            
+
             if (sftpContainer.classList.contains('d-none')) {
-                // 切换到SFTP视图
-                if (!serverId) {
-                    showToast('⚠ 选择服务器', '请先选择服务器', 'warning');
-                    return;
-                }
-                
-                if (!isConnected) {
-                    showToast('⚠ 未连接服务器', '请先连接服务器', 'warning');
-                    return;
-                }
-                
+                if (!serverId) { showToast('⚠ 选择服务器', '请先选择服务器', 'warning'); return; }
+                if (!isConnected) { showToast('⚠ 未连接服务器', '请先连接服务器', 'warning'); return; }
+
                 sftpContainer.classList.remove('d-none');
                 configEditorContainer.classList.add('d-none');
-                
-                // 设置iframe的src
+
                 const iframe = document.getElementById('sftpIframe');
                 if (iframe) {
                     iframe.src = `/sftp_page?server_id=${encodeURIComponent(serverId)}`;
-                    // 保存当前选择的服务器到 sessionStorage
                     sessionStorage.setItem('lastSelectedServer', serverId);
                 }
             } else {
-                // 切换回配置文件编辑视图
                 sftpContainer.classList.add('d-none');
                 configEditorContainer.classList.remove('d-none');
-                
-                // 清空iframe的src以停止其中的活动
                 const iframe = document.getElementById('sftpIframe');
-                if (iframe) {
-                    iframe.src = '';
-                }
+                if (iframe) iframe.src = '';
             }
         }
 
@@ -939,87 +761,20 @@
                 const response = await fetch('/auth/status');
                 if (response.ok) {
                     const data = await response.json();
-                    if (data.logged_in) {
-                        currentUser = data;
-                        return true;
-                    }
+                    if (data.logged_in) { currentUser = data; return true; }
                 }
                 return false;
-            } catch (error) {
-                console.error('检查登录状态失败:', error);
-                return false;
-            }
+            } catch (error) { return false; }
         }
 
         // 用户登出
         async function logout() {
             try {
                 const response = await fetch('/auth/logout', { method: 'POST' });
-                if (response.ok) {
-                    window.location.href = '/login';
-                } else {
-                    showToast('登出失败', '请稍后重试', 'error');
-                }
-            } catch (error) {
-                console.error('登出请求失败:', error);
-                showToast('登出失败', '请检查网络连接', 'error');
-            }
+                if (response.ok) window.location.href = '/login';
+                else showToast('登出失败', '请稍后重试', 'error');
+            } catch (error) { showToast('登出失败', '请检查网络连接', 'error'); }
         }
-
-        // 打开SFTP页面
-        function openSFTPPage() {
-            const serverId = document.getElementById('serverSelector').value;
-            if (!serverId) {
-                showToast('⚠ 选择服务器', '请先选择服务器', 'warning');
-                return;
-            }
-            
-            // 切换到SFTP视图
-            toggleSftpView();
-        }
-
-        // 在模态框中显示SFTP面板
-        function showSFTPPanel(serverId) {
-            // 创建模态框
-            let modal = document.getElementById('sftpModal');
-            if (!modal) {
-                modal = document.createElement('div');
-                modal.id = 'sftpModal';
-                modal.className = 'modal fade';
-                modal.tabIndex = -1;
-                modal.innerHTML = `
-                <div class="modal-dialog modal-xl">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title">SFTP 文件管理</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                        </div>
-                        <div class="modal-body p-0">
-                            <iframe src="/sftp_page?server_id=${encodeURIComponent(serverId)}" 
-                                style="width:100%;height:80vh;border:none;"></iframe>
-                        </div>
-                    </div>
-                </div>
-                `;
-                document.body.appendChild(modal);
-            } else {
-                // 更新iframe的src
-                const iframe = modal.querySelector('iframe');
-                iframe.src = `/sftp_page?server_id=${encodeURIComponent(serverId)}`;
-            }
-            
-            // 显示模态框
-            const modalInstance = new bootstrap.Modal(modal);
-            modalInstance.show();
-        }
-
-        // 启用所有 Bootstrap Tooltips
-            document.addEventListener('DOMContentLoaded', function () {
-                const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-                tooltipTriggerList.forEach(function (tooltipTriggerEl) {
-                    new bootstrap.Tooltip(tooltipTriggerEl);
-                });
-               });
 
         // 切换认证字段显示
         function toggleAuthFields() {
@@ -1035,84 +790,60 @@
 
         // 添加服务器
         async function addServer() {
-    const serverData = {
-        id: Date.now().toString(),
-        name: document.getElementById('serverName').value,
-        host: document.getElementById('serverHost').value,
-        port: parseInt(document.getElementById('serverPort').value),
-        username: document.getElementById('serverUsername').value,
-        auth_method: document.getElementById('authMethod').value
-    };
+            const serverData = {
+                id: Date.now().toString(),
+                name: document.getElementById('serverName').value,
+                host: document.getElementById('serverHost').value,
+                port: parseInt(document.getElementById('serverPort').value),
+                username: document.getElementById('serverUsername').value,
+                auth_method: document.getElementById('authMethod').value
+            };
 
-    if (serverData.auth_method === 'password') {
-        serverData.password = document.getElementById('serverPassword').value;
-    } else {
-        serverData.key_file = 'uploaded_key_path';
-    }
+            if (serverData.auth_method === 'password') {
+                serverData.password = document.getElementById('serverPassword').value;
+            } else {
+                serverData.key_file = 'uploaded_key_path';
+            }
 
-    try {
-        const response = await fetch('/servers', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(serverData)
-        });
+            try {
+                const response = await fetch('/servers', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(serverData)
+                });
 
                 if (response.ok) {
                     const newServer = await response.json();
                     showToast('✓ 添加成功', `服务器: ${newServer.name} (${newServer.host})`, 'success');
                     document.getElementById('addServerForm').reset();
 
-                    // 使用Bootstrap方法正确关闭模态框
                     const modalEl = document.getElementById('addServerModal');
                     const modal = bootstrap.Modal.getInstance(modalEl);
-                    if (modal) {
-                        modal.hide();
-                    } else {
-                        // 如果实例不存在，手动隐藏
+                    if (modal) modal.hide();
+                    else {
                         modalEl.classList.remove('show');
                         modalEl.style.display = 'none';
-                        // 手动清理所有可能的遮罩层
                         removeAllBackdropElements();
                     }
 
                     loadServers();
-                    addOperationLog('添加服务器', `成功添加服务器: ${newServer.name} (${newServer.host})`);
+                    addOperationLog('添加服务器', `成功添加服务器: ${newServer.name}`);
                 } else {
                     const error = await response.json();
                     showToast('✗ 添加失败', error.error, 'error');
-                    addOperationLog('添加服务器', `添加服务器失败: ${error.error}`);
                 }
             } catch (error) {
-                console.error('添加服务器失败:', error);
                 showToast('✗ 添加失败', '网络错误或服务器异常', 'error');
-                addOperationLog('添加服务器', `添加服务器失败: ${error.message}`);
             }
-        }
-
-        // 专门用于清理所有遮罩层元素的函数
-        function removeAllBackdropElements() {
-            // 移除所有模态框遮罩层
-            document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
-                backdrop.remove();
-            });
-            
-            // 确保body恢复正常状态
-            document.body.classList.remove('modal-open');
-            document.body.style.overflow = '';
-            document.body.style.paddingRight = '';
         }
 
         // 删除当前选中的服务器
         async function deleteSelectedServer() {
             const selector = document.getElementById('serverSelector');
             const serverId = selector.value;
-            if (!serverId) {
-                showToast('⚠ 选择服务器', '请先选择要删除的服务器', 'warning');
-                return;
-            }
+            if (!serverId) { showToast('⚠ 选择服务器', '请先选择要删除的服务器', 'warning'); return; }
 
-    const confirmDelete = confirm('确定要删除该服务器吗？此操作不可恢复。');
-    if (!confirmDelete) return;
+            if (!confirm('确定要删除该服务器吗？此操作不可恢复。')) return;
 
             try {
                 const resp = await fetch(`/servers/${serverId}`, { method: 'DELETE' });
@@ -1126,13 +857,8 @@
                 } else {
                     const err = await resp.json();
                     showToast('✗ 删除失败', err.error || '未知错误', 'error');
-                    addOperationLog('删除服务器', `删除服务器失败: ${err.error || '未知错误'}`);
                 }
-            } catch (err) {
-                console.error('删除服务器失败:', err);
-                showToast('✗ 删除失败', '请检查网络连接', 'error');
-                addOperationLog('删除服务器', `删除服务器失败: ${err.message}`);
-            }
+            } catch (err) { showToast('✗ 删除失败', '请检查网络连接', 'error'); }
         }
 
         // 初始化Monaco编辑器
@@ -1140,30 +866,11 @@
             require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.34.1/min/vs' }});
             require(['vs/editor/editor.main'], function() {
                 editor = monaco.editor.create(document.getElementById('editor'), {
-                    value: '',
-                    language: 'plaintext',
-                    theme: 'vs-light',
-                    automaticLayout: true,
-                    minimap: {
-                        enabled: true,
-                        showSlider: "always",
-                        scale: 1
-                    },
-                    scrollbar: {
-                        vertical: 'auto',
-                        horizontal: 'auto',
-                        verticalScrollbarSize: 14,
-                        horizontalScrollbarSize: 14,
-                        verticalSliderSize: 14,
-                        horizontalSliderSize: 14
-                    },
-                    overviewRulerLanes: 0,
-                    overviewRulerBorder: false
+                    value: '', language: 'ini', theme: 'vs', automaticLayout: true,
+                    fontSize: 13, fontFamily: "'JetBrains Mono', Consolas, monospace",
+                    minimap: { enabled: true, scale: 0.75 }
                 });
-
-                editor.onDidChangeModelContent(function() {
-                    document.getElementById('saveFileBtn').disabled = false;
-                });
+                editor.onDidChangeModelContent(() => document.getElementById('saveFileBtn').disabled = false);
             });
         }
 
@@ -1174,40 +881,26 @@
                 if (response.ok) {
                     servers = await response.json();
                     const selector = document.getElementById('serverSelector');
-                    selector.innerHTML = '<option value="">选择服务器</option>';
-                    // 当有服务器时启用下拉框，没有服务器时禁用
+                    selector.innerHTML = '<option value="">选择服务器...</option>';
                     selector.disabled = servers.length === 0;
-                    console.log('服务器列表加载完成，服务器数量：', servers.length, '下拉框状态：', selector.disabled);
                     servers.forEach(server => {
                         const option = document.createElement('option');
                         option.value = server.id;
-                        option.textContent = `${server.name} (${server.host}) [${server.username}]`;
+                        option.textContent = `${server.name} (${server.host})`;
                         selector.appendChild(option);
                     });
-                    console.error('加载服务器列表失败，HTTP状态码：', response.status);
+                    const lastServer = sessionStorage.getItem('lastSelectedServer');
+                    if (lastServer && servers.some(s => s.id == lastServer)) selector.value = lastServer;
                 }
-            } catch (error) {
-                console.error('加载服务器失败:', error);
-                showToast('⚠ 加载失败', '无法加载服务器列表', 'error');
-            }
+            } catch (error) { console.error('加载服务器失败:', error); }
         }
 
         // 加载服务列表
         async function loadServices() {
-            // 检查是否已连接服务器
             const isConnected = !document.getElementById('connectionStatus').classList.contains('d-none');
-            if (!isConnected) {
-                // 如果未连接，则清空服务列表
-                services = [];
-                renderServiceCards();
-                return;
-            }
-
-            // 获取当前选中的服务器ID
             const serverId = document.getElementById('serverSelector').value;
-            if (!serverId) {
-                console.error('未选择服务器');
-                // 即使没有选择服务器也清空服务列表
+
+            if (!isConnected || !serverId) {
                 services = [];
                 renderServiceCards();
                 return;
@@ -1219,235 +912,114 @@
                     services = await response.json();
                     renderServiceCards();
                 } else {
-                    const error = await response.json();
-                    console.error('加载服务失败:', error.error);
-                    // 出错时也清空服务列表
                     services = [];
                     renderServiceCards();
                 }
             } catch (error) {
-                console.error('加载服务失败:', error);
-                // 出错时也清空服务列表
                 services = [];
                 renderServiceCards();
             }
         }
 
-        // 定期刷新服务状态
-        function startStatusRefresh() {
-            setInterval(() => {
-                // 只有在已连接状态下才自动刷新
-                const isConnected = !document.getElementById('connectionStatus').classList.contains('d-none');
-                if (isConnected) {
-                    // 获取当前选中的服务器ID
-                    const serverId = document.getElementById('serverSelector').value;
-                    if (serverId) {
-                        loadServices();
-                    }
-                }
-            }, 60000); // 每60秒刷新一次
-        }
-
-        // 渲染服务卡片
+        // 渲染服务卡片 (Issue 3 Fix: 紧凑化)
         function renderServiceCards() {
-    const container = document.getElementById('serviceContainer');
-    container.innerHTML = '';
+            const container = document.getElementById('serviceContainer');
+            container.innerHTML = '';
 
-    services.forEach(service => {
-        // 根据状态显示不同颜色和文字
-        let statusClass = '';
-        let statusText = '';
+            if (services.length === 0) {
+                 container.innerHTML = `<div class="text-center text-muted mt-5 small"><i class="fas fa-server fa-2x mb-3 opacity-25"></i><p>暂无服务数据</p></div>`;
+                 return;
+            }
 
-        if (service.status === 'active') {
-            statusClass = 'status-running';
-            statusText = '运行中';
-        } else if (service.status === 'inactive' || service.status === 'failed') {
-            statusClass = 'status-stopped';
-            statusText = '已停止';
-        } else {
-            statusClass = 'status-unknown';
-            statusText = '未知状态';
+            services.forEach(service => {
+                let statusClass = '', statusText = '', statusTextColor = '';
+
+                if (service.status === 'active') {
+                    statusClass = 'status-running'; statusText = '运行'; statusTextColor = 'text-success';
+                } else if (service.status === 'inactive' || service.status === 'failed') {
+                    statusClass = 'status-stopped'; statusText = '停止'; statusTextColor = 'text-danger';
+                } else {
+                    statusClass = 'status-unknown'; statusText = '未知'; statusTextColor = 'text-muted';
+                }
+
+                const card = document.createElement('div');
+                card.className = 'service-card'; // 紧凑类
+                card.innerHTML = `
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <h6 class="card-title mb-0 fw-bold text-dark text-truncate" style="max-width: 140px; font-size: 0.9rem;" title="${service.display_name}">${service.display_name}</h6>
+                            <div class="d-flex align-items-center">
+                                <span class="status-indicator ${statusClass}"></span>
+                                <span class="small fw-medium ${statusTextColor}" style="font-size: 0.75rem;">${statusText}</span>
+                            </div>
+                        </div>
+                        <div class="text-secondary small font-monospace mb-2" style="font-size:0.75rem">${service.name}</div>
+                        <div class="service-footer d-flex justify-content-between align-items-center">
+                            <div>${service.has_config ? `<button class="btn btn-sm btn-link text-decoration-none text-primary p-0 service-btn" style="font-size:0.8rem" onclick="handleTooltipClick(this, function() { openConfig('${service.name}'); })" data-bs-toggle="tooltip" title="编辑配置"><i class="fas fa-cog"></i> 配置</button>` : ''}</div>
+                            <div class="btn-group btn-group-sm">
+                                <button class="btn btn-light text-success p-1 px-2" onclick="handleTooltipClick(this, function() { serviceAction('${service.name}', 'start'); })" data-bs-toggle="tooltip" title="启动"><i class="fas fa-play fa-xs"></i></button>
+                                <button class="btn btn-light text-warning p-1 px-2" onclick="handleTooltipClick(this, function() { serviceAction('${service.name}', 'restart'); })" data-bs-toggle="tooltip" title="重启"><i class="fas fa-redo fa-xs"></i></button>
+                                <button class="btn btn-light text-danger p-1 px-2" onclick="handleTooltipClick(this, function() { serviceAction('${service.name}', 'stop'); })" data-bs-toggle="tooltip" title="停止"><i class="fas fa-stop fa-xs"></i></button>
+                            </div>
+                        </div>
+                    </div>`;
+                container.appendChild(card);
+            });
+
+            setTimeout(() => {
+                const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+                tooltipTriggerList.forEach(el => new bootstrap.Tooltip(el));
+            }, 100);
         }
-
-        const card = document.createElement('div');
-        card.className = 'col-12 mb-3';
-        card.innerHTML = `
-            <div class="card service-card">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <div class="flex-grow-1">
-                            <h6 class="card-title mb-0" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px;">${service.display_name}</h6>
-                        </div>
-                        <div class="d-flex align-items-center">
-                            <span class="me-1 text-muted" style="font-size: 0.9rem;">${statusText}</span>
-                            <span class="status-indicator ${statusClass}"></span>
-                        </div>
-                    </div>
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <span class="badge bg-secondary" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 80px;">${service.name}</span>
-                        </div>
-                        <div>
-                            ${service.has_config ? `
-                                <button class="btn btn-sm btn-outline-primary me-1 service-btn"
-                                        onclick="handleTooltipClick(this, function() { openConfig('${service.name}'); })"
-                                        data-bs-toggle="tooltip"
-                                        title="打开配置文件">
-                                    <i class="fas fa-file-alt"></i>
-                                </button>
-                            ` : ''}
-                            <button class="btn btn-sm btn-success me-1 service-btn"
-                                    onclick="handleTooltipClick(this, function() { serviceAction('${service.name}', 'start'); })"
-                                    data-bs-toggle="tooltip"
-                                    title="启动服务">
-                                <i class="fas fa-play"></i>
-                            </button>
-                            <button class="btn btn-sm btn-warning me-1 service-btn"
-                                    onclick="handleTooltipClick(this, function() { serviceAction('${service.name}', 'restart'); })"
-                                    data-bs-toggle="tooltip"
-                                    title="重启服务">
-                                <i class="fas fa-redo"></i>
-                            </button>
-                            <button class="btn btn-sm btn-danger service-btn"
-                                    onclick="handleTooltipClick(this, function() { serviceAction('${service.name}', 'stop'); })"
-                                    data-bs-toggle="tooltip"
-                                    title="停止服务">
-                                <i class="fas fa-stop"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-        container.appendChild(card);
-    });
-
-    // ✅ 初始化 Tooltip（每次渲染都重建实例）
-    setTimeout(() => {
-        document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
-            new bootstrap.Tooltip(el);
-        });
-    }, 100);
-
-
-    // ✅ 启用 Tooltip
-    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-    tooltipTriggerList.forEach(function (tooltipTriggerEl) {
-        new bootstrap.Tooltip(tooltipTriggerEl);
-    });
-}
-
-/**
- * ✅ 点击按钮后自动关闭 Tooltip 的封装函数
- */
-function handleTooltipClick(el, callback) {
-    try {
-        // 强制隐藏并销毁 tooltip
-        const tooltip = bootstrap.Tooltip.getInstance(el);
-        if (tooltip) {
-            tooltip.hide();
-            tooltip.dispose();
-        }
-
-        // 确保 DOM 层面清理（防止残留）
-        const tooltipElements = document.querySelectorAll('.tooltip');
-        tooltipElements.forEach(t => t.remove());
-
-        // 延迟一点点再执行回调，避免和 tooltip 动画冲突
-        setTimeout(() => {
-            if (typeof callback === 'function') callback();
-        }, 150);
-    } catch (err) {
-        console.error('handleTooltipClick error:', err);
-        if (typeof callback === 'function') callback();
-    }
-}
-
-
-
 
         // 服务器选择处理
         function handleServerSelection() {
             const selectedServerId = document.getElementById('serverSelector').value;
+            sessionStorage.setItem('lastSelectedServer', selectedServerId);
 
             if (!selectedServerId) {
-                // 清空状态
                 document.getElementById('connectionStatus').classList.add('d-none');
                 document.getElementById('disconnectedStatus').classList.remove('d-none');
                 services = [];
                 renderServiceCards();
-                document.getElementById('fileTree').innerHTML = '';
+                document.getElementById('fileTree').innerHTML = '<li class="text-center text-muted small mt-4">请连接服务器</li>';
                 editor.setValue('');
                 return;
             }
 
-            console.log(' 选择了服务器:', selectedServerId);
-
-            // 检查是否已连接
-            const isConnected = !document.getElementById('connectionStatus').classList.contains('d-none');
-
-            if (isConnected) {
-                console.log(' 已连接，加载服务和文件...');
-                loadServices();
-
-                // 清空文件树（等待用户选择具体服务）
-                document.getElementById('fileTree').innerHTML = '<li class="text-muted">请从左侧选择服务打开配置文件</li>';
-                editor.setValue('');
-            } else {
-                console.log('️ 未连接，请先点击【连接】按钮');
-                // 不再弹出alert，改为更新UI状态
-                services = [];
-                renderServiceCards();
-                document.getElementById('fileTree').innerHTML = '';
-                editor.setValue('');
-            }
+            document.getElementById('connectionStatus').classList.add('d-none');
+            document.getElementById('disconnectedStatus').classList.remove('d-none');
+            services = [];
+            renderServiceCards();
         }
 
         // 连接到服务器
         async function connectToServer() {
             const serverId = document.getElementById('serverSelector').value;
-            if (!serverId) {
-                showToast('⚠ 选择服务器', '请先选择服务器', 'warning');
-                return;
-            }
+            if (!serverId) { showToast('⚠ 选择服务器', '请先选择服务器', 'warning'); return; }
 
             try {
                 const response = await fetch(`/servers/${serverId}/connect`, { method: 'POST' });
-
                 if (response.ok) {
                     const result = await response.json();
                     document.getElementById('connectionStatus').classList.remove('d-none');
                     document.getElementById('disconnectedStatus').classList.add('d-none');
                     showToast('✓ 连接成功', result.message, 'success');
                     addOperationLog('连接服务器', result.message);
-
-                    // 连接成功后加载服务列表
                     loadServices();
-                } else {
-                    throw new Error('连接失败');
-                }
+                } else throw new Error('连接失败');
             } catch (error) {
-                console.error('连接服务器失败:', error);
                 showToast('✗ 连接失败', '无法连接到服务器', 'error');
                 addOperationLog('连接服务器', `连接服务器失败: ${error.message}`);
             }
         }
 
-        // 手动刷新服务状态
         async function refreshServiceStatus() {
-            // 检查是否已连接服务器
             const isConnected = !document.getElementById('connectionStatus').classList.contains('d-none');
-            if (!isConnected) {
-                showToast('⚠ 未连接', '请先连接服务器', 'warning');
-                return;
-            }
+            if (!isConnected) { showToast('⚠ 未连接', '请先连接服务器', 'warning'); return; }
 
-            // 获取当前选中的服务器ID
             const serverId = document.getElementById('serverSelector').value;
-            if (!serverId) {
-                showToast('⚠ 选择服务器', '未选择服务器', 'warning');
-                return;
-            }
+            if (!serverId) return;
 
             try {
                 const response = await fetch(`/services/status?server_id=${serverId}`);
@@ -1459,874 +1031,395 @@ function handleTooltipClick(el, callback) {
                     const error = await response.json();
                     showToast('✗ 刷新失败', error.error, 'error');
                 }
-            } catch (error) {
-                console.error('刷新服务状态失败:', error);
-                showToast('✗ 刷新失败', '请检查网络连接', 'error');
-            }
+            } catch (error) { showToast('✗ 刷新失败', '请检查网络连接', 'error'); }
         }
 
-        // 服务操作函数
         async function serviceAction(serviceName, action) {
             const serverId = document.getElementById('serverSelector').value;
-            if (!serverId) {
-                showToast('⚠ 选择服务器', '未选择服务器', 'warning');
-                return;
-            }
+            if (!serverId) return;
 
             try {
                 const response = await fetch(`/services/${serviceName}/${action}?server_id=${serverId}`, { method: 'POST' });
-
                 if (response.ok) {
-                    const result = await response.json();
                     const actionText = { start: '启动', stop: '停止', restart: '重启' }[action];
                     showToast(`✓ ${actionText}成功`, `${serviceName} 服务${actionText}命令已发送`, 'success');
                     addOperationLog(`服务操作`, `向服务 ${serviceName} 发送 ${action} 命令`);
-                    
-                    // 如果是启动操作，立即获取一次错误日志
-                    if (action === 'start') {
-                        setTimeout(() => {
-                            fetchServiceErrors(serviceName);
-                        }, 2000);
-                    }
-
+                    if (action === 'start') setTimeout(() => fetchServiceErrors(serviceName), 2000);
                     await new Promise(r => setTimeout(r, 1000));
                     await loadServices();
                 } else {
                     const error = await response.json();
                     showToast('✗ 操作失败', error.error, 'error');
-                    addOperationLog(`服务操作`, `向服务 ${serviceName} 发送 ${action} 命令失败: ${error.error}`);
                 }
-            } catch (error) {
-                console.error('服务操作失败:', error);
-                showToast('✗ 操作失败', '网络错误或服务器异常', 'error');
-                addOperationLog(`服务操作`, `向服务 ${serviceName} 发送 ${action} 命令失败: ${error.message}`);
-            }
+            } catch (error) { showToast('✗ 操作失败', '网络错误或服务器异常', 'error'); }
         }
 
-
-        // 打开配置文件
         function openConfig(serviceName) {
-            // 获取当前选中的服务器ID
             const serverId = document.getElementById('serverSelector').value;
-            if (!serverId) {
-                showToast('⚠ 选择服务器', '未选择服务器', 'warning');
-                return;
-            }
-
+            if (!serverId) { showToast('⚠ 选择服务器', '未选择服务器', 'warning'); return; }
             currentServiceName = serviceName;
             loadFileTree(serviceName);
         }
 
         async function showBackupHistory() {
-            if (!currentFilePath) {
-                showToast('⚠ 选择文件', '请先打开一个配置文件', 'warning');
-                return;
-            }
-
+            if (!currentFilePath) { showToast('⚠ 选择文件', '请先打开一个配置文件', 'warning'); return; }
             const serverId = document.getElementById('serverSelector').value;
-            if (!serverId) {
-                showToast('⚠ 选择服务器', '未选择服务器', 'warning');
-                return;
-            }
 
-    // 🔧 修正路径格式
-    const normalizedPath = currentFilePath.replace(/\\/g, '/');
-    const dirPath = normalizedPath.substring(0, normalizedPath.lastIndexOf('/'));
-    const fileName = normalizedPath.split('/').pop();
+            const normalizedPath = currentFilePath.replace(/\\/g, '/');
+            const dirPath = normalizedPath.substring(0, normalizedPath.lastIndexOf('/'));
+            const fileName = normalizedPath.split('/').pop();
 
-    try {
-        // 调用后端接口获取当前服务的文件列表
-        const response = await fetch(`/config/files?service=${currentServiceName}&server_id=${serverId}`);
-        if (!response.ok) throw new Error(`加载失败 (${response.status})`);
+            try {
+                const response = await fetch(`/config/files?service=${currentServiceName}&server_id=${serverId}`);
+                if (!response.ok) throw new Error('加载失败');
+                const files = await response.json();
+                const serviceFiles = files[currentServiceName] || [];
+                const backups = serviceFiles.filter(f => f.path && f.path.startsWith(dirPath) && f.path.includes(`${fileName}.backup_`)).sort((a, b) => b.path.localeCompare(a.path));
 
-        const files = await response.json();
-        const serviceFiles = files[currentServiceName] || [];
+                if (backups.length === 0) { showToast('ℹ 提示', '没有找到备份文件', 'info'); return; }
 
-        // 🔍 筛选出所有以当前文件名为前缀的备份文件
-        const backups = serviceFiles
-            .filter(f => f.path && f.path.startsWith(dirPath) && f.path.includes(`${fileName}.backup_`))
-            .sort((a, b) => b.path.localeCompare(a.path)); // 按时间倒序
+                const listHtml = backups.map(b => {
+                    const shortName = b.path.split('/').pop();
+                    return `<li class="list-group-item d-flex justify-content-between align-items-center"><span class="font-monospace small">${shortName}</span><div><button class="btn btn-sm btn-outline-primary me-1" onclick="loadFileContent('${b.path}')">查看</button><button class="btn btn-sm btn-outline-success" onclick="restoreBackupFile('${b.path}')">恢复</button></div></li>`;
+                }).join('');
 
-                if (backups.length === 0) {
-                    showToast('ℹ 提示', '没有找到备份文件', 'info');
-                    return;
+                let modal = document.getElementById('backupModal');
+                if (!modal) {
+                    modal = document.createElement('div');
+                    modal.id = 'backupModal';
+                    modal.innerHTML = `<div class="modal fade" tabindex="-1"><div class="modal-dialog modal-lg"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">备份历史</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><ul class="list-group list-group-flush" id="backupList"></ul></div></div></div></div>`;
+                    document.body.appendChild(modal);
                 }
-
-        // 🔹 生成备份文件列表
-        const listHtml = backups
-            .map(b => {
-                const shortName = b.path.split('/').pop();
-                return `
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                        <span>${shortName}</span>
-                        <div>
-                            <button class="btn btn-sm btn-outline-primary me-1" onclick="loadFileContent('${b.path}')">查看</button>
-                            <button class="btn btn-sm btn-outline-success" onclick="restoreBackupFile('${b.path}')">恢复</button>
-                        </div>
-                    </li>`;
-            })
-            .join('');
-
-        // 🔹 创建模态框（只创建一次）
-        let modal = document.getElementById('backupModal');
-        if (!modal) {
-            modal = document.createElement('div');
-            modal.id = 'backupModal';
-            modal.innerHTML = `
-                <div class="modal fade" tabindex="-1">
-                    <div class="modal-dialog modal-lg">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h5 class="modal-title">备份历史</h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                            </div>
-                            <div class="modal-body">
-                                <ul class="list-group" id="backupList"></ul>
-                            </div>
-                        </div>
-                    </div>
-                </div>`;
-            document.body.appendChild(modal);
+                document.getElementById('backupList').innerHTML = listHtml;
+                new bootstrap.Modal(modal.querySelector('.modal')).show();
+            } catch (error) { alert('无法加载备份历史: ' + error.message); }
         }
 
-        // 更新内容
-        document.getElementById('backupList').innerHTML = listHtml;
-
-        // 显示模态框
-        const modalInstance = new bootstrap.Modal(modal.querySelector('.modal'));
-        modalInstance.show();
-
-    } catch (error) {
-        console.error('加载备份历史失败:', error);
-        alert('无法加载备份历史: ' + error.message);
-    }
-}
-
-async function restoreBackupFile(backupPath) {
-    // 获取当前选中的服务器ID
-    const serverId = document.getElementById('serverSelector').value;
-    if (!serverId) {
-        alert('未选择服务器');
-        return;
-    }
-
-    if (!confirm(`确定要用以下文件覆盖当前配置吗？\n${backupPath}`)) return;
-
-    try {
-        const response = await fetch(`/config/files/${encodeURIComponent(backupPath)}?server_id=${serverId}`);
-        const data = await response.json();
-
+        async function restoreBackupFile(backupPath) {
+            const serverId = document.getElementById('serverSelector').value;
+            if (!confirm(`确定要用以下文件覆盖当前配置吗？\n${backupPath}`)) return;
+            try {
+                const response = await fetch(`/config/files/${encodeURIComponent(backupPath)}?server_id=${serverId}`);
+                const data = await response.json();
                 if (!data.content) throw new Error('无法读取备份文件内容');
                 editor.setValue(data.content);
                 currentFilePath = backupPath.replace(/\.backup_.+$/, '');
                 showToast('✓ 已加载', '备份文件已加载，请确认并点击保存', 'success');
                 addOperationLog('恢复备份', `已加载备份文件: ${backupPath}`);
-            } catch (error) {
-                console.error('恢复备份失败:', error);
-                showToast('✗ 恢复失败', error.message, 'error');
-                addOperationLog('恢复备份', `恢复备份失败: ${backupPath} - ${error.message}`);
-            }
+            } catch (error) { showToast('✗ 恢复失败', error.message, 'error'); }
         }
 
-
-        // 加载文件树
         async function loadFileTree(serviceName = currentServiceName) {
-            if (!serviceName) {
-                console.warn('️ 未指定服务名称');
-                return;
-            }
-
+            if (!serviceName) return;
             const serverId = document.getElementById('serverSelector').value;
-            if (!serverId) {
-                showToast('⚠ 选择服务器', '未选择服务器', 'warning');
-                return;
-            }
+            if (!serverId) { showToast('⚠ 选择服务器', '未选择服务器', 'warning'); return; }
 
             try {
                 const response = await fetch(`/config/files?service=${encodeURIComponent(serviceName)}&server_id=${serverId}`);
                 if (response.ok) {
                     const files = await response.json();
                     renderFileTree(files, serviceName);
-                    console.log(' 文件树加载成功');
-                } else {
-                    showToast('✗ 加载失败', '无法加载文件列表', 'error');
-                }
-            } catch (error) {
-                console.error('加载文件列表失败:', error);
-                showToast('✗ 加载失败', error.message, 'error');
-            }
+                } else showToast('✗ 加载失败', '无法加载文件列表', 'error');
+            } catch (error) { showToast('✗ 加载失败', error.message, 'error'); }
         }
 
-        // 渲染文件树
         function renderFileTree(files, serviceName) {
-    const treeContainer = document.getElementById('fileTree');
-    treeContainer.innerHTML = '';
+            const treeContainer = document.getElementById('fileTree');
+            treeContainer.innerHTML = '';
 
-    if (files[serviceName]) {
-        const serviceNode = document.createElement('li');
-        serviceNode.className = 'mb-1';
-        serviceNode.innerHTML = `<strong>${serviceName}</strong>`;
+            if (files[serviceName]) {
+                const serviceNode = document.createElement('li');
+                serviceNode.className = 'mb-2';
+                serviceNode.style.border = 'none';
+                serviceNode.style.background = 'transparent';
+                serviceNode.innerHTML = `<div class="fw-bold text-dark px-2 py-1 bg-light rounded mb-2 border"><i class="fas fa-box me-2 text-secondary"></i>${serviceName}</div>`;
 
-        const fileList = document.createElement('ul');
-        fileList.className = 'list-unstyled ms-3';
+                const fileList = document.createElement('ul');
+                fileList.className = 'list-unstyled ms-2 border-start border-2 border-light ps-2';
 
-        // 按字母顺序排序文件
-        const sortedFiles = [...files[serviceName]].sort((a, b) => {
-            // 文件夹优先显示
-            if (a.type === 'directory' && b.type !== 'directory') return -1;
-            if (a.type !== 'directory' && b.type === 'directory') return 1;
-            return a.name.localeCompare(b.name);
-        });
+                const sortedFiles = [...files[serviceName]].sort((a, b) => {
+                    if (a.type === 'directory' && b.type !== 'directory') return -1;
+                    if (a.type !== 'directory' && b.type === 'directory') return 1;
+                    return a.name.localeCompare(b.name);
+                });
 
-        sortedFiles.forEach(fileItem => {
-            const fileName = fileItem.name;
+                sortedFiles.forEach(fileItem => {
+                    const fileName = fileItem.name;
+                    const fileNode = document.createElement('li');
+                    fileNode.className = 'd-flex justify-content-between align-items-center mb-1 rounded';
+                    fileNode.style.border = 'none';
+                    let iconClass = fileItem.type === 'directory' ? 'fa-folder' : 'fa-file';
+                    let textClass = fileItem.type === 'directory' ? 'text-warning' : 'text-secondary';
+                    const displayName = fileName.length > 25 ? fileName.substring(0, 22) + '...' : fileName;
 
-            // 每个文件行：文件名 + 删除按钮
-            const fileNode = document.createElement('li');
-            fileNode.className = 'd-flex justify-content-between align-items-center mb-1 border-bottom pb-1';
-            
-            // 根据类型显示不同图标
-            let iconClass = 'fa-file';
-            if (fileItem.type === 'directory') {
-                iconClass = 'fa-folder';
+                    fileNode.innerHTML = `
+                        <div class="text-truncate px-2 py-1 w-100 file-item-hover" style="cursor:pointer; font-size: 0.85rem;" onclick="handleFileClick('${fileItem.path}', '${fileItem.type}')">
+                            <i class="fas ${iconClass} me-2 ${textClass}" style="width: 16px; text-align:center;"></i>${displayName}
+                        </div>
+                        ${fileItem.type !== 'directory' ? `<button class="btn btn-link text-danger p-0 ms-1 opacity-50 hover-opacity-100" style="font-size:0.8rem;" onclick="deleteConfigFile('${fileItem.path}', event)" title="删除文件"><i class="fas fa-times"></i></button>` : ''}`;
+                    fileList.appendChild(fileNode);
+                });
+                serviceNode.appendChild(fileList);
+                treeContainer.appendChild(serviceNode);
+            } else {
+                treeContainer.innerHTML = '<li class="text-center text-muted small mt-4">请选择服务打开配置文件</li>';
             }
-
-            // 限制文件名长度，防止影响布局
-            const displayName = fileName.length > 30 ? fileName.substring(0, 27) + '...' : fileName;
-
-            fileNode.innerHTML = `
-                <div class="text-primary" style="cursor:pointer; flex: 1;" onclick="handleFileClick('${fileItem.path}', '${fileItem.type}')">
-                    <i class="fas ${iconClass} me-1"></i>${displayName}
-                </div>
-                ${fileItem.type !== 'directory' ? `
-                <button class="btn btn-sm btn-outline-danger py-0 px-1" style="font-size:0.75rem; flex-shrink: 0; margin-left: 5px;"
-                    onclick="deleteConfigFile('${fileItem.path}', event)">
-                    <i class="fas fa-trash"></i>
-                </button>
-                ` : ''}
-            `;
-            fileList.appendChild(fileNode);
-        });
-
-        serviceNode.appendChild(fileList);
-        treeContainer.appendChild(serviceNode);
-    } else {
-        treeContainer.innerHTML = '<li class="text-muted">请选择服务打开配置文件</li>';
-    }
-}
-
-// 处理文件点击事件
-async function handleFileClick(filePath, fileType) {
-    if (fileType === 'directory') {
-        // 进入目录浏览
-        await browseDirectory(filePath);
-    } else {
-        loadFileContent(filePath);
-    }
-}
-
-// 浏览目录
-async function browseDirectory(dirPath) {
-    const serverId = document.getElementById('serverSelector').value;
-    if (!serverId) {
-        showToast('⚠ 选择服务器', '未选择服务器', 'warning');
-        return;
-    }
-
-    try {
-        const response = await fetch(`/api/sftp/list?server_id=${serverId}&path=${encodeURIComponent(dirPath)}`);
-        if (response.ok) {
-            const items = await response.json();
-            renderDirectoryContents(items, dirPath);
-        } else {
-            const errorData = await response.json();
-            showToast('✗ 加载失败', errorData.error || '无法加载目录内容', 'error');
-        }
-    } catch (error) {
-        console.error('加载目录内容失败:', error);
-        showToast('✗ 加载失败', error.message, 'error');
-    }
-}
-
-// 渲染目录内容
-function renderDirectoryContents(items, dirPath) {
-    const treeContainer = document.getElementById('fileTree');
-    treeContainer.innerHTML = '';
-
-    // 添加返回上级目录的链接（如果不是根目录）
-    const parentPath = dirPath.substring(0, dirPath.lastIndexOf('/'));
-    const parentItem = document.createElement('li');
-    parentItem.className = 'mb-1';
-    parentItem.innerHTML = `
-        <div class="text-primary" style="cursor:pointer;" onclick="browseUpDirectory('${parentPath}')">
-            <i class="fas fa-arrow-up me-1"></i>..
-        </div>
-    `;
-    treeContainer.appendChild(parentItem);
-
-    // 按字母顺序排序，文件夹优先
-    const sortedItems = [...items].sort((a, b) => {
-        if (a.type === 'directory' && b.type !== 'directory') return -1;
-        if (a.type !== 'directory' && b.type === 'directory') return 1;
-        return a.name.localeCompare(b.name);
-    });
-
-    sortedItems.forEach(item => {
-        const itemNode = document.createElement('li');
-        itemNode.className = 'd-flex justify-content-between align-items-center mb-1 border-bottom pb-1';
-        
-        let iconClass = 'fa-file';
-        if (item.type === 'directory') {
-            iconClass = 'fa-folder';
         }
 
-        // 限制文件名长度，防止影响布局
-        const displayName = item.name.length > 30 ? item.name.substring(0, 27) + '...' : item.name;
-
-        itemNode.innerHTML = `
-            <div class="text-primary" style="cursor:pointer; flex: 1;" onclick="handleFileClick('${item.path}', '${item.type}')">
-                <i class="fas ${iconClass} me-1"></i>${displayName}
-            </div>
-            ${item.type !== 'directory' ? `
-            <button class="btn btn-sm btn-outline-danger py-0 px-1" style="font-size:0.75rem; flex-shrink: 0; margin-left: 5px;"
-                onclick="deleteConfigFile('${item.path}', event)">
-                <i class="fas fa-trash"></i>
-            </button>
-            ` : ''}
-        `;
-        treeContainer.appendChild(itemNode);
-    });
-}
-
-// 返回上级目录
-async function browseUpDirectory(dirPath) {
-    if (!dirPath && dirPath !== '') {
-        // 如果是根目录，重新加载服务文件树
-        if (currentServiceName) {
-            loadFileTree(currentServiceName);
+        async function handleFileClick(filePath, fileType) {
+            if (fileType === 'directory') await browseDirectory(filePath);
+            else loadFileContent(filePath);
         }
-        return;
-    }
-    
-    // 否则浏览指定的上级目录
-    await browseDirectory(dirPath);
-}
 
-async function deleteConfigFile(filePath, event) {
-    event.stopPropagation(); // 防止触发文件打开
+        async function browseDirectory(dirPath) {
+            const serverId = document.getElementById('serverSelector').value;
+            if (!serverId) { showToast('⚠ 选择服务器', '未选择服务器', 'warning'); return; }
 
-    // 获取当前选中的服务器ID
-    const serverId = document.getElementById('serverSelector').value;
-    if (!serverId) {
-        alert('未选择服务器');
-        return;
-    }
-
-    // 获取文件类型（根据调用此函数的按钮来判断）
-    const button = event.target.closest('button');
-    const isDirectory = button && 
-        button.previousElementSibling && 
-        button.previousElementSibling.querySelector && 
-        button.previousElementSibling.querySelector('i') && 
-        button.previousElementSibling.querySelector('i').classList.contains('fa-folder');
-    
-    const type = isDirectory ? '文件夹' : '文件';
-    const message = `确定要删除${type} "${filePath}" 吗？\n\n删除后将无法恢复，请确认！`;
-    
-    if (!confirm(message)) return;
-
-    try {
-        const response = await fetch(`/config/files/${encodeURIComponent(filePath)}?server_id=${serverId}`, {
-            method: 'DELETE'
-        });
-
-        if (response.ok) {
-            showToast('✓ 删除成功', `${type}已删除: ${filePath.split('/').pop()}`, 'success');
-            addOperationLog('删除文件', `${type}已删除: ${filePath}`);
-            if (currentServiceName) {
-                loadFileTree(currentServiceName);
-            }
-        } else {
-            const errorData = await response.json().catch(() => ({}));
-            const errorMsg = errorData.error || '未知错误';
-            showToast('✗ 删除失败', errorMsg, 'error');
-            addOperationLog('删除文件', `删除${type}失败: ${filePath} - ${errorMsg}`);
+            try {
+                const response = await fetch(`/api/sftp/list?server_id=${serverId}&path=${encodeURIComponent(dirPath)}`);
+                if (response.ok) {
+                    const items = await response.json();
+                    renderDirectoryContents(items, dirPath);
+                } else {
+                    const errorData = await response.json();
+                    showToast('✗ 加载失败', errorData.error || '无法加载目录内容', 'error');
+                }
+            } catch (error) { showToast('✗ 加载失败', error.message, 'error'); }
         }
-    } catch (error) {
-        console.error('删除文件失败:', error);
-        showToast('✗ 删除失败', error.message, 'error');
-        addOperationLog('删除文件', `删除${type}失败: ${filePath} - ${error.message}`);
-    }
-}
 
+        function renderDirectoryContents(items, dirPath) {
+            const treeContainer = document.getElementById('fileTree');
+            treeContainer.innerHTML = '';
+            const parentPath = dirPath.substring(0, dirPath.lastIndexOf('/'));
+            const parentItem = document.createElement('li');
+            parentItem.className = 'mb-2';
+            parentItem.style.border = 'none';
+            parentItem.innerHTML = `<div class="text-primary px-2 py-1 fw-bold small" style="cursor:pointer;" onclick="browseUpDirectory('${parentPath}')"><i class="fas fa-level-up-alt me-2"></i>返回上级</div><div class="text-muted small px-2 mb-2 font-monospace bg-light rounded py-1 text-truncate" title="${dirPath}">${dirPath}</div>`;
+            treeContainer.appendChild(parentItem);
 
-        // 加载文件内容
+            const sortedItems = [...items].sort((a, b) => {
+                if (a.type === 'directory' && b.type !== 'directory') return -1;
+                if (a.type !== 'directory' && b.type === 'directory') return 1;
+                return a.name.localeCompare(b.name);
+            });
+
+            sortedItems.forEach(item => {
+                const itemNode = document.createElement('li');
+                itemNode.className = 'd-flex justify-content-between align-items-center mb-1 rounded';
+                itemNode.style.border = 'none';
+                let iconClass = item.type === 'directory' ? 'fa-folder' : 'fa-file';
+                let textClass = item.type === 'directory' ? 'text-warning' : 'text-secondary';
+                const displayName = item.name.length > 25 ? item.name.substring(0, 22) + '...' : item.name;
+
+                itemNode.innerHTML = `<div class="text-truncate px-2 py-1 w-100 file-item-hover" style="cursor:pointer; font-size: 0.85rem;" onclick="handleFileClick('${item.path}', '${item.type}')"><i class="fas ${iconClass} me-2 ${textClass}" style="width: 16px;"></i>${displayName}</div>${item.type !== 'directory' ? `<button class="btn btn-link text-danger p-0 ms-1 opacity-50 hover-opacity-100" style="font-size:0.8rem;" onclick="deleteConfigFile('${item.path}', event)"><i class="fas fa-times"></i></button>` : ''}`;
+                treeContainer.appendChild(itemNode);
+            });
+        }
+
+        async function browseUpDirectory(dirPath) {
+            if (!dirPath && dirPath !== '') { if (currentServiceName) loadFileTree(currentServiceName); return; }
+            await browseDirectory(dirPath);
+        }
+
+        async function deleteConfigFile(filePath, event) {
+            event.stopPropagation();
+            const serverId = document.getElementById('serverSelector').value;
+            const button = event.target.closest('button');
+            const isDirectory = button && button.previousElementSibling && button.previousElementSibling.querySelector && button.previousElementSibling.querySelector('i') && button.previousElementSibling.querySelector('i').classList.contains('fa-folder');
+            const type = isDirectory ? '文件夹' : '文件';
+            if (!confirm(`确定要删除${type} "${filePath}" 吗？\n\n删除后将无法恢复，请确认！`)) return;
+
+            try {
+                const response = await fetch(`/config/files/${encodeURIComponent(filePath)}?server_id=${serverId}`, { method: 'DELETE' });
+                if (response.ok) {
+                    showToast('✓ 删除成功', `${type}已删除`, 'success');
+                    addOperationLog('删除文件', `${type}已删除: ${filePath}`);
+                    if (currentServiceName) loadFileTree(currentServiceName);
+                } else {
+                    const errorData = await response.json();
+                    showToast('✗ 删除失败', errorData.error, 'error');
+                }
+            } catch (error) { showToast('✗ 删除失败', error.message, 'error'); }
+        }
+
         async function loadFileContent(filePath) {
             try {
                 const normalizedPath = filePath.replace(/\\/g, '/');
                 const serverId = document.getElementById('serverSelector').value;
-                if (!serverId) {
-                    showToast('⚠ 选择服务器', '未选择服务器', 'warning');
-                    return;
-                }
-
-
+                if (!serverId) { showToast('⚠ 选择服务器', '未选择服务器', 'warning'); return; }
 
                 const response = await fetch(`/config/files/${encodeURIComponent(normalizedPath)}?server_id=${serverId}`);
+                if (!response.ok) throw new Error('加载失败');
 
-                if (!response.ok) {
-                    if (response.status === 404) {
-                        showToast('✗ 文件不存在', normalizedPath, 'error');
-                        return;
-                    }
-                    const errorData = await response.json().catch(() => ({}));
-                    throw new Error(errorData.error || `加载失败 (HTTP ${response.status})`);
-                }
-
-        // ✅ 获取文件内容
-        const fileData = await response.json();
-        currentFilePath = normalizedPath;
-        editor.setValue(fileData.content || '');
-        editor.focus();
-
-        // ✅ 更新顶部文件路径显示
-        document.getElementById('currentFileName').textContent = normalizedPath;
-
-        // ✅ 清除上次保存时间
-        const timeEl = document.getElementById('lastSavedTime');
-        if (timeEl) timeEl.textContent = '';
-
-
-
-        // ✅ 启用按钮
-        const saveBtn = document.getElementById('saveFileBtn');
-        const compareBtn = document.getElementById('compareBtn');
-        const backupBtn = document.getElementById('backupListBtn');
-
-        if (saveBtn) saveBtn.disabled = true;
-        if (compareBtn) compareBtn.disabled = false;
-        if (backupBtn) backupBtn.disabled = false;
-
-            } catch (error) {
-                console.error('加载文件内容失败:', error);
-                showToast('✗ 加载失败', error.message, 'error');
-            }
+                const fileData = await response.json();
+                currentFilePath = normalizedPath;
+                editor.setValue(fileData.content || '');
+                editor.focus();
+                document.getElementById('currentFileName').textContent = normalizedPath.split('/').pop();
+                document.getElementById('lastSavedTime').textContent = '';
+                document.getElementById('saveFileBtn').disabled = true;
+                document.getElementById('compareBtn').disabled = false;
+                document.getElementById('backupListBtn').disabled = false;
+            } catch (error) { showToast('✗ 加载失败', error.message, 'error'); }
         }
-
 
         async function compareWithServer() {
-            if (!currentFilePath) {
-                showToast('⚠ 选择文件', '请先选择一个文件', 'warning');
-                return;
-            }
-
+            if (!currentFilePath) { showToast('⚠ 选择文件', '请先选择一个文件', 'warning'); return; }
             const serverId = document.getElementById('serverSelector').value;
-            if (!serverId) {
 
+            try {
+                const resp = await fetch(`/config/files/${encodeURIComponent(currentFilePath)}?server_id=${serverId}`);
+                if (!resp.ok) throw new Error('无法获取服务器文件');
+                const fileData = await resp.json();
+                const serverText = fileData.content || '';
+                const localText = editor.getValue();
+                const diff = Diff.diffLines(serverText, localText);
 
-                showToast('⚠ 选择服务器', '未选择服务器', 'warning');
-                return;
-            }
+                let modal = document.getElementById('diffModal');
+                if (!modal) {
+                    modal = document.createElement('div');
+                    modal.id = 'diffModal';
+                    modal.innerHTML = `<div class="modal fade" tabindex="-1"><div class="modal-dialog modal-xl"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">文件对比结果</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="d-flex"><div class="w-50 pe-2"><h6 class="text-center mb-3 fw-bold text-secondary">服务器版本</h6><div id="serverDiffContent" style="font-family: monospace; white-space: pre-wrap; max-height: 70vh; overflow-y: auto; background-color: #f8f9fa; padding: 10px; border-radius: 8px; font-size: 0.85rem;"></div></div><div class="w-50 ps-2 border-start"><h6 class="text-center mb-3 fw-bold text-primary">本地编辑器版本</h6><div id="localDiffContent" style="font-family: monospace; white-space: pre-wrap; max-height: 70vh; overflow-y: auto; background-color: #f8f9fa; padding: 10px; border-radius: 8px; font-size: 0.85rem;"></div></div></div></div><div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">关闭</button></div></div></div></div>`;
+                    document.body.appendChild(modal);
+                }
 
-            if (typeof Diff === 'undefined') {
-                showToast('✗ 对比失败', '对比功能依赖的库未正确加载，请刷新页面重试', 'error');
-                return;
-            }
-
-    try {
-        // 获取服务器上最新内容
-        const resp = await fetch(`/config/files/${encodeURIComponent(currentFilePath)}?server_id=${serverId}`);
-        if (!resp.ok) throw new Error(`无法获取服务器文件 (${resp.status})`);
-        const fileData = await resp.json();
-        const serverText = fileData.content || '';
-
-        // 当前编辑器中的内容
-        const localText = editor.getValue();
-
-        // 使用 diff 库生成差异
-        const diff = Diff.diffLines(serverText, localText);
-
-        // --- 渲染到模态框（双栏对比）
-        let modal = document.getElementById('diffModal');
-        if (!modal) {
-            modal = document.createElement('div');
-            modal.id = 'diffModal';
-            modal.innerHTML = `
-                <div class="modal fade" tabindex="-1">
-                    <div class="modal-dialog modal-xl">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h5 class="modal-title">文件对比结果 — ${currentFilePath.split('/').pop()}</h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                            </div>
-                            <div class="modal-body">
-                                <div class="d-flex">
-                                    <div class="w-50 pe-2">
-                                        <h6 class="text-center mb-3">服务器版本</h6>
-                                        <div id="serverDiffContent" style="font-family: monospace; white-space: pre-wrap; max-height: 70vh; overflow-y: auto; background-color: #f8f9fa; padding: 10px; border-radius: 4px;"></div>
-                                    </div>
-                                    <div class="w-50 ps-2">
-                                        <h6 class="text-center mb-3">本地版本</h6>
-                                        <div id="localDiffContent" style="font-family: monospace; white-space: pre-wrap; max-height: 70vh; overflow-y: auto; background-color: #f8f9fa; padding: 10px; border-radius: 4px;"></div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="modal-footer">
-                                <button class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>`;
-            document.body.appendChild(modal);
+                let serverHtml = '', localHtml = '';
+                diff.forEach(part => {
+                    const value = part.value.replace(/</g, '&lt;').replace(/ /g, '&nbsp;');
+                    const lines = value.split('\n'); lines.pop();
+                    if (part.added) localHtml += `<div class="p-1 rounded mb-1" style="background:#dcfce7;color:#166534;">${lines.map(line => '+' + line).join('\n').replace(/\n/g, '<br>')}</div>`;
+                    else if (part.removed) serverHtml += `<div class="p-1 rounded mb-1" style="background:#fee2e2;color:#991b1b;">${lines.map(line => '-' + line).join('\n').replace(/\n/g, '<br>')}</div>`;
+                    else {
+                        serverHtml += `<div class="p-1 rounded mb-1" style="opacity:0.6">${lines.join('\n').replace(/\n/g, '<br>')}</div>`;
+                        localHtml += `<div class="p-1 rounded mb-1" style="opacity:0.6">${lines.join('\n').replace(/\n/g, '<br>')}</div>`;
+                    }
+                });
+                modal.querySelector('#serverDiffContent').innerHTML = serverHtml;
+                modal.querySelector('#localDiffContent').innerHTML = localHtml;
+                new bootstrap.Modal(modal.querySelector('.modal')).show();
+            } catch (err) { alert('对比失败: ' + err.message); }
         }
 
-        // 分别渲染两个面板的内容
-        const serverContentEl = modal.querySelector('#serverDiffContent');
-        const localContentEl = modal.querySelector('#localDiffContent');
-
-        let serverHtml = '';
-        let localHtml = '';
-
-        diff.forEach(part => {
-            const value = part.value.replace(/</g, '&lt;').replace(/ /g, '&nbsp;');
-            const lines = value.split('\n');
-            lines.pop(); // 移除最后一个空行
-
-            if (part.added) {
-                // 这些行只在本地版本中存在
-                localHtml += `<div class="p-1 rounded mb-1" style="background:#e6ffed;color:#0b6623;">${lines.map(line => '+' + line).join('\n').replace(/\n/g, '<br>')}</div>`;
-            } else if (part.removed) {
-                // 这些行只在服务器版本中存在
-                serverHtml += `<div class="p-1 rounded mb-1" style="background:#ffecec;color:#8b0000;">${lines.map(line => '-' + line).join('\n').replace(/\n/g, '<br>')}</div>`;
-            } else {
-                // 这些行在两个版本中都存在
-                serverHtml += `<div class="p-1 rounded mb-1">${lines.join('\n').replace(/\n/g, '<br>')}</div>`;
-                localHtml += `<div class="p-1 rounded mb-1">${lines.join('\n').replace(/\n/g, '<br>')}</div>`;
-            }
-        });
-
-        serverContentEl.innerHTML = serverHtml;
-        localContentEl.innerHTML = localHtml;
-
-        // 显示模态框
-        const modalInstance = new bootstrap.Modal(modal.querySelector('.modal'));
-        modalInstance.show();
-
-    } catch (err) {
-        console.error('文件对比失败:', err);
-        alert('对比失败: ' + (err.message || err));
-    }
-}
-
-        // 保存当前文件
         async function saveCurrentFile() {
-    if (!currentFilePath) {
-        alert('请先选择要保存的文件');
-        return;
-    }
+            if (!currentFilePath) { alert('请先选择要保存的文件'); return; }
+            const serverId = document.getElementById('serverSelector').value;
+            if (!serverId) { alert('未选择服务器'); return; }
 
-    // 获取当前选中的服务器ID
-    const serverId = document.getElementById('serverSelector').value;
-    if (!serverId) {
-        alert('未选择服务器');
-        return;
-    }
+            try {
+                const content = editor.getValue();
+                const response = await fetch(`/config/files/${encodeURIComponent(currentFilePath)}?server_id=${serverId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ content })
+                });
 
-    try {
-        const content = editor.getValue();
-        const response = await fetch(`/config/files/${encodeURIComponent(currentFilePath)}?server_id=${serverId}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ content })
-        });
-
-        if (response.ok) {
-            const result = await response.json();
-            document.getElementById('saveFileBtn').disabled = true;
-            document.getElementById('lastSavedTime').textContent = `最后保存: ${new Date().toLocaleTimeString()}`;
-            alert(`文件保存成功！备份文件: ${result.backup_path}`);
-            addOperationLog('保存文件', `文件保存成功: ${currentFilePath}`);
-
-            // ✅ 保存成功后自动刷新文件树
-            if (currentServiceName) {
-                loadFileTree(currentServiceName);
-            } else {
-                loadFileTree();
-            }
-
-        } else {
-            throw new Error('保存失败');
+                if (response.ok) {
+                    const result = await response.json();
+                    document.getElementById('saveFileBtn').disabled = true;
+                    document.getElementById('lastSavedTime').textContent = `已保存 ${new Date().toLocaleTimeString()}`;
+                    showToast('✓ 保存成功', '文件已更新并备份', 'success');
+                    addOperationLog('保存文件', `文件保存成功: ${currentFilePath}`);
+                    if (currentServiceName) loadFileTree(currentServiceName);
+                } else throw new Error('保存失败');
+            } catch (error) { alert('保存文件失败'); addOperationLog('保存文件', `保存失败: ${error.message}`); }
         }
-    } catch (error) {
-        console.error('保存文件失败:', error);
-        alert('保存文件失败');
-        addOperationLog('保存文件', `文件保存失败: ${currentFilePath} - ${error.message}`);
-    }
-}
 
-        // 添加操作记录
         function addOperationLog(operation, details = '') {
             const now = new Date();
-            const timestamp = now.toLocaleString('zh-CN');
-            const logEntry = {
-                id: Date.now(),
-                timestamp: timestamp,
-                operation: operation,
-                details: details
-            };
-
+            const logEntry = { id: Date.now(), timestamp: now.toLocaleTimeString('zh-CN'), operation: operation, details: details };
             operationLog.unshift(logEntry);
-            // 限制记录数量为100条
-            if (operationLog.length > 100) {
-                operationLog.pop();
-            }
-
+            if (operationLog.length > 100) operationLog.pop();
             saveOperationLog();
             renderOperationLog();
         }
 
-        // 添加错误信息
         async function addErrorPattern() {
             const keyword = document.getElementById('errorKeyword').value.trim();
             const name = document.getElementById('errorName').value.trim();
-
-            if (!keyword || !name) {
-                showToast('⚠ 输入错误', '请填写完整信息', 'warning');
-                return;
-            }
+            if (!keyword || !name) { showToast('⚠ 输入错误', '请填写完整信息', 'warning'); return; }
 
             try {
-                // 获取现有的错误模式
                 const response = await fetch('/config/error_patterns');
                 let patterns = [];
-                
-                if (response.ok) {
-                    patterns = await response.json();
-                } else if (response.status === 401) {
-                    showToast('✗ 未登录', '请先登录系统', 'error');
-                    return;
-                }
+                if (response.ok) patterns = await response.json();
 
-                // 检查是否已存在相同的模式
-                const exists = patterns.some(pattern => 
-                    pattern.keyword === keyword || pattern.name === name
-                );
+                const exists = patterns.some(p => p.keyword === keyword || p.name === name);
+                if (exists) { showToast('⚠ 重复项', '关键字或名称已存在', 'warning'); return; }
 
-                if (exists) {
-                    showToast('⚠ 重复项', '关键字或名称已存在', 'warning');
-                    return;
-                }
-
-                // 添加新模式
-                const newPattern = { keyword, name };
-                patterns.push(newPattern);
-
-                // 保存更新后的模式
-                const saveResponse = await fetch('/config/error_patterns', {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(patterns)
-                });
-
+                patterns.push({ keyword, name });
+                const saveResponse = await fetch('/config/error_patterns', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(patterns) });
                 if (saveResponse.ok) {
-                    showToast('✓ 添加成功', `已添加错误信息: ${name}`, 'success');
+                    showToast('✓ 添加成功', `已添加: ${name}`, 'success');
                     document.getElementById('addErrorPatternForm').reset();
-                    
-                    // 关闭模态框
                     const modalEl = document.getElementById('addErrorPatternModal');
-                    const modalInstance = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
-                    modalInstance.hide();
-                    
-                    // 确保在模态框完全隐藏后清理所有相关的遮罩层
-                    setTimeout(() => {
-                        removeAllBackdropElements();
-                    }, 100);
-
+                    bootstrap.Modal.getInstance(modalEl).hide();
+                    setTimeout(() => removeAllBackdropElements(), 100);
                     addOperationLog('添加错误信息', `关键字: ${keyword}, 名称: ${name}`);
-                } else if (saveResponse.status === 401) {
-                    showToast('✗ 未登录', '请先登录系统', 'error');
-                } else {
-                    throw new Error('保存失败');
-                }
-            } catch (error) {
-                console.error('添加错误信息失败:', error);
-                showToast('✗ 添加失败', '请稍后重试', 'error');
-                addOperationLog('添加错误信息', `添加失败: ${error.message}`);
-            }
+                } else throw new Error('保存失败');
+            } catch (error) { showToast('✗ 添加失败', '请稍后重试', 'error'); }
         }
 
-        // 保存操作记录到localStorage
-        function saveOperationLog() {
-            try {
-                localStorage.setItem('operationLog', JSON.stringify(operationLog));
-            } catch (e) {
-                console.error('无法保存操作记录到localStorage:', e);
-            }
-        }
+        function saveOperationLog() { try { localStorage.setItem('operationLog', JSON.stringify(operationLog)); } catch (e) {} }
+        function loadOperationLog() { try { const savedLog = localStorage.getItem('operationLog'); if (savedLog) operationLog = JSON.parse(savedLog); } catch (e) {} renderOperationLog(); }
 
-        // 从localStorage加载操作记录
-        function loadOperationLog() {
-            try {
-                const savedLog = localStorage.getItem('operationLog');
-                if (savedLog) {
-                    operationLog = JSON.parse(savedLog);
-                }
-            } catch (e) {
-                console.error('无法从localStorage加载操作记录:', e);
-            }
-            renderOperationLog();
-        }
-
-        // 渲染操作记录
         function renderOperationLog() {
             const logContainer = document.getElementById('operationLog');
-            if (operationLog.length === 0) {
-                logContainer.innerHTML = '<li class="text-muted">暂无操作记录</li>';
-                return;
-            }
-
+            if (operationLog.length === 0) { logContainer.innerHTML = '<li class="text-muted small text-center mt-4">暂无操作记录</li>'; return; }
             logContainer.innerHTML = '';
             operationLog.forEach(entry => {
                 const logItem = document.createElement('li');
-                logItem.className = 'mb-1 border-bottom pb-1';
-                logItem.innerHTML = `
-                    <div class="d-flex justify-content-between">
-                        <span class="fw-bold">${entry.operation}</span>
-                        <small class="text-muted">${entry.timestamp}</small>
-                    </div>
-                    ${entry.details ? `<div class="text-muted small">${entry.details}</div>` : ''}
-                `;
+                logItem.innerHTML = `<div class="d-flex justify-content-between"><span class="fw-bold text-dark">${entry.operation}</span><small class="text-secondary font-monospace">${entry.timestamp}</small></div>${entry.details ? `<div class="text-secondary small mt-1 text-break">${entry.details}</div>` : ''}`;
                 logContainer.appendChild(logItem);
             });
         }
-        
-        // 渲染服务日志
+
         function renderServiceLogs() {
-            // 获取所有日志条目并渲染到日志模块
-            const logContainer = document.querySelector('.right-sidebar .row .col-12:first-child .card-body .operation-log');
-            
-            if (!logContainer) {
-                console.error('无法找到服务日志容器');
-                return;
-            }
-            
-            if (serviceLogs.length === 0) {
-                logContainer.innerHTML = '<li class="text-muted">暂无日志记录</li>';
-                return;
-            }
-            
-            // 按时间排序（最新的在前面）
-            const sortedLogs = [...serviceLogs].sort((a, b) => 
-                new Date(b.timestamp) - new Date(a.timestamp)
-            );
-            
-            // 去重：同样的报错只保留最新的一条
+            const logContainer = document.querySelector('.right-sidebar .operation-log');
+            if (!logContainer) return;
+            if (serviceLogs.length === 0) { logContainer.innerHTML = '<li class="text-muted small text-center mt-4">暂无错误日志</li>'; return; }
+
+            const sortedLogs = [...serviceLogs].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
             const uniqueLogs = [];
             const seenErrors = new Set();
-            
             for (const log of sortedLogs) {
-                // 使用服务名和错误名组合作为唯一标识
                 const errorKey = `${log.service}-${log.error_name}`;
-                
-                if (!seenErrors.has(errorKey)) {
-                    seenErrors.add(errorKey);
-                    uniqueLogs.push(log);
-                }
+                if (!seenErrors.has(errorKey)) { seenErrors.add(errorKey); uniqueLogs.push(log); }
             }
-            
+
             logContainer.innerHTML = '';
             uniqueLogs.forEach(entry => {
                 const logItem = document.createElement('li');
-                logItem.className = 'mb-1 border-bottom pb-1';
-                logItem.innerHTML = `
-                    <div class="d-flex justify-content-between">
-                        <span class="fw-bold">[${entry.service}] ${entry.error_name}</span>
-                        <small class="text-muted">${entry.timestamp}</small>
-                    </div>
-                    <div class="text-muted small">${entry.log_line}</div>
-                `;
+                logItem.style.borderLeftColor = '#ef4444';
+                logItem.innerHTML = `<div class="d-flex justify-content-between"><span class="fw-bold text-danger small">[${entry.service}] ${entry.error_name}</span><small class="text-secondary font-monospace">${entry.timestamp.split(' ')[1] || entry.timestamp}</small></div><div class="text-secondary small text-break mt-1 font-monospace">${entry.log_line}</div>`;
                 logContainer.appendChild(logItem);
             });
         }
-        
-        // 获取并显示服务错误日志
+
         async function fetchServiceErrors(serviceName) {
             const serverId = document.getElementById('serverSelector').value;
-            if (!serverId) {
-                return;
-            }
-            
+            if (!serverId) return;
             try {
                 const response = await fetch(`/services/${serviceName}/errors?server_id=${serverId}`);
                 if (response.ok) {
                     const errors = await response.json();
-                    // 更新serviceLogs数组
                     serviceLogs = serviceLogs.filter(log => log.service !== serviceName);
                     serviceLogs.push(...errors);
                     renderServiceLogs();
                 }
-            } catch (error) {
-                console.error('获取服务错误日志失败:', error);
-            }
+            } catch (error) {}
         }
-        
-        // 定期获取所有服务的错误日志
+
         function startErrorLogRefresh() {
-            // 只有在连接到服务器且有服务时才启动轮询
             const isConnected = !document.getElementById('connectionStatus').classList.contains('d-none');
-            if (!isConnected || services.length === 0) {
-                return;
-            }
-        
-            // 使用更长的轮询间隔（10秒）
+            if (!isConnected || services.length === 0) return;
             setInterval(() => {
-                // 获取当前选中的服务器ID
                 const serverId = document.getElementById('serverSelector').value;
-                if (serverId) {
-                    // 获取所有服务的错误日志
-                    services.forEach(service => {
-                        fetchServiceErrors(service.name);
-                    });
-                }
-            }, 20000); // 每10秒刷新一次
+                if (serverId) services.forEach(service => fetchServiceErrors(service.name));
+            }, 20000);
         }
 
-        // 清空操作记录
-        function clearOperationLog() {
-            operationLog = [];
-            saveOperationLog();
-            renderOperationLog();
-            console.log("操作记录已清空");
-        }
-        
-        // 清空服务日志
-        function clearServiceLogs() {
-            serviceLogs = [];
-            renderServiceLogs();
-            console.log("服务日志已清空");
-        }
-        
-        // 添加服务日志条目
-        function addServiceLogEntry(serviceName, errorName, logLine) {
-            if (!serviceLogs[serviceName]) {
-                serviceLogs[serviceName] = [];
-            }
-            
-            serviceLogs[serviceName].push({
-                timestamp: new Date().toLocaleString('zh-CN'),
-                service: serviceName,
-                error_name: errorName,
-                log_line: logLine
-            });
-            
-            renderServiceLogs();
-        }
-        
+        function clearOperationLog() { operationLog = []; saveOperationLog(); renderOperationLog(); }
+        function clearServiceLogs() { serviceLogs = []; renderServiceLogs(); }
     </script>
-
 </body>
 </html>

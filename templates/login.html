@@ -2,14 +2,24 @@
 {% block title %}登录 - 服务管理工具{% endblock %}
 
 {% block head %}
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
     <style>
         :root {
-            --tech-blue: #0080ff;
-            --tech-purple: #7c3aed;
-            --tech-cyan: #00d9ff;
-            --tech-dark: #0a1628;
-            --tech-light: #e0f4ff;
-            --header-height: 70px;
+            /* 🎨 统一配色系统 */
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --bg-gradient-1: #eff6ff;
+            --bg-gradient-2: #dbeafe;
+
+            /* 🧊 玻璃拟态变量 */
+            --glass-bg: rgba(255, 255, 255, 0.75);
+            --glass-border: 1px solid rgba(255, 255, 255, 0.6);
+            --shadow-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+
+            --text-main: #1f2937;
+            --text-secondary: #6b7280;
         }
 
         * {
@@ -19,289 +29,198 @@
         }
 
         body {
-            font-family: "Segoe UI", "Microsoft YaHei", sans-serif;
-            background: linear-gradient(135deg, #cfe9ff 0%, #e7f6ff 50%, #bde0fe 100%);
-            background-attachment: fixed;
+            font-family: "Inter", system-ui, -apple-system, sans-serif;
+            /* 动态渐变背景 */
+            background-color: #f3f4f6;
+            background-image:
+                radial-gradient(at 0% 0%, hsla(253,16%,7%,0) 0, hsla(253,16%,7%,0) 50%),
+                radial-gradient(at 0% 0%, hsla(210,100%,96%,1) 0, transparent 50%),
+                radial-gradient(at 100% 100%, hsla(220,100%,94%,1) 0, transparent 50%);
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            overflow-x: hidden;
+            color: var(--text-main);
         }
 
         .container {
             width: 100%;
-            max-width: 480px;
-            padding: 0 20px;
+            max-width: 420px; /* 稍微收窄卡片以显得更精致 */
+            padding: 20px;
         }
 
+        /* 🧊 卡片主体优化 */
         .login-card {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(20px);
-            border-radius: 16px;
-            box-shadow: 0 20px 60px rgba(0, 128, 255, 0.15),
-                        0 0 40px rgba(0, 217, 255, 0.1);
-            border: 1px solid rgba(0, 128, 255, 0.2);
+            background: var(--glass-bg);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border-radius: 24px;
+            border: var(--glass-border);
+            box-shadow: var(--shadow-lg);
             overflow: hidden;
-            animation: slideUp 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
             position: relative;
-        }
-
-        /* 🌟 科技背景光效 */
-        .login-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: radial-gradient(circle at 20% 50%, rgba(0, 128, 255, 0.05) 0%, transparent 50%),
-                        radial-gradient(circle at 80% 80%, rgba(0, 217, 255, 0.05) 0%, transparent 50%);
-            pointer-events: none;
+            animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         @keyframes slideUp {
-            from {
-                opacity: 0;
-                transform: translateY(40px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
+        /* 头部区域 */
         .login-header {
-            background: linear-gradient(135deg, rgba(0, 128, 255, 0.15) 0%, rgba(0, 217, 255, 0.1) 100%);
-            border-bottom: 2px solid rgba(0, 128, 255, 0.3);
-            padding: 40px 30px;
+            padding: 40px 40px 20px 40px;
             text-align: center;
-            position: relative;
-            overflow: hidden;
-        }
-
-        /* 🔷 科技装饰线 */
-        .login-header::after {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: 2px;
-            background: linear-gradient(90deg,
-                transparent 0%,
-                var(--tech-blue) 25%,
-                var(--tech-cyan) 50%,
-                var(--tech-blue) 75%,
-                transparent 100%);
+            background: transparent;
         }
 
         .login-header h1 {
-            font-size: 28px;
+            font-size: 26px;
             font-weight: 700;
-            background: linear-gradient(135deg, var(--tech-blue) 0%, var(--tech-cyan) 100%);
+            background: linear-gradient(135deg, var(--primary), #06b6d4);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            background-clip: text;
             margin-bottom: 8px;
-            letter-spacing: -0.5px;
+            letter-spacing: -0.025em;
         }
 
         .login-header p {
-            font-size: 13px;
-            color: var(--tech-blue);
+            font-size: 14px;
+            color: var(--text-secondary);
             font-weight: 500;
-            letter-spacing: 1px;
-            text-transform: uppercase;
         }
 
+        /* 表单区域 */
         .login-body {
-            padding: 40px;
-            position: relative;
-            z-index: 1;
+            padding: 10px 40px 40px 40px;
         }
 
         .form-group {
-            margin-bottom: 24px;
-            position: relative;
+            margin-bottom: 20px;
         }
 
         .form-group label {
             display: block;
-            font-size: 12px;
+            font-size: 13px;
             font-weight: 600;
-            color: var(--tech-blue);
-            margin-bottom: 10px;
-            text-transform: uppercase;
-            letter-spacing: 0.8px;
+            color: var(--text-main);
+            margin-bottom: 8px;
         }
 
+        /* 输入框优化 */
         .form-group input {
             width: 100%;
-            padding: 14px 16px;
-            font-size: 14px;
-            border: 2px solid rgba(0, 128, 255, 0.2);
-            border-radius: 10px;
-            background: rgba(255, 255, 255, 0.7);
-            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-            font-family: inherit;
-            color: var(--tech-dark);
+            padding: 12px 16px;
+            font-size: 15px;
+            color: var(--text-main);
+            background: rgba(255, 255, 255, 0.6);
+            border: 1px solid rgba(209, 213, 219, 0.8);
+            border-radius: 12px;
+            transition: all 0.2s ease;
         }
 
         .form-group input::placeholder {
-            color: rgba(0, 128, 255, 0.4);
+            color: #9ca3af;
         }
 
         .form-group input:focus {
             outline: none;
-            background: white;
-            border-color: var(--tech-blue);
-            box-shadow: 0 0 0 4px rgba(0, 128, 255, 0.1),
-                        0 0 20px rgba(0, 128, 255, 0.2),
-                        inset 0 0 10px rgba(0, 217, 255, 0.05);
-            transform: translateY(-2px);
-        }
-
-        /* 💫 按钮科技风格 */
-        .btn-submit {
-            width: 100%;
-            padding: 14px;
-            font-size: 16px;
-            font-weight: 700;
-            color: white;
-            background: linear-gradient(135deg, var(--tech-blue) 0%, var(--tech-cyan) 100%);
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-            letter-spacing: 0.5px;
-            text-transform: uppercase;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .btn-submit::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg,
-                transparent 0%,
-                rgba(255, 255, 255, 0.2) 50%,
-                transparent 100%);
-            transition: left 0.5s;
-        }
-
-        .btn-submit:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 10px 30px rgba(0, 128, 255, 0.4),
-                        0 0 20px var(--tech-cyan);
-        }
-
-        .btn-submit:hover::before {
-            left: 100%;
-        }
-
-        .btn-submit:active {
+            background: #fff;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
             transform: translateY(-1px);
         }
 
+        /* 💫 按钮优化 */
+        .btn-submit {
+            width: 100%;
+            padding: 12px;
+            font-size: 15px;
+            font-weight: 600;
+            color: white;
+            background: linear-gradient(135deg, var(--primary), var(--primary-hover));
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3);
+            margin-top: 10px;
+        }
+
+        .btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 12px -1px rgba(59, 130, 246, 0.4);
+        }
+
+        .btn-submit:active {
+            transform: translateY(0);
+        }
+
+        /* 底部链接 */
         .form-footer {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-top: 20px;
-            font-size: 12px;
+            margin-top: 24px;
+            font-size: 13px;
         }
 
         .form-footer a {
-            color: var(--tech-blue);
+            color: var(--text-secondary);
             text-decoration: none;
-            transition: all 0.3s;
             font-weight: 500;
-            position: relative;
+            transition: color 0.2s;
         }
 
-        .form-footer a::after {
-            content: '';
-            position: absolute;
-            bottom: -2px;
-            left: 0;
-            width: 0;
-            height: 2px;
-            background: linear-gradient(90deg, var(--tech-blue), var(--tech-cyan));
-            transition: width 0.3s;
-        }
-
-        .form-footer a:hover::after {
-            width: 100%;
+        .form-footer a:hover {
+            color: var(--primary);
+            text-decoration: underline;
         }
 
         .d-none {
             display: none;
         }
 
-        /* 🎯 消息提示框 - 科技风 */
+        /* 🎯 消息提示框 - 悬浮胶囊风 */
         .alert-container {
             position: fixed;
-            top: 30px;
+            top: 24px;
             left: 50%;
             transform: translateX(-50%);
             z-index: 9999;
             display: none;
-            animation: slideDown 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
-
-        @keyframes slideDown {
-            from {
-                opacity: 0;
-                transform: translateX(-50%) translateY(-30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateX(-50%) translateY(0);
-            }
         }
 
         .alert {
-            min-width: 340px;
-            padding: 16px 24px;
-            border-radius: 12px;
+            min-width: 320px;
+            padding: 12px 20px;
+            border-radius: 50px; /* 胶囊形状 */
             font-size: 14px;
             font-weight: 500;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2),
-                        0 0 30px rgba(0, 128, 255, 0.2);
-            border: 1px solid rgba(0, 128, 255, 0.3);
-            backdrop-filter: blur(10px);
-            animation: popIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255,255,255,0.5);
+            animation: popIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         @keyframes popIn {
-            from {
-                transform: scale(0.8);
-                opacity: 0;
-            }
-            to {
-                transform: scale(1);
-                opacity: 1;
-            }
+            from { transform: scale(0.95); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
         }
 
         .alert-success {
-            background: linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(34, 197, 94, 0.05) 100%);
-            color: #16a34a;
-            border-color: rgba(34, 197, 94, 0.3);
+            background: rgba(236, 253, 245, 0.95);
+            color: #059669;
+            border-color: rgba(167, 243, 208, 0.5);
         }
 
         .alert-danger {
-            background: linear-gradient(135deg, rgba(220, 38, 38, 0.1) 0%, rgba(220, 38, 38, 0.05) 100%);
+            background: rgba(254, 242, 242, 0.95);
             color: #dc2626;
-            border-color: rgba(220, 38, 38, 0.3);
+            border-color: rgba(254, 202, 202, 0.5);
         }
 
         .alert-close {
@@ -309,80 +228,17 @@
             border: none;
             color: currentColor;
             cursor: pointer;
-            font-size: 20px;
-            padding: 0;
-            margin-left: 12px;
+            font-size: 18px;
+            padding: 0 0 0 12px;
             opacity: 0.6;
-            transition: all 0.3s;
+            line-height: 1;
         }
 
-        .alert-close:hover {
-            opacity: 1;
-            transform: rotate(90deg);
-        }
-
-        /* 📱 响应式设计 */
-        @media (max-width: 480px) {
-            .container {
-                padding: 0 16px;
-            }
-
-            .login-body {
-                padding: 28px 20px;
-            }
-
-            .login-header {
-                padding: 28px 20px;
-            }
-
-            .login-header h1 {
-                font-size: 24px;
-            }
-
-            .alert {
-                min-width: auto;
-                max-width: 90vw;
-                font-size: 13px;
-                padding: 14px 16px;
-            }
-
-            .btn-submit {
-                padding: 12px;
-                font-size: 14px;
-            }
-        }
-
-        /* ✨ 按钮科技高亮 */
-        .btn-outline-primary {
-            border-color: var(--tech-blue);
-            color: var(--tech-blue);
-            transition: 0.3s;
-        }
-
-        .btn-outline-primary:hover {
-            background: var(--tech-blue);
-            color: white;
-            box-shadow: 0 0 10px var(--tech-blue);
-        }
-
-        .btn-primary, .btn-success, .btn-info, .btn-warning, .btn-danger {
-            border: none;
-            transition: 0.3s;
-        }
-
-        .btn-primary:hover,
-        .btn-success:hover,
-        .btn-info:hover,
-        .btn-warning:hover,
-        .btn-danger:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 0 12px rgba(0, 128, 255, 0.4);
-        }
+        .alert-close:hover { opacity: 1; }
     </style>
 {% endblock %}
 
 {% block content %}
-    <!-- 消息提示框 -->
     <div class="alert-container">
         <div class="alert alert-success" id="messageAlert">
             <span id="messageText"></span>
@@ -392,52 +248,50 @@
 
     <div class="container">
         <div class="login-card">
-            <!-- 登录表单 -->
             <div id="loginFormContainer">
                 <div class="login-header">
-                    <h1>服务管理工具</h1>
-                    <p>✨ 智能管理平台</p>
+                    <h1>服务管理平台</h1>
+                    <p>Login to your account</p>
                 </div>
                 <div class="login-body">
                     <form id="loginForm">
                         <div class="form-group">
                             <label for="username">用户名</label>
-                            <input type="text" id="username" placeholder="输入您的用户名" required>
+                            <input type="text" id="username" placeholder="请输入用户名" required autocomplete="username">
                         </div>
                         <div class="form-group">
                             <label for="password">密码</label>
-                            <input type="password" id="password" placeholder="输入您的密码" required>
+                            <input type="password" id="password" placeholder="请输入密码" required autocomplete="current-password">
                         </div>
-                        <button type="submit" class="btn-submit">立即登录</button>
+                        <button type="submit" class="btn-submit">登 录</button>
                         <div class="form-footer">
                             <a href="#">忘记密码？</a>
-                            <a href="#" id="showRegister">注册新账户</a>
+                            <a href="#" id="showRegister">注册账号</a>
                         </div>
                     </form>
                 </div>
             </div>
 
-            <!-- 注册表单 -->
             <div id="registerFormContainer" class="d-none">
                 <div class="login-header">
-                    <h1>创建新账户</h1>
-                    <p>🚀 加入我们</p>
+                    <h1>创建账号</h1>
+                    <p>Create new account</p>
                 </div>
                 <div class="login-body">
                     <form id="registerForm">
                         <div class="form-group">
                             <label for="regUsername">用户名</label>
-                            <input type="text" id="regUsername" placeholder="输入用户名" required>
+                            <input type="text" id="regUsername" placeholder="设置用户名" required autocomplete="username">
                         </div>
                         <div class="form-group">
                             <label for="regPassword">密码</label>
-                            <input type="password" id="regPassword" placeholder="输入密码（至少6位）" required>
+                            <input type="password" id="regPassword" placeholder="设置密码（至少6位）" required autocomplete="new-password">
                         </div>
                         <div class="form-group">
                             <label for="regPasswordConfirm">确认密码</label>
-                            <input type="password" id="regPasswordConfirm" placeholder="请再次输入密码" required>
+                            <input type="password" id="regPasswordConfirm" placeholder="确认密码" required autocomplete="new-password">
                         </div>
-                        <button type="submit" class="btn-submit">立即注册</button>
+                        <button type="submit" class="btn-submit">注 册</button>
                         <div class="form-footer">
                             <a href="#" id="showLogin">返回登录</a>
                         </div>

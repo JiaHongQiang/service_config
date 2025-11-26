@@ -1603,11 +1603,13 @@ def sftp_chmod():
       - server_id
       - path
       - mode
+      - recursive (optional) 是否递归修改权限
     """
     data = request.get_json()
     server_id = data.get('server_id')
     path = data.get('path')
     mode = data.get('mode')
+    recursive = data.get('recursive', False)
     
     if not server_id or not path or mode is None:
         return jsonify({"error": "缺少必要参数: server_id, path, mode"}), 400
@@ -1619,8 +1621,13 @@ def sftp_chmod():
     sftp = None
     try:
         sftp = ssh.open_sftp()
-        # 使用chmod方法修改文件权限
-        sftp.chmod(path, mode)
+        # 如果需要递归修改权限
+        if recursive:
+            # 递归修改目录及其子目录和文件的权限
+            _chmod_recursive(sftp, path, mode)
+        else:
+            # 使用chmod方法修改文件权限
+            sftp.chmod(path, mode)
         return jsonify({"message": "文件权限修改成功"})
     except Exception as e:
         return jsonify({"error": format_ssh_error(e)}), 500
@@ -1643,12 +1650,14 @@ def sftp_chown():
       - path
       - uid
       - gid
+      - recursive (optional) 是否递归修改所有者和组
     """
     data = request.get_json()
     server_id = data.get('server_id')
     path = data.get('path')
     uid = data.get('uid')
     gid = data.get('gid')
+    recursive = data.get('recursive', False)
     
     if not server_id or not path or uid is None or gid is None:
         return jsonify({"error": "缺少必要参数: server_id, path, uid, gid"}), 400
@@ -1660,8 +1669,13 @@ def sftp_chown():
     sftp = None
     try:
         sftp = ssh.open_sftp()
-        # 使用chown方法修改文件所有者和组
-        sftp.chown(path, uid, gid)
+        # 如果需要递归修改所有者和组
+        if recursive:
+            # 递归修改目录及其子目录和文件的所有者和组
+            _chown_recursive(sftp, path, uid, gid)
+        else:
+            # 使用chown方法修改文件所有者和组
+            sftp.chown(path, uid, gid)
         return jsonify({"message": "文件所有者和组修改成功"})
     except Exception as e:
         return jsonify({"error": format_ssh_error(e)}), 500
@@ -1671,6 +1685,56 @@ def sftp_chown():
                 sftp.close()
             except:
                 pass
+
+
+# 递归修改文件权限的辅助函数
+def _chmod_recursive(sftp, path, mode):
+    """
+    递归修改目录及其子目录和文件的权限
+    """
+    import stat
+    
+    # 修改当前路径的权限
+    sftp.chmod(path, mode)
+    
+    # 如果是目录，递归处理其内容
+    try:
+        items = sftp.listdir_attr(path)
+        for item in items:
+            item_path = path + '/' + item.filename
+            # 递归处理子目录和文件
+            if stat.S_ISDIR(item.st_mode):
+                _chmod_recursive(sftp, item_path, mode)
+            else:
+                sftp.chmod(item_path, mode)
+    except Exception:
+        # 如果无法列出目录内容，忽略错误
+        pass
+
+
+# 递归修改文件所有者和组的辅助函数
+def _chown_recursive(sftp, path, uid, gid):
+    """
+    递归修改目录及其子目录和文件的所有者和组
+    """
+    import stat
+    
+    # 修改当前路径的所有者和组
+    sftp.chown(path, uid, gid)
+    
+    # 如果是目录，递归处理其内容
+    try:
+        items = sftp.listdir_attr(path)
+        for item in items:
+            item_path = path + '/' + item.filename
+            # 递归处理子目录和文件
+            if stat.S_ISDIR(item.st_mode):
+                _chown_recursive(sftp, item_path, uid, gid)
+            else:
+                sftp.chown(item_path, uid, gid)
+    except Exception:
+        # 如果无法列出目录内容，忽略错误
+        pass
 
 
 @api_bp.route('/sftp_page')
