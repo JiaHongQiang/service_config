@@ -23,12 +23,12 @@
     }
 
     body {
-      padding: 1rem;
+      padding: 0rem;
       background-color: #f9fafb;
-      height: 100vh; /* 强制高度 */
+      height: 100vh;
       font-family: 'Inter', system-ui, -apple-system, sans-serif;
       color: var(--text-main);
-      overflow: hidden; /* ✅ 修复1：禁止整个页面滚动，防止双滚动条 */
+      overflow: hidden;
     }
 
     .container-fluid { padding: 0; height: 100%; }
@@ -58,7 +58,7 @@
 
     .card-body {
         flex: 1;
-        overflow: hidden; /* 内部容器独立滚动 */
+        overflow: hidden;
         padding: 0;
         position: relative;
     }
@@ -66,7 +66,7 @@
     /* 表格容器 */
     .table-container {
       height: 100%;
-      overflow-y: auto; /* 仅此处滚动 */
+      overflow-y: auto;
     }
 
     .table {
@@ -100,39 +100,35 @@
       font-size: 0.85rem;
       color: var(--text-main);
       white-space: nowrap;
-      /* ✅ 修复2：移除全局 overflow: hidden，防止悬浮按钮被遮挡 */
     }
 
     /* 列宽定义 */
     .col-icon { width: 40px; text-align: center; }
-    .col-name { width: auto; } /* 自动宽度 */
+    .col-name { width: auto; }
     .col-size { width: 100px; }
-    .col-date { width: 180px; } /* 留足空间给时间 */
+    .col-date { width: 180px; }
     .col-perm { width: 100px; }
     .col-user { width: 153px; }
 
     .file-row:hover { background-color: #eff6ff; cursor: pointer; }
     .file-row.selected { background-color: #e0f2fe !important; }
 
-    /* 右侧上传面板 - 隐藏滚动条但保留功能 */
+    /* 右侧上传面板 */
     .upload-panel-body {
         padding: 1.5rem;
         height: 100%;
         overflow-y: auto;
-        scrollbar-width: none; /* Firefox */
-        -ms-overflow-style: none; /* IE/Edge */
     }
-    .upload-panel-body::-webkit-scrollbar { display: none; } /* Chrome/Safari */
 
     /* 拖拽区域 */
     .drop-zone {
       border: 2px dashed #d1d5db !important;
       border-radius: 12px;
-      padding: 2rem 1rem;
+      padding: 2rem 0.6rem;
       background: #f9fafb;
       transition: all 0.2s;
       color: var(--text-secondary);
-      margin-bottom: 1rem;
+      margin-bottom: 0.3rem;
     }
     .drop-zone.dragover {
       border-color: var(--primary) !important;
@@ -145,12 +141,12 @@
     .folder-icon { color: #f59e0b; }
     .file-icon-text { color: #9ca3af; }
 
-    /* ✅ 文件名单独截断 */
+    /* 文件名单独截断 */
     .filename-container {
         display: flex;
         align-items: center;
         width: 100%;
-        overflow: hidden; /* 仅在这里截断 */
+        overflow: hidden;
     }
     .filename-text {
         overflow: hidden;
@@ -158,10 +154,13 @@
         white-space: nowrap;
     }
 
-    /* 滚动条美化 (仅针对表格区域) */
+    /* 滚动条美化 */
     .table-container::-webkit-scrollbar { width: 6px; height: 6px; }
     .table-container::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 3px; }
     .table-container::-webkit-scrollbar-track { background: transparent; }
+    .upload-panel-body::-webkit-scrollbar { width: 6px; }
+    .upload-panel-body::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 3px; }
+    .upload-panel-body::-webkit-scrollbar-track { background: transparent; }
 
     /* 面包屑 */
     .path-breadcrumb {
@@ -179,11 +178,11 @@
       vertical-align: middle;
     }
 
-    /* ✅ 修复2：悬浮操作按钮容器优化 */
+    /* 悬浮操作按钮容器优化 */
     .file-actions {
       display: none;
       position: absolute;
-      right: 8px; /* 靠右显示 */
+      right: 8px;
       top: 50%;
       transform: translateY(-50%);
       background: rgba(255,255,255,0.95);
@@ -211,7 +210,7 @@
     .file-action-btn:hover { background: #eff6ff; color: var(--primary); }
     .file-action-btn.delete:hover { background: #fef2f2; color: var(--danger); }
 
-    /* 修复重命名样式 */
+    /* 重命名样式 */
     .rename-wrapper {
         background: #fff;
         border: 1px solid var(--primary);
@@ -808,7 +807,7 @@
                   <div class="mt-3">
                     <label class="tea-form-check per-checkbox" name="la">
                       <input type="checkbox" class="tea-checkbox" id="applyToSubdirectories">
-                      <span class="tea-form-check__label">应用用户和组到子目录</span>
+                      <span class="tea-form-check__label">将用户组应用到子目录</span>
                     </label>
                   </div>
                 </div>
