@@ -886,7 +886,7 @@
                     servers.forEach(server => {
                         const option = document.createElement('option');
                         option.value = server.id;
-                        option.textContent = `${server.name} (${server.host})`;
+                        option.textContent = `${server.name} (${server.host}) [${server.username}]`;
                         selector.appendChild(option);
                     });
                     const lastServer = sessionStorage.getItem('lastSelectedServer');
@@ -1423,6 +1423,8 @@
     </script>
 </body>
 </html>
+
+
 
 
 

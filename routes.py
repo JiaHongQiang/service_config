@@ -418,6 +418,41 @@ def add_server():
         return jsonify({"error": format_ssh_error(e)}), 500
 
 
+# 编辑服务器接口
+# 编辑现有服务器的配置
+@api_bp.route('/servers/<server_id>', methods=['PUT'])
+@login_required
+def edit_server(server_id):
+    try:
+        # 获取请求中的服务器配置数据
+        updated_server = request.json
+        
+        # 加载现有服务器列表
+        servers = load_servers()
+        
+        # 查找要更新的服务器
+        server_found = False
+        for i, server in enumerate(servers):
+            if str(server["id"]) == str(server_id):
+                # 更新服务器信息
+                servers[i] = updated_server
+                server_found = True
+                break
+        
+        # 如果未找到服务器，返回错误
+        if not server_found:
+            return jsonify({"error": "未找到该服务器"}), 404
+        
+        # 保存更新后的服务器列表
+        save_servers(servers)
+        
+        # 返回更新成功的服务器信息
+        return jsonify(updated_server), 200
+    except Exception as e:
+        # 处理异常情况
+        return jsonify({"error": format_ssh_error(e)}), 500
+
+
 # 删除服务器接口
 # 根据服务器ID删除服务器配置及相关连接
 @api_bp.route('/servers/<server_id>', methods=['DELETE'])
@@ -501,6 +536,45 @@ def connect_server(server_id):
     except Exception as e:
         # 处理连接异常
         return jsonify({"error": format_ssh_error(e)}), 500
+
+
+# 测试服务器连接接口
+# 测试服务器连接是否正常
+@api_bp.route('/servers/<server_id>/test_connection', methods=['POST'])
+@login_required
+def test_server_connection(server_id):
+    # 查找目标服务器配置
+    target = find_server(server_id)
+    if not target:
+        return jsonify({"error": "服务器不存在"}), 404
+    
+    ssh = None
+    try:
+        # 创建SSH客户端
+        ssh = paramiko.SSHClient()
+        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        
+        # 建立SSH连接
+        ssh.connect(
+            hostname=target["host"],
+            port=int(target["port"]),
+            username=target["username"],
+            password=target["password"],
+            timeout=8
+        )
+        
+        # 返回连接成功响应
+        return jsonify({"message": f"连接成功: {target['name']} ({target['host']})"}), 200
+    except Exception as e:
+        # 处理连接异常
+        return jsonify({"error": format_ssh_error(e)}), 500
+    finally:
+        # 关闭SSH连接
+        if ssh:
+            try:
+                ssh.close()
+            except:
+                pass
 
 
 # 获取服务状态接口

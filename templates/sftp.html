@@ -368,7 +368,7 @@
         servers.forEach(s => {
           const opt = document.createElement('option');
           opt.value = s.id;
-          opt.textContent = `${s.name}`;
+          opt.textContent = `${s.name} (${s.host}) [${s.username}]`;
           sel.appendChild(opt);
         });
         return Promise.resolve();
