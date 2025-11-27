@@ -12,97 +12,26 @@
   <style>
     :root {
       --primary: #3b82f6;
-      --primary-hover: #2563eb;
-      --success: #10b981;
-      --warning: #f59e0b;
-      --danger: #ef4444;
-      --text-main: #1f2937;
-      --text-secondary: #6b7280;
       --glass-border: 1px solid rgba(229, 231, 235, 0.8);
       --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+      --text-main: #1f2937;
+      --text-secondary: #6b7280;
     }
-
-    body {
-      padding: 0rem;
-      background-color: #f9fafb;
-      height: 100vh;
-      font-family: 'Inter', system-ui, -apple-system, sans-serif;
-      color: var(--text-main);
-      overflow: hidden;
-    }
+    body { padding: 0; background-color: #f9fafb; height: 100vh; font-family: 'Inter', sans-serif; color: var(--text-main); overflow: hidden; }
 
     .container-fluid { padding: 0; height: 100%; }
     .row { height: 100%; }
 
-    /* 🧊 卡片样式 */
-    .glass-card {
-      background: #fff;
-      border: var(--glass-border);
-      border-radius: 12px;
-      box-shadow: var(--card-shadow);
-      display: flex;
-      flex-direction: column;
-      height: 100%;
-      overflow: hidden;
-    }
+    .glass-card { background: #fff; border: var(--glass-border); border-radius: 12px; box-shadow: var(--card-shadow); display: flex; flex-direction: column; height: 100%; overflow: hidden; }
+    .card-header { background: #fff; border-bottom: 1px solid #f3f4f6; padding: 0.8rem 1rem; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+    .card-body { flex: 1; overflow: hidden; padding: 0; position: relative; }
 
-    .card-header {
-      background: #fff;
-      border-bottom: 1px solid #f3f4f6;
-      padding: 0.8rem 1rem;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-shrink: 0;
-    }
+    .table-container { height: 100%; overflow-y: auto; }
+    .table { width: 100%; table-layout: fixed; margin-bottom: 0; }
+    .table thead { position: sticky; top: 0; z-index: 10; background: #f9fafb; }
+    .table th { background: #f9fafb; color: var(--text-secondary); font-size: 0.75rem; padding: 0.75rem 0.5rem; border-bottom: 1px solid #e5e7eb; white-space: nowrap; }
+    .table td { padding: 0.6rem 0.5rem; vertical-align: middle; border-bottom: 1px solid #f3f4f6; font-size: 0.85rem; color: var(--text-main); white-space: nowrap; }
 
-    .card-body {
-        flex: 1;
-        overflow: hidden;
-        padding: 0;
-        position: relative;
-    }
-
-    /* 表格容器 */
-    .table-container {
-      height: 100%;
-      overflow-y: auto;
-    }
-
-    .table {
-      width: 100%;
-      table-layout: fixed;
-      margin-bottom: 0;
-    }
-
-    .table thead {
-      position: sticky;
-      top: 0;
-      z-index: 10;
-      background: #f9fafb;
-    }
-
-    .table th {
-      background-color: #f9fafb;
-      color: var(--text-secondary);
-      font-weight: 600;
-      font-size: 0.75rem;
-      text-transform: uppercase;
-      padding: 0.75rem 0.5rem;
-      border-bottom: 1px solid #e5e7eb;
-      white-space: nowrap;
-    }
-
-    .table td {
-      padding: 0.6rem 0.5rem;
-      vertical-align: middle;
-      border-bottom: 1px solid #f3f4f6;
-      font-size: 0.85rem;
-      color: var(--text-main);
-      white-space: nowrap;
-    }
-
-    /* 列宽定义 */
     .col-icon { width: 40px; text-align: center; }
     .col-name { width: auto; }
     .col-size { width: 100px; }
@@ -111,130 +40,42 @@
     .col-user { width: 153px; }
 
     .file-row:hover { background-color: #eff6ff; cursor: pointer; }
-    .file-row.selected { background-color: #e0f2fe !important; }
-
-    /* 右侧上传面板 */
-    .upload-panel-body {
-        padding: 1.5rem;
-        height: 100%;
-        overflow-y: auto;
-    }
-
-    /* 拖拽区域 */
-    .drop-zone {
-      border: 2px dashed #d1d5db !important;
-      border-radius: 12px;
-      padding: 2rem 0.6rem;
-      background: #f9fafb;
-      transition: all 0.2s;
-      color: var(--text-secondary);
-      margin-bottom: 0.3rem;
-    }
-    .drop-zone.dragover {
-      border-color: var(--primary) !important;
-      background-color: #eff6ff;
-      color: var(--primary);
-    }
-
-    /* 按钮与图标 */
-    .btn-sm { padding: 0.3rem 0.6rem; font-size: 0.8rem; border-radius: 6px; }
     .folder-icon { color: #f59e0b; }
     .file-icon-text { color: #9ca3af; }
+    .filename-container { display: flex; align-items: center; width: 100%; overflow: hidden; }
+    .filename-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-    /* 文件名单独截断 */
-    .filename-container {
-        display: flex;
-        align-items: center;
-        width: 100%;
-        overflow: hidden;
-    }
-    .filename-text {
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-
-    /* 滚动条美化 */
-    .table-container::-webkit-scrollbar { width: 6px; height: 6px; }
-    .table-container::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 3px; }
-    .table-container::-webkit-scrollbar-track { background: transparent; }
-    .upload-panel-body::-webkit-scrollbar { width: 6px; }
-    .upload-panel-body::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 3px; }
-    .upload-panel-body::-webkit-scrollbar-track { background: transparent; }
-
-    /* 面包屑 */
-    .path-breadcrumb {
-      background: #f3f4f6;
-      padding: 2px 8px;
-      border-radius: 4px;
-      font-size: 0.8rem;
-      color: var(--text-secondary);
-      border: 1px solid #e5e7eb;
-      max-width: 300px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      display: inline-block;
-      vertical-align: middle;
-    }
-
-    /* 悬浮操作按钮容器优化 */
-    .file-actions {
-      display: none;
-      position: absolute;
-      right: 8px;
-      top: 50%;
-      transform: translateY(-50%);
-      background: rgba(255,255,255,0.95);
-      border: 1px solid #e5e7eb;
-      padding: 3px;
-      border-radius: 6px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-      z-index: 20;
-      gap: 4px;
-    }
+    /* 操作按钮 */
+    .file-actions { display: none; position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.95); border: 1px solid #e5e7eb; padding: 3px; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); z-index: 20; gap: 4px; }
     .file-row:hover .file-actions { display: flex; }
-
-    .file-action-btn {
-        width: 26px;
-        height: 26px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 4px;
-        cursor: pointer;
-        color: var(--text-secondary);
-        background: transparent;
-        transition: all 0.2s;
-    }
+    .file-action-btn { width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; border-radius: 4px; cursor: pointer; color: var(--text-secondary); transition: all 0.2s; }
     .file-action-btn:hover { background: #eff6ff; color: var(--primary); }
-    .file-action-btn.delete:hover { background: #fef2f2; color: var(--danger); }
+    .file-action-btn.delete:hover { background: #fef2f2; color: #ef4444; }
 
-    /* 重命名样式 */
-    .rename-wrapper {
-        background: #fff;
-        border: 1px solid var(--primary);
-        padding: 2px;
-        border-radius: 4px;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-        position: absolute;
-        left: 0px;
-        top: 3px;
-        z-index: 100;
-        width: 80%;
-    }
+    /* 上传区域 */
+    .upload-panel-body { padding: 1.5rem; height: 100%; overflow-y: auto; }
+    .drop-zone { border: 2px dashed #d1d5db; border-radius: 12px; padding: 2rem 0.6rem; background: #f9fafb; transition: all 0.2s; color: var(--text-secondary); margin-bottom: 0.3rem; }
+    .drop-zone.dragover { border-color: var(--primary); background-color: #eff6ff; color: var(--primary); }
+
+    /* 原始权限弹窗的特定样式 */
+    .tea-checkbox { margin-right: 8px; }
+    .tea-form-check__label { font-size: 0.85rem; user-select: none; }
+    .dropdown-menu { max-height: 200px; overflow-y: auto; }
+
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 3px; }
+    ::-webkit-scrollbar-track { background: transparent; }
   </style>
 </head>
 <body>
   <div class="container-fluid">
     <div class="row h-100 g-0">
-
       <div class="col-md-9 h-100 pe-3">
         <div class="glass-card">
           <div class="card-header">
             <div class="d-flex align-items-center gap-2" style="overflow: hidden;">
               <h6 class="mb-0 fw-bold text-dark"><i class="fas fa-folder-open me-2 text-primary"></i>文件</h6>
-              <div class="path-breadcrumb font-monospace" id="currentPath" title="/">/</div>
+              <div class="font-monospace text-secondary small border px-2 rounded bg-light" id="currentPath" title="/">/</div>
             </div>
             <div class="d-flex gap-2 flex-shrink-0">
               <button id="btnUp" class="btn btn-sm btn-outline-secondary"><i class="fas fa-level-up-alt"></i></button>
@@ -256,12 +97,7 @@
                   </tr>
                 </thead>
                 <tbody id="fileTableBody">
-                  <tr><td colspan="6" class="text-center py-5 text-muted">
-                    <div class="d-flex flex-column align-items-center">
-                        <i class="fas fa-circle-notch fa-spin fa-2x mb-3 text-secondary opacity-25"></i>
-                        <span class="small">等待连接...</span>
-                    </div>
-                  </td></tr>
+                  <tr><td colspan="6" class="text-center py-5 text-muted">等待连接...</td></tr>
                 </tbody>
               </table>
             </div>
@@ -271,40 +107,25 @@
 
       <div class="col-md-3 h-100">
         <div class="glass-card">
-          <div class="card-header">
-            <h6 class="mb-0 fw-bold text-dark"><i class="fas fa-cloud-upload-alt me-2 text-success"></i>上传</h6>
-          </div>
+          <div class="card-header"><h6 class="mb-0 fw-bold text-dark">上传</h6></div>
           <div class="card-body upload-panel-body">
             <div class="mb-3">
               <label class="form-label small fw-bold text-secondary">目标路径</label>
-              <input id="uploadPath" class="form-control form-control-sm font-monospace bg-light text-secondary" value="/" readonly />
+              <input id="uploadPath" class="form-control form-control-sm font-monospace bg-light" value="/" readonly />
             </div>
-
             <div id="dropZone" class="drop-zone text-center">
-              <i class="fas fa-cloud-arrow-up fa-2x mb-2 text-secondary opacity-25"></i>
+              <i class="fas fa-cloud-arrow-up fa-2x mb-2 opacity-25"></i>
               <p class="mb-1 fw-medium small">拖拽文件到此处</p>
-
               <div id="dropZoneFileList" class="text-start mt-3 bg-white p-2 rounded border small" style="display: none;">
-                <div class="fw-bold mb-1 text-primary">已选:</div>
-                <ul id="dropZoneFileListItems" class="mb-0 ps-3 text-secondary"></ul>
+                 <ul id="dropZoneFileListItems" class="mb-0 ps-3 text-secondary"></ul>
               </div>
             </div>
-
             <div class="d-grid gap-2">
               <input id="fileInput" type="file" multiple class="d-none" />
-              <button id="pickFilesBtn" class="btn btn-outline-primary btn-sm">
-                <i class="far fa-folder-open me-1"></i> 选择文件
-              </button>
-              <button id="uploadBtn" class="btn btn-success btn-sm">
-                <i class="fas fa-upload me-1"></i> 开始上传
-              </button>
+              <button id="pickFilesBtn" class="btn btn-outline-primary btn-sm">选择文件</button>
+              <button id="uploadBtn" class="btn btn-success btn-sm">开始上传</button>
             </div>
-
             <div id="uploadProgressContainer" class="mt-3"></div>
-
-            <div class="alert alert-light border small text-muted mt-4 mb-0 p-2">
-                <i class="fas fa-info-circle me-1"></i> 提示：支持多文件拖拽。
-            </div>
           </div>
         </div>
       </div>
@@ -318,537 +139,286 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-
   <script>
-    // ===== 页面状态 =====
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    }
+
     let currentPath = '/';
     let currentServerId = '';
-    let fileList = [];
     let draggedFiles = null;
 
     document.addEventListener('DOMContentLoaded', () => {
-      const urlParams = new URLSearchParams(window.location.search);
-      const serverIdFromUrl = urlParams.get('server_id');
+        const urlParams = new URLSearchParams(window.location.search);
+        const serverIdFromUrl = urlParams.get('server_id');
 
-      if (serverIdFromUrl) {
         initServerSelector().then(() => {
-          setTimeout(() => {
-            const serverSelector = document.getElementById('sftpServerSelector');
-            if (serverSelector) {
-              serverSelector.value = serverIdFromUrl;
-              currentServerId = serverIdFromUrl;
-              connectServerFromSelector(true);
+            const sid = serverIdFromUrl || sessionStorage.getItem('lastSelectedServer');
+            if(sid) {
+                const sel = document.getElementById('sftpServerSelector');
+                if(sel) { sel.value = sid; currentServerId = sid; connectServerFromSelector(true); }
             }
-          }, 100);
         });
-      } else {
-        initServerSelector().then(() => {
-          const lastServerId = sessionStorage.getItem('lastSelectedServer');
-          if (lastServerId) {
-            const serverSelector = document.getElementById('sftpServerSelector');
-            if (serverSelector) {
-              serverSelector.value = lastServerId;
-              currentServerId = lastServerId;
-              updateStatus();
-            }
-          }
+
+        initDragAndDrop();
+
+        document.getElementById('refreshListBtn').addEventListener('click', () => loadPath(currentPath));
+        document.getElementById('btnUp').addEventListener('click', () => {
+            if(currentPath === '/' || !currentPath) return;
+            const parent = currentPath.replace(/\/+$/, '').split('/').slice(0,-1).join('/') || '/';
+            loadPath(parent);
         });
-      }
-      bindUI();
-      initDragAndDrop();
+        document.getElementById('pickFilesBtn').addEventListener('click', () => document.getElementById('fileInput').click());
+        document.getElementById('fileInput').addEventListener('change', e => handleFiles(e.target.files));
+        document.getElementById('uploadBtn').addEventListener('click', uploadSelectedFiles);
+        document.getElementById('btnNewFolder').addEventListener('click', () => {
+            const name = prompt('请输入新目录名：');
+            if(name) createDirectory(currentPath.endsWith('/') ? currentPath + name : currentPath + '/' + name);
+        });
     });
 
     async function initServerSelector() {
-      try {
-        const resp = await fetch('/servers');
-        if (!resp.ok) return;
-        const servers = await resp.json();
-        const sel = document.getElementById('sftpServerSelector');
-        sel.innerHTML = '<option value="">请选择服务器</option>';
-        servers.forEach(s => {
-          const opt = document.createElement('option');
-          opt.value = s.id;
-          opt.textContent = `${s.name} (${s.host}) [${s.username}]`;
-          sel.appendChild(opt);
-        });
-        return Promise.resolve();
-      } catch (e) {
-        return Promise.reject(e);
-      }
+        try {
+            const res = await fetch('/servers');
+            if(res.ok) {
+                const servers = await res.json();
+                const sel = document.getElementById('sftpServerSelector');
+                sel.innerHTML = '<option value="">请选择服务器</option>';
+                servers.forEach(s => {
+                    const opt = document.createElement('option');
+                    opt.value = s.id;
+                    opt.textContent = s.name;
+                    sel.appendChild(opt);
+                });
+            }
+        } catch(e) {}
     }
 
     function initDragAndDrop() {
-      const dropZone = document.getElementById('dropZone');
-      ['dragenter', 'dragover'].forEach(eName => {
-        dropZone.addEventListener(eName, (e) => { e.preventDefault(); e.stopPropagation(); }, false);
-        document.body.addEventListener(eName, (e) => { e.preventDefault(); e.stopPropagation(); }, false);
-      });
-      ['dragleave', 'drop'].forEach(eName => {
-        dropZone.addEventListener(eName, (e) => { e.preventDefault(); e.stopPropagation(); }, false);
-        document.body.addEventListener(eName, (e) => { e.preventDefault(); e.stopPropagation(); }, false);
-      });
-      dropZone.addEventListener('dragover', () => dropZone.classList.add('dragover'), false);
-      dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'), false);
-      dropZone.addEventListener('drop', handleDrop, false);
-    }
+        const dropZone = document.getElementById('dropZone');
+        const highlight = () => dropZone.classList.add('dragover');
+        const unhighlight = () => dropZone.classList.remove('dragover');
 
-    function handleDrop(e) {
-      const dt = e.dataTransfer;
-      const files = dt.files;
-      document.getElementById('dropZone').classList.remove('dragover');
-      handleFiles(files);
+        ['dragenter', 'dragover'].forEach(e => dropZone.addEventListener(e, (ev) => { ev.preventDefault(); highlight(); }));
+        ['dragleave', 'drop'].forEach(e => dropZone.addEventListener(e, (ev) => { ev.preventDefault(); unhighlight(); }));
+
+        dropZone.addEventListener('drop', (e) => handleFiles(e.dataTransfer.files));
     }
 
     function handleFiles(files) {
-      draggedFiles = files;
-      const fileNamesList = document.getElementById('dropZoneFileListItems');
-      const fileListContainer = document.getElementById('dropZoneFileList');
-      fileNamesList.innerHTML = '';
-      Array.from(files).forEach(file => {
-        const li = document.createElement('li');
-        li.textContent = `${file.name} (${humanFileSize(file.size)})`;
-        fileNamesList.appendChild(li);
-      });
-      fileListContainer.style.display = files.length > 0 ? 'block' : 'none';
+        draggedFiles = files;
+        const list = document.getElementById('dropZoneFileListItems');
+        list.innerHTML = Array.from(files).map(f => `<li>${escapeHtml(f.name)} (${humanFileSize(f.size)})</li>`).join('');
+        document.getElementById('dropZoneFileList').style.display = files.length ? 'block' : 'none';
     }
 
-    function bindUI() {
-      document.getElementById('sftpServerSelector').addEventListener('change', e => {
-        currentServerId = e.target.value;
-        updateStatus();
-      });
-      document.getElementById('connectSftpBtn').addEventListener('click', connectServerFromSelector);
-      document.getElementById('refreshListBtn').addEventListener('click', () => loadPath(currentPath));
-      document.getElementById('btnUp').addEventListener('click', () => {
-        if (currentPath === '/' || !currentPath) return;
-        const parent = currentPath.replace(/\/+$/, '').split('/').slice(0,-1).join('/') || '/';
-        loadPath(parent);
-      });
-      document.getElementById('pickFilesBtn').addEventListener('click', () => document.getElementById('fileInput').click());
-      document.getElementById('fileInput').addEventListener('change', e => handleFiles(e.target.files));
-      document.getElementById('uploadBtn').addEventListener('click', uploadSelectedFiles);
-      document.getElementById('btnNewFolder').addEventListener('click', () => {
-        const name = prompt('请输入新目录名：');
-        if (name) createDirectory(currentPath.endsWith('/') ? currentPath + name : currentPath + '/' + name);
-      });
-    }
-
-    function updateStatus() {
-      const badge = document.getElementById('sftpStatus');
-      if (!currentServerId) { badge.textContent = '未选择'; return; }
-      showLoading(true);
-      fetch(`/api/sftp/list?server_id=${encodeURIComponent(currentServerId)}&path=/`).then(r => {
-        if (r.ok) {
-          badge.textContent = '在线';
-          loadPath('/');
-        } else {
-          badge.textContent = '连接中...';
-          connectServerFromSelector(true);
-        }
-        showLoading(false);
-      }).catch(() => { badge.textContent = '未连接'; showLoading(false); });
-    }
-
-    async function connectServerFromSelector(quiet = false) {
-      const sid = document.getElementById('sftpServerSelector').value;
-      if (!sid) return;
-      try {
-        const resp = await fetch(`/servers/${sid}/connect`, { method: 'POST' });
-        if (resp.ok) {
-          const result = await resp.json();
-          addLog('连接', `已连接 ${sid}`);
-          currentServerId = sid;
-          sessionStorage.setItem('lastSelectedServer', sid);
-          document.getElementById('sftpStatus').textContent = '在线';
-          loadPath('/');
-          
-          // 发送消息到父窗口，记录操作日志
-          if (window.parent !== window) {
-            window.parent.postMessage({
-              type: 'sftp_operation_log',
-              operation: '连接服务器',
-              details: result.message
-            }, '*');
-          }
-        } else if (!quiet) {
-          const result = await resp.json();
-          alert('连接失败: ' + result.error);
-        }
-      } catch (e) { 
-        if (!quiet) alert('连接异常: ' + e.message); 
-      }
+    async function connectServerFromSelector(quiet) {
+        if(!currentServerId) return;
+        try {
+            const res = await fetch(`/servers/${currentServerId}/connect`, { method: 'POST' });
+            if(res.ok) loadPath('/');
+            else if(!quiet) alert('连接失败');
+        } catch(e) { if(!quiet) alert('错误'); }
     }
 
     async function loadPath(path) {
-      if (!currentServerId) return;
-      const target = path || '/';
-      try {
-        showLoading(true);
-        const resp = await fetch(`/api/sftp/list?server_id=${encodeURIComponent(currentServerId)}&path=${encodeURIComponent(target)}`);
-        if (!resp.ok) {
-            showLoading(false); return;
-        }
-        const arr = await resp.json();
-        currentPath = target;
-        document.getElementById('currentPath').textContent = currentPath;
-        document.getElementById('currentPath').title = currentPath;
-        document.getElementById('uploadPath').value = currentPath;
-        renderFileTable(sortFileList(arr));
-        showLoading(false);
-        
-        // 恢复滚动位置
-        const savedScrollTop = sessionStorage.getItem('sftpTableScrollTop');
-        if (savedScrollTop) {
-          setTimeout(() => {
-            const tableContainer = document.querySelector('.table-container');
-            if (tableContainer) {
-              tableContainer.scrollTop = parseInt(savedScrollTop);
+        if(!currentServerId) return;
+        try {
+            const res = await fetch(`/api/sftp/list?server_id=${currentServerId}&path=${encodeURIComponent(path || '/')}`);
+            if(res.ok) {
+                currentPath = path || '/';
+                document.getElementById('currentPath').textContent = currentPath;
+                document.getElementById('uploadPath').value = currentPath;
+                renderFileTable(await res.json());
             }
-          }, 0);
-        }
-      } catch (e) { showLoading(false); }
-    }
-
-    function showLoading(show) {
-      const tbody = document.getElementById('fileTableBody');
-      if (show) {
-        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-5"><div class="spinner-border text-primary spinner-border-sm" role="status"></div></td></tr>';
-      }
-    }
-
-    function sortFileList(items) {
-      if (!items || items.length === 0) return [];
-      const folders = items.filter(i => i.type === 'directory').sort((a, b) => a.name.localeCompare(b.name));
-      const files = items.filter(i => i.type !== 'directory').sort((a, b) => a.name.localeCompare(b.name));
-      return [...folders, ...files];
-    }
-
-    function formatDateTime(timestamp) {
-      if (!timestamp) return '';
-      const d = new Date(timestamp * 1000);
-      return d.toLocaleString('zh-CN', { hour12: false });
-    }
-
-    function formatFileMode(mode) {
-        if (typeof mode === 'string' && mode.startsWith('0o')) return mode.slice(2);
-        if (typeof mode === 'number') return '0' + mode.toString(8);
-        return mode;
+        } catch(e){}
     }
 
     function renderFileTable(items) {
-      fileList = items || [];
-      const tbody = document.getElementById('fileTableBody');
-      tbody.innerHTML = '';
-      if (!items || items.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">空目录</td></tr>';
-        return;
-      }
+        const tbody = document.getElementById('fileTableBody');
+        tbody.innerHTML = '';
+        if(!items || !items.length) { tbody.innerHTML='<tr><td colspan="6" class="text-center text-muted">空目录</td></tr>'; return; }
 
-      items.forEach(it => {
-        const tr = document.createElement('tr');
-        tr.className = 'file-row';
-
-        let iconClass = 'file-icon-text';
-        if (it.type === 'directory') iconClass = 'folder-icon';
-        else if (it.name.match(/\.(jpg|png|gif)$/i)) iconClass = 'file-icon-image';
-        else if (it.name.match(/\.(js|py|html|css|json)$/i)) iconClass = 'file-icon-code';
-
-        const iconHtml = it.type === 'directory' ? `<i class="fas fa-folder ${iconClass}"></i>` : `<i class="fas fa-file ${iconClass}"></i>`;
-        const userGroup = (it.user && it.group) ? `${it.user}:${it.group}` : (it.uid + ':' + it.gid);
-
-        // ✅ 修复2：创建操作按钮 (调用新逻辑)
-        const operationButtons = createActionButtons(it);
-
-        tr.innerHTML = `
-          <td class="text-center">${iconHtml}</td>
-          <td class="position-relative filename-cell" style="cursor: pointer;" title="${it.name}">
-            <div class="filename-container">
-                <span class="filename-text">${it.name}</span>
-            </div>
-          </td>
-          <td class="font-monospace small text-secondary">${it.type==='directory'?'-':humanFileSize(it.size)}</td>
-          <td class="font-monospace small text-secondary position-relative">
-            ${formatDateTime(it.mtime)}
-            ${operationButtons} </td>
-          <td class="font-monospace small text-secondary">${formatFileMode(it.mode)}</td>
-          <td class="font-monospace small text-secondary" title="${userGroup}">${userGroup}</td>
-        `;
-
-        // 为整个行和文件名列添加点击事件
-        tr.addEventListener('click', (e) => {
-            // 检查点击的是否是操作按钮，如果是则不触发导航
-            if (e.target.closest('.file-action-btn')) {
-                return;
-            }
-            
-            if (it.type === 'directory') {
-                loadPath(it.path);
-            }
+        items.sort((a,b) => {
+            if(a.type === b.type) return a.name.localeCompare(b.name);
+            return a.type === 'directory' ? -1 : 1;
         });
 
-            // 为文件名列添加点击事件
-            tr.querySelector('.filename-cell').addEventListener('click', () => {
-                if (it.type === 'directory') loadPath(it.path);
+        const fragment = document.createDocumentFragment();
+        items.forEach(it => {
+            const tr = document.createElement('tr');
+            tr.className = 'file-row';
+            const icon = it.type === 'directory' ? 'fa-folder folder-icon' : 'fa-file file-icon-text';
+            const safeName = escapeHtml(it.name);
+            const safePath = escapeHtml(it.path);
+            const safeUser = escapeHtml(it.user);
+            const safeGroup = escapeHtml(it.group);
+
+            const btns = `
+                <div class="file-actions shadow-sm">
+                    ${it.type !== 'directory' ? `<div class="file-action-btn" onclick="downloadPath('${safePath}')" title="下载"><i class="fas fa-download fa-sm"></i></div>` : ''}
+                    <div class="file-action-btn" onclick="showPermissionsModal('${safePath}', '${it.mode}', '${safeUser}', '${safeGroup}', ${it.uid}, ${it.gid})" title="权限"><i class="fas fa-shield-alt fa-sm"></i></div>
+                    <div class="file-action-btn" onclick="startRename('${safePath}', this)" title="重命名"><i class="fas fa-pen fa-sm"></i></div>
+                    <div class="file-action-btn delete" onclick="deletePath('${safePath}')" title="删除"><i class="fas fa-trash fa-sm"></i></div>
+                </div>`;
+
+            tr.innerHTML = `
+                <td class="text-center"><i class="fas ${icon}"></i></td>
+                <td class="position-relative filename-cell" title="${safeName}">
+                    <div class="filename-container"><span class="filename-text">${safeName}</span></div>
+                </td>
+                <td class="small text-secondary font-monospace">${it.type==='directory'?'-':humanFileSize(it.size)}</td>
+                <td class="small text-secondary font-monospace position-relative">${formatDateTime(it.mtime)} ${btns}</td>
+                <td class="small text-secondary font-monospace">${formatFileMode(it.mode)}</td>
+                <td class="small text-secondary font-monospace">${safeUser}:${safeGroup}</td>
+            `;
+
+            tr.addEventListener('click', (e) => {
+                if(!e.target.closest('.file-action-btn') && !e.target.closest('input') && it.type === 'directory') {
+                    loadPath(it.path);
+                }
             });
-
-            tbody.appendChild(tr);
-          });
-        }
-
-    // ✅ 修复2：按要求生成操作按钮
-    function createActionButtons(item) {
-      const encodedPath = encodeURIComponent(item.path);
-
-      // 1. 权限 (File & Folder)
-      const btnPerm = `
-        <div class="file-action-btn permissions" onclick="setPermissions('${encodedPath}', '${item.mode}', '${item.user}', '${item.group}', ${item.uid}, ${item.gid})" title="权限">
-          <i class="fas fa-shield-alt fa-sm"></i>
-        </div>`;
-
-      // 2. 重命名 (File & Folder)
-      const btnRename = `
-        <div class="file-action-btn rename" onclick="startRename('${encodedPath}', this)" title="重命名">
-          <i class="fas fa-pen fa-sm"></i>
-        </div>`;
-
-      // 3. 删除 (File & Folder)
-      const btnDelete = `
-        <div class="file-action-btn delete" onclick="deletePath('${encodedPath}')" title="删除">
-          <i class="fas fa-trash fa-sm"></i>
-        </div>`;
-
-      // 4. 下载 (仅 File)
-      const btnDownload = `
-        <div class="file-action-btn" onclick="downloadPath('${encodedPath}')" title="下载">
-          <i class="fas fa-download fa-sm"></i>
-        </div>`;
-
-      let buttonsHtml = '';
-
-      if (item.type === 'directory') {
-          // 文件夹：权限、重命名、删除
-          buttonsHtml = btnPerm + btnRename + btnDelete;
-      } else {
-          // 文件：下载、权限、重命名、删除
-          buttonsHtml = btnDownload + btnPerm + btnRename + btnDelete;
-      }
-
-      return `<div class="file-actions shadow-sm">${buttonsHtml}</div>`;
+            fragment.appendChild(tr);
+        });
+        tbody.appendChild(fragment);
     }
 
-    // 工具函数
     function humanFileSize(bytes) {
-      if (bytes === 0) return '0 B';
-      const i = Math.floor(Math.log(bytes) / Math.log(1024));
-      return (bytes / Math.pow(1024, i)).toFixed(1) + ' ' + ['B','KB','MB','GB'][i];
+        if(bytes===0) return '0 B';
+        const i = Math.floor(Math.log(bytes)/Math.log(1024));
+        return (bytes/Math.pow(1024, i)).toFixed(1)+' '+['B','KB','MB','GB'][i];
     }
+    function formatDateTime(ts) { return new Date(ts*1000).toLocaleString('zh-CN', {hour12:false}); }
+    function formatFileMode(m) { return typeof m==='string' && m.startsWith('0o') ? m.slice(2) : m; }
 
-    function uploadSelectedFiles() {
-        if (!currentServerId || !draggedFiles && !document.getElementById('fileInput').files.length) return alert('请选择文件');
-        const files = draggedFiles || document.getElementById('fileInput').files;
-        const target = document.getElementById('uploadPath').value;
-        const form = new FormData();
-        for(let i=0;i<files.length;i++) form.append('files', files[i]);
-        form.append('path', target);
-        form.append('server_id', currentServerId);
-
-        const xhr = new XMLHttpRequest();
-        xhr.open('POST', `/api/sftp/upload?server_id=${currentServerId}&path=${encodeURIComponent(target)}`);
-
-        const progressBox = document.getElementById('uploadProgressContainer');
-        progressBox.innerHTML = '<div class="progress" style="height:4px"><div class="progress-bar" style="width:0%"></div></div>';
-
-        xhr.upload.onprogress = e => {
-            if(e.lengthComputable) progressBox.querySelector('.progress-bar').style.width = Math.round((e.loaded/e.total)*100) + '%';
-        };
-        xhr.onload = () => {
-            loadPath(currentPath);
-            progressBox.innerHTML='';
-            document.getElementById('dropZoneFileListItems').innerHTML='';
-            document.getElementById('dropZoneFileList').style.display='none';
-            draggedFiles=null;
-            
-            // 发送消息到父窗口，记录操作日志
-            if (window.parent !== window) {
-              const fileNames = Array.from(files).map(f => f.name).join(', ');
-              window.parent.postMessage({
-                type: 'sftp_operation_log',
-                operation: '文件上传',
-                details: `上传文件到 ${target}: ${fileNames}`
-              }, '*');
-            }
-        };
-        xhr.send(form);
-    }
-
-    function downloadPath(p) {
+    window.downloadPath = (p) => {
         const a = document.createElement('a');
-        a.href = `/api/sftp/download?server_id=${currentServerId}&path=${p}`;
+        a.href = `/api/sftp/download?server_id=${currentServerId}&path=${encodeURIComponent(p)}`;
         document.body.appendChild(a); a.click(); a.remove();
     }
 
-    function deletePath(p) {
+    window.deletePath = (p) => {
         if(confirm('确认删除?')) {
-          fetch(`/api/sftp/delete?server_id=${currentServerId}&path=${p}`, {method:'DELETE'})
-          .then(response => response.json())
-          .then(data => {
-            loadPath(currentPath);
-            // 发送消息到父窗口，记录操作日志
-            if (window.parent !== window) {
-              window.parent.postMessage({
-                type: 'sftp_operation_log',
-                operation: '删除文件',
-                details: `删除文件/目录: ${decodeURIComponent(p)}`
-              }, '*');
-            }
-          });
+            fetch(`/api/sftp/delete?server_id=${currentServerId}&path=${encodeURIComponent(p)}`, {method:'DELETE'})
+            .then(r=>r.json()).then(() => {
+                loadPath(currentPath);
+                if (window.parent !== window) window.parent.postMessage({type:'sftp_operation_log', operation:'删除文件', details:`删除: ${p}`}, '*');
+            });
         }
     }
 
-    function startRename(encPath, btn) {
-        // 保存当前滚动位置
-        const tableContainer = document.querySelector('.table-container');
-        if (tableContainer) {
-          sessionStorage.setItem('sftpTableScrollTop', tableContainer.scrollTop.toString());
-        }
-        
+    window.startRename = (path, btn) => {
         const row = btn.closest('tr');
-        const nameSpan = row.querySelector('.filename-text');
-        const oldName = nameSpan.textContent;
+        const nameEl = row.querySelector('.filename-text');
+        const oldName = nameEl.textContent;
         const cell = row.querySelector('td:nth-child(2)');
 
+        // 恢复取消按钮
         cell.innerHTML = `
-            <div class="rename-wrapper d-flex gap-1">
-                <input type="text" class="form-control form-control-sm p-1" value="${oldName}" style="font-size:0.8rem">
-                <button class="btn btn-success btn-sm p-0" style="width:24px"><i class="fas fa-check"></i></button>
-                <button class="btn btn-secondary btn-sm p-0" style="width:24px"><i class="fas fa-times"></i></button>
+            <div class="d-flex gap-1 align-items-center">
+                <input type="text" class="form-control form-control-sm p-1" value="${escapeHtml(oldName)}" style="min-width:150px">
+                <button class="btn btn-success btn-sm p-0 w-auto px-2" title="确认"><i class="fas fa-check"></i></button>
+                <button class="btn btn-secondary btn-sm p-0 w-auto px-2" title="取消"><i class="fas fa-times"></i></button>
             </div>`;
-
         const input = cell.querySelector('input');
         input.focus();
 
-        cell.querySelector('.btn-success').onclick = () => {
+        cell.querySelector('.btn-success').onclick = (e) => {
+            e.stopPropagation();
             const newName = input.value;
-            const oldPath = decodeURIComponent(encPath);
-            const newPath = oldPath.substring(0, oldPath.lastIndexOf('/')+1) + newName;
-
+            const dir = path.substring(0, path.lastIndexOf('/')+1);
             fetch('/api/sftp/rename', {
-                method:'POST',
-                headers:{'Content-Type':'application/json'},
-                body: JSON.stringify({server_id:currentServerId, old_path:oldPath, new_path:newPath})
-            }).then(response => response.json())
-            .then(data => {
-              loadPath(currentPath);
-              // 发送消息到父窗口，记录操作日志
-              if (window.parent !== window) {
-                window.parent.postMessage({
-                  type: 'sftp_operation_log',
-                  operation: '重命名文件',
-                  details: `重命名文件: ${oldName} -> ${newName}`
-                }, '*');
-              }
+                method:'POST', headers:{'Content-Type':'application/json'},
+                body: JSON.stringify({server_id:currentServerId, old_path:path, new_path:dir+newName})
+            }).then(() => {
+                loadPath(currentPath);
+                if (window.parent !== window) window.parent.postMessage({type:'sftp_operation_log', operation:'重命名', details:`${oldName} -> ${newName}`}, '*');
             });
         };
-
-        cell.querySelector('.btn-secondary').onclick = () => loadPath(currentPath);
+        // 绑定取消事件
+        cell.querySelector('.btn-secondary').onclick = (e) => {
+            e.stopPropagation();
+            loadPath(currentPath);
+        };
+        input.onclick = (e) => e.stopPropagation();
     }
 
-    function addLog(t, d) { 
-      console.log(t, d); 
-      
-      // 发送消息到父窗口，记录操作日志
-      if (window.parent !== window) {
-        window.parent.postMessage({
-          type: 'sftp_operation_log',
-          operation: t,
-          details: d
-        }, '*');
-      }
+    function uploadSelectedFiles() {
+        const files = draggedFiles || document.getElementById('fileInput').files;
+        if(!files.length) return alert('请选择文件');
+
+        const fd = new FormData();
+        Array.from(files).forEach(f => fd.append('files', f));
+        fd.append('path', document.getElementById('uploadPath').value);
+        fd.append('server_id', currentServerId);
+
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', `/api/sftp/upload?server_id=${currentServerId}&path=${encodeURIComponent(currentPath)}`);
+        xhr.upload.onprogress = e => {
+            if(e.lengthComputable) {
+                const pct = Math.round((e.loaded/e.total)*100)+'%';
+                document.getElementById('uploadProgressContainer').innerHTML = `<div class="progress" style="height:4px"><div class="progress-bar" style="width:${pct}"></div></div>`;
+            }
+        };
+        xhr.onload = () => {
+            loadPath(currentPath);
+            document.getElementById('uploadProgressContainer').innerHTML='';
+            draggedFiles=null; document.getElementById('dropZoneFileList').style.display='none';
+            if (window.parent !== window) window.parent.postMessage({type:'sftp_operation_log', operation:'上传文件', details:`上传 ${files.length} 个文件到 ${currentPath}`}, '*');
+        };
+        xhr.send(fd);
     }
+
     function createDirectory(p) {
         fetch('/api/sftp/mkdir', {
-            method:'POST',
-            headers:{'Content-Type':'application/json'},
+            method:'POST', headers:{'Content-Type':'application/json'},
             body:JSON.stringify({server_id:currentServerId, path:p})
-        }).then(response => response.json())
-        .then(data => {
-          loadPath(currentPath);
-          // 发送消息到父窗口，记录操作日志
-          if (window.parent !== window) {
-            const dirName = p.split('/').pop();
-            window.parent.postMessage({
-              type: 'sftp_operation_log',
-              operation: '创建目录',
-              details: `创建目录: ${dirName}`
-            }, '*');
-          }
-        });
+        }).then(() => loadPath(currentPath));
     }
 
-    // 设置权限和所有者（合并功能）
-    async function setPermissions(encPath, currentMode, currentUser, currentGroup, currentUid, currentGid) {
-      // 创建一个包含权限和所有者设置的模态框
-      const path = decodeURIComponent(encPath);
+    // 重点：完全还原您的权限管理布局和功能逻辑
+    async function showPermissionsModal(encPath, currentMode, currentUser, currentGroup, currentUid, currentGid) {
+        const path = decodeURIComponent(encPath);
 
-      // 首先获取用户和组列表
-      let users = [];
-      let groups = [];
+        // 1. 准备数据
+        let users = [], groups = [];
+        try {
+            const res = await fetch(`/api/sftp/users-groups?server_id=${encodeURIComponent(currentServerId)}`);
+            if(res.ok) { const d = await res.json(); users = d.users; groups = d.groups; }
+        } catch(e) { console.warn('Fetch users error', e); }
 
-      try {
-        const resp = await fetch(`/api/sftp/users-groups?server_id=${encodeURIComponent(currentServerId)}`);
-        if (resp.ok) {
-          const data = await resp.json();
-          users = data.users;
-          groups = data.groups;
-        }
-      } catch (e) {
-        console.warn('无法获取用户和组列表:', e);
-      }
+        let mode = 0;
+        if (typeof currentMode === 'string' && currentMode.startsWith('0o')) mode = parseInt(currentMode.slice(2), 8);
+        else if (typeof currentMode === 'number') mode = currentMode;
 
-      // 解析当前权限
-      let mode = 0;
-      if (typeof currentMode === 'string' && currentMode.startsWith('0o')) {
-        mode = parseInt(currentMode.slice(2), 8);
-      } else if (typeof currentMode === 'number') {
-        mode = currentMode;
-      }
+        const check = (mask) => (mode & mask) !== 0 ? 'checked' : '';
 
-      // 将权限转换为rwx格式
-      const ownerRead = (mode & 0o400) !== 0;
-      const ownerWrite = (mode & 0o200) !== 0;
-      const ownerExecute = (mode & 0o100) !== 0;
-      const groupRead = (mode & 0o040) !== 0;
-      const groupWrite = (mode & 0o020) !== 0;
-      const groupExecute = (mode & 0o010) !== 0;
-      const publicRead = (mode & 0o004) !== 0;
-      const publicWrite = (mode & 0o002) !== 0;
-      const publicExecute = (mode & 0o001) !== 0;
-
-      // 创建模态框HTML
-      const modalHtml = `
-        <div class="modal fade" id="permissionModal" tabindex="-1" aria-labelledby="permissionModalLabel" aria-hidden="true">
+        // 2. 还原您的原始 HTML 结构
+        const modalHtml = `
+        <div class="modal fade" id="permissionModal" tabindex="-1">
           <div class="modal-dialog">
             <div class="modal-content">
               <div class="modal-header">
-                <h5 class="modal-title fw-bold" id="permissionModalLabel">权限与所有者</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <h5 class="modal-title fw-bold">权限与所有者</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
               </div>
               <div class="modal-body">
-                <div class="alert alert-light border small text-break mb-3 font-monospace">${path}</div>
+                <div class="alert alert-light border small text-break mb-3 font-monospace">${escapeHtml(path)}</div>
 
                 <div class="row g-3">
                   <div class="col-6">
                     <label for="newUser" class="form-label small fw-bold">用户 (User)</label>
-                    <input type="text" class="form-control form-control-sm" id="newUser" placeholder="输入用户名或UID" value="${currentUser}">
-                    <div class="form-text small">当前: ${currentUser} (${currentUid})</div>
-                    <div id="userSuggestions" class="dropdown-menu" style="display: none; max-height: 200px; overflow-y: auto;"></div>
+                    <input type="text" class="form-control form-control-sm" id="newUser" placeholder="输入用户名或UID" value="${escapeHtml(currentUser)}">
+                    <div class="form-text small">当前: ${escapeHtml(currentUser)} (${currentUid})</div>
+                    <div id="userSuggestions" class="dropdown-menu" style="display: none; width: 90%;"></div>
                   </div>
 
                   <div class="col-6">
                     <label for="newGroup" class="form-label small fw-bold">用户组 (Group)</label>
-                    <input type="text" class="form-control form-control-sm" id="newGroup" placeholder="输入组名或GID" value="${currentGroup}">
-                    <div class="form-text small">当前: ${currentGroup} (${currentGid})</div>
-                    <div id="groupSuggestions" class="dropdown-menu" style="display: none; max-height: 200px; overflow-y: auto;"></div>
+                    <input type="text" class="form-control form-control-sm" id="newGroup" placeholder="输入组名或GID" value="${escapeHtml(currentGroup)}">
+                    <div class="form-text small">当前: ${escapeHtml(currentGroup)} (${currentGid})</div>
+                    <div id="groupSuggestions" class="dropdown-menu" style="display: none; width: 90%;"></div>
                   </div>
                 </div>
 
@@ -862,21 +432,21 @@
                         <tbody>
                             <tr>
                                 <td class="fw-bold text-start ps-3">所有者</td>
-                                <td><input class="form-check-input" type="checkbox" id="ownerRead" ${ownerRead ? 'checked' : ''}></td>
-                                <td><input class="form-check-input" type="checkbox" id="ownerWrite" ${ownerWrite ? 'checked' : ''}></td>
-                                <td><input class="form-check-input" type="checkbox" id="ownerExecute" ${ownerExecute ? 'checked' : ''}></td>
+                                <td><input class="form-check-input" type="checkbox" id="ownerRead" ${check(0o400)}></td>
+                                <td><input class="form-check-input" type="checkbox" id="ownerWrite" ${check(0o200)}></td>
+                                <td><input class="form-check-input" type="checkbox" id="ownerExecute" ${check(0o100)}></td>
                             </tr>
                             <tr>
                                 <td class="fw-bold text-start ps-3">用户组</td>
-                                <td><input class="form-check-input" type="checkbox" id="groupRead" ${groupRead ? 'checked' : ''}></td>
-                                <td><input class="form-check-input" type="checkbox" id="groupWrite" ${groupWrite ? 'checked' : ''}></td>
-                                <td><input class="form-check-input" type="checkbox" id="groupExecute" ${groupExecute ? 'checked' : ''}></td>
+                                <td><input class="form-check-input" type="checkbox" id="groupRead" ${check(0o040)}></td>
+                                <td><input class="form-check-input" type="checkbox" id="groupWrite" ${check(0o020)}></td>
+                                <td><input class="form-check-input" type="checkbox" id="groupExecute" ${check(0o010)}></td>
                             </tr>
                             <tr>
                                 <td class="fw-bold text-start ps-3">公共</td>
-                                <td><input class="form-check-input" type="checkbox" id="publicRead" ${publicRead ? 'checked' : ''}></td>
-                                <td><input class="form-check-input" type="checkbox" id="publicWrite" ${publicWrite ? 'checked' : ''}></td>
-                                <td><input class="form-check-input" type="checkbox" id="publicExecute" ${publicExecute ? 'checked' : ''}></td>
+                                <td><input class="form-check-input" type="checkbox" id="publicRead" ${check(0o004)}></td>
+                                <td><input class="form-check-input" type="checkbox" id="publicWrite" ${check(0o002)}></td>
+                                <td><input class="form-check-input" type="checkbox" id="publicExecute" ${check(0o001)}></td>
                             </tr>
                         </tbody>
                     </table>
@@ -887,9 +457,9 @@
                     <input type="text" class="form-control form-control-sm font-monospace text-center fw-bold text-primary" id="modeValue" value="${mode.toString(8).padStart(3, '0')}" maxlength="3" style="width: 80px;">
                     <div class="ms-3 text-muted small">预览: <span id="modeValueDisplay" class="font-monospace fw-bold">${mode.toString(8).padStart(3, '0')}</span></div>
                   </div>
-                  
+
                   <div class="mt-3">
-                    <label class="tea-form-check per-checkbox" name="la">
+                    <label class="tea-form-check per-checkbox">
                       <input type="checkbox" class="tea-checkbox" id="applyToSubdirectories">
                       <span class="tea-form-check__label">将用户组应用到子目录</span>
                     </label>
@@ -903,526 +473,127 @@
             </div>
           </div>
         </div>
-      `;
-
-      // 添加模态框到页面
-      const modalContainer = document.createElement('div');
-      modalContainer.innerHTML = modalHtml;
-      document.body.appendChild(modalContainer);
-
-      // 显示模态框
-      const modal = new bootstrap.Modal(document.getElementById('permissionModal'));
-      modal.show();
-
-      // 获取DOM元素
-      const userInputElement = document.getElementById('newUser');
-      const groupInputElement = document.getElementById('newGroup');
-      const userSuggestionsElement = document.getElementById('userSuggestions');
-      const groupSuggestionsElement = document.getElementById('groupSuggestions');
-
-      // 用户搜索功能
-      userInputElement.addEventListener('input', function() {
-        const value = this.value.toLowerCase();
-        if (value.length > 0 && users.length > 0) {
-          const filteredUsers = users.filter(user =>
-            user.name.toLowerCase().includes(value) || user.uid.toString().includes(value)
-          );
-
-          if (filteredUsers.length > 0) {
-            userSuggestionsElement.innerHTML = '';
-            filteredUsers.forEach(user => {
-              const item = document.createElement('a');
-              item.className = 'dropdown-item';
-              item.href = '#';
-              item.textContent = `${user.name} (${user.uid})`;
-              item.addEventListener('click', (e) => {
-                e.preventDefault();
-                userInputElement.value = user.name;
-                userSuggestionsElement.style.display = 'none';
-              });
-              userSuggestionsElement.appendChild(item);
-            });
-            userSuggestionsElement.style.display = 'block';
-          } else {
-            userSuggestionsElement.style.display = 'none';
-          }
-        } else {
-          userSuggestionsElement.style.display = 'none';
-        }
-      });
-
-      // 组搜索功能
-      groupInputElement.addEventListener('input', function() {
-        const value = this.value.toLowerCase();
-        if (value.length > 0 && groups.length > 0) {
-          const filteredGroups = groups.filter(group =>
-            group.name.toLowerCase().includes(value) || group.gid.toString().includes(value)
-          );
-
-          if (filteredGroups.length > 0) {
-            groupSuggestionsElement.innerHTML = '';
-            filteredGroups.forEach(group => {
-              const item = document.createElement('a');
-              item.className = 'dropdown-item';
-              item.href = '#';
-              item.textContent = `${group.name} (${group.gid})`;
-              item.addEventListener('click', (e) => {
-                e.preventDefault();
-                groupInputElement.value = group.name;
-                groupSuggestionsElement.style.display = 'none';
-              });
-              groupSuggestionsElement.appendChild(item);
-            });
-            groupSuggestionsElement.style.display = 'block';
-          } else {
-            groupSuggestionsElement.style.display = 'none';
-          }
-        } else {
-          groupSuggestionsElement.style.display = 'none';
-        }
-      });
-
-      // 点击其他地方隐藏下拉菜单
-      document.addEventListener('click', function(e) {
-        if (!userInputElement.contains(e.target) && !userSuggestionsElement.contains(e.target)) {
-          userSuggestionsElement.style.display = 'none';
-        }
-        if (!groupInputElement.contains(e.target) && !groupSuggestionsElement.contains(e.target)) {
-          groupSuggestionsElement.style.display = 'none';
-        }
-      });
-
-      // 更新权限值显示
-      function updateModeValue() {
-        const owner = (document.getElementById('ownerRead').checked ? 4 : 0) +
-                     (document.getElementById('ownerWrite').checked ? 2 : 0) +
-                     (document.getElementById('ownerExecute').checked ? 1 : 0);
-        const group = (document.getElementById('groupRead').checked ? 4 : 0) +
-                     (document.getElementById('groupWrite').checked ? 2 : 0) +
-                     (document.getElementById('groupExecute').checked ? 1 : 0);
-        const public_ = (document.getElementById('publicRead').checked ? 4 : 0) +
-                      (document.getElementById('publicWrite').checked ? 2 : 0) +
-                      (document.getElementById('publicExecute').checked ? 1 : 0);
-        const modeValue = `${owner}${group}${public_}`;
-        document.getElementById('modeValue').value = modeValue;
-        document.getElementById('modeValueDisplay').textContent = modeValue;
-      }
-
-      // 为所有复选框绑定事件
-      const checkboxes = modalContainer.querySelectorAll('input[type="checkbox"]');
-      checkboxes.forEach(checkbox => {
-        checkbox.addEventListener('change', updateModeValue);
-      });
-
-      // 为权限值输入框绑定事件
-      document.getElementById('modeValue').addEventListener('input', function() {
-        const modeValue = this.value;
-        if (modeValue.length === 3) {
-          // 解析权限值并更新复选框
-          const owner = parseInt(modeValue[0]);
-          const group = parseInt(modeValue[1]);
-          const public_ = parseInt(modeValue[2]);
-
-          document.getElementById('ownerRead').checked = (owner & 4) !== 0;
-          document.getElementById('ownerWrite').checked = (owner & 2) !== 0;
-          document.getElementById('ownerExecute').checked = (owner & 1) !== 0;
-          document.getElementById('groupRead').checked = (group & 4) !== 0;
-          document.getElementById('groupWrite').checked = (group & 2) !== 0;
-          document.getElementById('groupExecute').checked = (group & 1) !== 0;
-          document.getElementById('publicRead').checked = (public_ & 4) !== 0;
-          document.getElementById('publicWrite').checked = (public_ & 2) !== 0;
-          document.getElementById('publicExecute').checked = (public_ & 1) !== 0;
-          
-          updateModeValue();
-        }
-      });
-
-      // 保存更改按钮事件
-      document.getElementById('confirmPermission').addEventListener('click', async function() {
-        const newUser = userInputElement.value;
-        const newGroup = groupInputElement.value;
-        const newMode = document.getElementById('modeValue').value;
-        const applyToSubdirectories = document.getElementById('applyToSubdirectories').checked;
-
-        // 关闭模态框
-        modal.hide();
-
-        try {
-          // 更改权限（仅当前文件/目录）
-          const chmodResp = await fetch('/api/sftp/chmod', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              server_id: currentServerId,
-              path: path,
-              mode: parseInt(newMode, 8)
-            })
-          });
-
-          if (!chmodResp.ok) {
-            const error = await chmodResp.json();
-            throw new Error(error.error || '权限设置失败');
-          }
-
-          // 更改所有者和组
-          // 首先查找用户和组的ID
-          let uid = currentUid;
-          let gid = currentGid;
-
-          // 如果用户输入的是UID，直接使用；否则查找
-          if (/^\d+$/.test(newUser)) {
-            uid = parseInt(newUser);
-          } else {
-            const user = users.find(u => u.name === newUser);
-            if (user) {
-              uid = user.uid;
-            }
-          }
-
-          // 如果组输入的是GID，直接使用；否则查找
-          if (/^\d+$/.test(newGroup)) {
-            gid = parseInt(newGroup);
-          } else {
-            const group = groups.find(g => g.name === newGroup);
-            if (group) {
-              gid = group.gid;
-            }
-          }
-
-          // 发送chown请求（可以选择是否递归应用）
-          const chownResp = await fetch('/api/sftp/chown', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              server_id: currentServerId,
-              path: path,
-              uid: uid,
-              gid: gid,
-              recursive: applyToSubdirectories ? true : undefined
-            })
-          });
-
-          if (!chownResp.ok) {
-            const error = await chownResp.json();
-            throw new Error(error.error || '所有者/组设置失败');
-          }
-
-          // 重新加载文件列表
-          loadPath(currentPath);
-          
-          // 发送消息到父窗口，记录操作日志
-          if (window.parent !== window) {
-            window.parent.postMessage({
-              type: 'sftp_operation_log',
-              operation: '设置权限',
-              details: `设置文件权限和所有者: ${path}`
-            }, '*');
-          }
-        } catch (error) {
-          alert('操作失败: ' + error.message);
-          console.error(error);
-        }
-
-        // 移除模态框
-        setTimeout(() => {
-          document.getElementById('permissionModal').remove();
-        }, 500);
-      });
-
-      // 模态框关闭事件
-      document.getElementById('permissionModal').addEventListener('hidden.bs.modal', function () {
-        document.getElementById('permissionModal').remove();
-      });
-    }
-
-    // 显示权限设置模态框
-    function showPermissionsModal(encPath, mode, user, group, uid, gid) {
-        const path = decodeURIComponent(encPath);
-        const filename = path.split('/').pop();
-        
-        // 创建模态框HTML
-        const modalHtml = `
-        <div class="modal fade" id="permissionsModal" tabindex="-1" aria-labelledby="permissionsModalLabel" aria-hidden="true">
-          <div class="modal-dialog">
-            <div class="modal-content">
-              <div class="modal-header">
-                <h5 class="modal-title" id="permissionsModalLabel">设置权限: ${filename}</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-              </div>
-              <div class="modal-body">
-                <input type="hidden" id="permPath" value="${path}">
-                <div class="mb-3">
-                  <label class="form-label">所有者</label>
-                  <div class="form-control">
-                    <span>${user || uid}</span>
-                  </div>
-                </div>
-                <div class="mb-3">
-                  <label class="form-label">用户组</label>
-                  <div class="form-control">
-                    <span>${group || gid}</span>
-                  </div>
-                </div>
-                
-                <!-- 权限设置 -->
-                <div class="mb-3">
-                  <label class="form-label">权限</label>
-                  <div class="card">
-                    <div class="card-body">
-                      <div class="row">
-                        <div class="col-md-4">
-                          <label class="form-label">所有者</label>
-                          <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="ownerRead" ${mode && (parseInt(mode, 8) & 0o400) ? 'checked' : ''}>
-                            <label class="form-check-label" for="ownerRead">读取</label>
-                          </div>
-                          <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="ownerWrite" ${mode && (parseInt(mode, 8) & 0o200) ? 'checked' : ''}>
-                            <label class="form-check-label" for="ownerWrite">写入</label>
-                          </div>
-                          <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="ownerExecute" ${mode && (parseInt(mode, 8) & 0o100) ? 'checked' : ''}>
-                            <label class="form-check-label" for="ownerExecute">执行</label>
-                          </div>
-                        </div>
-                        
-                        <div class="col-md-4">
-                          <label class="form-label">用户组</label>
-                          <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="groupRead" ${mode && (parseInt(mode, 8) & 0o040) ? 'checked' : ''}>
-                            <label class="form-check-label" for="groupRead">读取</label>
-                          </div>
-                          <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="groupWrite" ${mode && (parseInt(mode, 8) & 0o020) ? 'checked' : ''}>
-                            <label class="form-check-label" for="groupWrite">写入</label>
-                          </div>
-                          <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="groupExecute" ${mode && (parseInt(mode, 8) & 0o010) ? 'checked' : ''}>
-                            <label class="form-check-label" for="groupExecute">执行</label>
-                          </div>
-                        </div>
-                        
-                        <div class="col-md-4">
-                          <label class="form-label">公共</label>
-                          <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="publicRead" ${mode && (parseInt(mode, 8) & 0o004) ? 'checked' : ''}>
-                            <label class="form-check-label" for="publicRead">读取</label>
-                          </div>
-                          <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="publicWrite" ${mode && (parseInt(mode, 8) & 0o002) ? 'checked' : ''}>
-                            <label class="form-check-label" for="publicWrite">写入</label>
-                          </div>
-                          <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="publicExecute" ${mode && (parseInt(mode, 8) & 0o001) ? 'checked' : ''}>
-                            <label class="form-check-label" for="publicExecute">执行</label>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div class="mt-3">
-                        <label class="form-label">权限值</label>
-                        <input type="text" class="form-control" id="permissionValue" value="${mode || ''}">
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
-                <button type="button" class="btn btn-primary" onclick="savePermissions()">保存</button>
-              </div>
-            </div>
-          </div>
-        </div>
         `;
-        
-        // 移除已存在的模态框
-        const existingModal = document.getElementById('permissionsModal');
-        if (existingModal) {
-            existingModal.remove();
-        }
-        
-        // 添加模态框到页面
-        document.body.insertAdjacentHTML('beforeend', modalHtml);
-        
-        // 绑定权限复选框事件
-        bindPermissionEvents();
-        
-        // 显示模态框
-        const modal = new bootstrap.Modal(document.getElementById('permissionsModal'));
+
+        // 3. 渲染与绑定
+        const div = document.createElement('div');
+        div.innerHTML = modalHtml;
+        document.body.appendChild(div);
+
+        const modal = new bootstrap.Modal(document.getElementById('permissionModal'));
         modal.show();
-        
-        // 模态框关闭后移除它
-        document.getElementById('permissionsModal').addEventListener('hidden.bs.modal', function () {
-            document.getElementById('permissionsModal').remove();
-        });
-    }
-    
-    // 绑定权限复选框事件
-    function bindPermissionEvents() {
-        const checkboxes = document.querySelectorAll('#permissionsModal .form-check-input');
-        const permissionValueInput = document.getElementById('permissionValue');
-        
-        checkboxes.forEach(checkbox => {
-            checkbox.addEventListener('change', function () {
-                updatePermissionValue();
+
+        // 搜索功能实现
+        const setupSearch = (inputId, listId, dataList, idKey) => {
+            const input = div.querySelector(inputId);
+            const list = div.querySelector(listId);
+
+            input.addEventListener('input', () => {
+                const v = input.value.toLowerCase();
+                if(!v || !dataList.length) { list.style.display='none'; return; }
+                const matched = dataList.filter(i => i.name.toLowerCase().includes(v) || String(i[idKey]).includes(v));
+
+                list.innerHTML = '';
+                if(matched.length) {
+                    matched.forEach(item => {
+                        const a = document.createElement('a');
+                        a.className = 'dropdown-item';
+                        a.href='#';
+                        a.textContent = `${item.name} (${item[idKey]})`;
+                        a.onclick = (e) => { e.preventDefault(); input.value = item.name; list.style.display='none'; };
+                        list.appendChild(a);
+                    });
+                    list.style.display = 'block';
+                } else list.style.display='none';
             });
-        });
-        
-        permissionValueInput.addEventListener('input', function () {
-            updateCheckboxesFromValue(this.value);
-        });
-        
-        // 初始化权限值
-        updatePermissionValue();
-    }
-    
-    // 根据复选框状态更新权限值
-    function updatePermissionValue() {
-        let value = 0;
-        
-        // 所有者权限
-        if (document.getElementById('ownerRead')?.checked) value |= 0o400;
-        if (document.getElementById('ownerWrite')?.checked) value |= 0o200;
-        if (document.getElementById('ownerExecute')?.checked) value |= 0o100;
-        
-        // 用户组权限
-        if (document.getElementById('groupRead')?.checked) value |= 0o040;
-        if (document.getElementById('groupWrite')?.checked) value |= 0o020;
-        if (document.getElementById('groupExecute')?.checked) value |= 0o010;
-        
-        // 公共权限
-        if (document.getElementById('publicRead')?.checked) value |= 0o004;
-        if (document.getElementById('publicWrite')?.checked) value |= 0o002;
-        if (document.getElementById('publicExecute')?.checked) value |= 0o001;
-        
-        const permissionValueInput = document.getElementById('permissionValue');
-        if (permissionValueInput) {
-            permissionValueInput.value = '0' + value.toString(8);
-        }
-    }
+            // 点击外部隐藏
+            document.addEventListener('click', (e) => {
+                if(!input.contains(e.target) && !list.contains(e.target)) list.style.display='none';
+            });
+        };
 
+        setupSearch('#newUser', '#userSuggestions', users, 'uid');
+        setupSearch('#newGroup', '#groupSuggestions', groups, 'gid');
 
+        // 权限联动逻辑
+        const updateModeValue = () => {
+            let m = 0;
+            if(document.getElementById('ownerRead').checked) m|=0o400;
+            if(document.getElementById('ownerWrite').checked) m|=0o200;
+            if(document.getElementById('ownerExecute').checked) m|=0o100;
+            if(document.getElementById('groupRead').checked) m|=0o040;
+            if(document.getElementById('groupWrite').checked) m|=0o020;
+            if(document.getElementById('groupExecute').checked) m|=0o010;
+            if(document.getElementById('publicRead').checked) m|=0o004;
+            if(document.getElementById('publicWrite').checked) m|=0o002;
+            if(document.getElementById('publicExecute').checked) m|=0o001;
 
-    
-    // 显示所有者和用户组设置模态框
-    function showOwnerGroupModal(encPath, users, groups) {
-        const path = decodeURIComponent(encPath);
-        const filename = path.split('/').pop();
-        
-        // 构建用户选项
-        let userOptions = '';
-        users.forEach(user => {
-            userOptions += `<option value="${user.uid}">${user.name} (${user.uid})</option>`;
+            const s = m.toString(8).padStart(3,'0');
+            document.getElementById('modeValue').value = s;
+            document.getElementById('modeValueDisplay').textContent = s;
+        };
+
+        div.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+            if(cb.id !== 'applyToSubdirectories') cb.addEventListener('change', updateModeValue);
         });
-        
-        // 构建组选项
-        let groupOptions = '';
-        groups.forEach(group => {
-            groupOptions += `<option value="${group.gid}">${group.name} (${group.gid})</option>`;
+
+        document.getElementById('modeValue').addEventListener('input', function() {
+            if(this.value.length === 3) {
+                const m = parseInt(this.value, 8);
+                document.getElementById('ownerRead').checked = (m&0o400);
+                document.getElementById('ownerWrite').checked = (m&0o200);
+                document.getElementById('ownerExecute').checked = (m&0o100);
+                document.getElementById('groupRead').checked = (m&0o040);
+                document.getElementById('groupWrite').checked = (m&0o020);
+                document.getElementById('groupExecute').checked = (m&0o010);
+                document.getElementById('publicRead').checked = (m&0o004);
+                document.getElementById('publicWrite').checked = (m&0o002);
+                document.getElementById('publicExecute').checked = (m&0o001);
+                updateModeValue();
+            }
         });
-        
-        // 创建模态框HTML
-        const modalHtml = `
-        <div class="modal fade" id="ownerGroupModal" tabindex="-1" aria-labelledby="ownerGroupModalLabel" aria-hidden="true">
-          <div class="modal-dialog">
-            <div class="modal-content">
-              <div class="modal-header">
-                <h5 class="modal-title" id="ownerGroupModalLabel">更改所有者/组: ${filename}</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-              </div>
-              <div class="modal-body">
-                <input type="hidden" id="ownerGroupPath" value="${path}">
-                <div class="mb-3">
-                  <label class="form-label">所有者 (UID)</label>
-                  <select class="form-select" id="fileOwner">
-                    ${userOptions}
-                  </select>
-                </div>
-                <div class="mb-3">
-                  <label class="form-label">用户组 (GID)</label>
-                  <select class="form-select" id="fileGroup">
-                    ${groupOptions}
-                  </select>
-                </div>
-              </div>
-              <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
-                <button type="button" class="btn btn-primary" onclick="saveOwnerGroup()">保存</button>
-              </div>
-            </div>
-          </div>
-        </div>
-        `;
-        
-        // 移除已存在的模态框
-        const existingModal = document.getElementById('ownerGroupModal');
-        if (existingModal) {
-            existingModal.remove();
-        }
-        
-        // 添加模态框到页面
-        document.body.insertAdjacentHTML('beforeend', modalHtml);
-        
-        // 显示模态框
-        const modal = new bootstrap.Modal(document.getElementById('ownerGroupModal'));
-        modal.show();
-        
-        // 模态框关闭后移除它
-        document.getElementById('ownerGroupModal').addEventListener('hidden.bs.modal', function () {
-            document.getElementById('ownerGroupModal').remove();
-        });
-    }
-    
-    // 保存所有者和用户组设置
-    function saveOwnerGroup() {
-        const path = document.getElementById('ownerGroupPath').value;
-        const uid = document.getElementById('fileOwner').value;
-        const gid = document.getElementById('fileGroup').value;
-        
-        fetch('/api/sftp/chown', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                server_id: currentServerId,
-                path: path,
-                uid: parseInt(uid),
-                gid: parseInt(gid)
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.error) {
-                alert('所有者/组设置失败: ' + data.error);
-            } else {
-                // 关闭模态框
-                const modal = bootstrap.Modal.getInstance(document.getElementById('ownerGroupModal'));
-                modal.hide();
-                
-                // 重新加载文件列表
-                loadPath(currentPath);
-                
-                // 发送消息到父窗口，记录操作日志
-                if (window.parent !== window) {
-                  window.parent.postMessage({
-                    type: 'sftp_operation_log',
-                    operation: '更改所有者',
-                    details: `更改文件所有者/组: ${path}`
-                  }, '*');
+
+        // 保存逻辑
+        document.getElementById('confirmPermission').onclick = async () => {
+            const newUser = document.getElementById('newUser').value;
+            const newGroup = document.getElementById('newGroup').value;
+            const newMode = document.getElementById('modeValue').value;
+            const recursive = document.getElementById('applyToSubdirectories').checked;
+
+            modal.hide();
+
+            try {
+                // chmod
+                await fetch('/api/sftp/chmod', {
+                    method: 'POST', headers:{'Content-Type':'application/json'},
+                    body: JSON.stringify({ server_id:currentServerId, path, mode: parseInt(newMode, 8) })
+                });
+
+                // chown
+                let uid = parseInt(newUser), gid = parseInt(newGroup);
+                if(isNaN(uid)) { const u = users.find(x=>x.name===newUser); if(u) uid=u.uid; }
+                if(isNaN(gid)) { const g = groups.find(x=>x.name===newGroup); if(g) gid=g.gid; }
+
+                if(!isNaN(uid) || !isNaN(gid)) {
+                     // 如果只改了一个，另一个保持原样(但这里简化为都传，逻辑上通常uid/gid都得有效)
+                     // 简单处理：如果解析失败就用原值
+                     if(isNaN(uid)) uid = currentUid;
+                     if(isNaN(gid)) gid = currentGid;
+
+                     await fetch('/api/sftp/chown', {
+                        method: 'POST', headers:{'Content-Type':'application/json'},
+                        body: JSON.stringify({ server_id:currentServerId, path, uid, gid, recursive: recursive ? true : undefined })
+                    });
                 }
-            }
-        })
-        .catch(error => {
-            alert('所有者/组设置失败: ' + error.message);
-        });
-    }
 
-    async function loadFileContent(filePath) {
-      // SFTP页面没有文件内容编辑功能，所以这里不需要实现
-      // 保留此函数仅为可能的未来扩展或避免脚本错误
-      console.warn('SFTP页面不支持文件内容编辑功能');
+                loadPath(currentPath);
+                if (window.parent !== window) window.parent.postMessage({type:'sftp_operation_log', operation:'权限设置', details:`更新权限/所有者: ${path}`}, '*');
+            } catch(e) { alert('操作失败'); }
+
+            setTimeout(() => div.remove(), 500);
+        };
+
+        document.getElementById('permissionModal').addEventListener('hidden.bs.modal', () => div.remove());
     }
   </script>
 </body>
