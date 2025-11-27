@@ -455,15 +455,28 @@
       try {
         const resp = await fetch(`/servers/${sid}/connect`, { method: 'POST' });
         if (resp.ok) {
+          const result = await resp.json();
           addLog('连接', `已连接 ${sid}`);
           currentServerId = sid;
           sessionStorage.setItem('lastSelectedServer', sid);
           document.getElementById('sftpStatus').textContent = '在线';
           loadPath('/');
+          
+          // 发送消息到父窗口，记录操作日志
+          if (window.parent !== window) {
+            window.parent.postMessage({
+              type: 'sftp_operation_log',
+              operation: '连接服务器',
+              details: result.message
+            }, '*');
+          }
         } else if (!quiet) {
-          alert('连接失败');
+          const result = await resp.json();
+          alert('连接失败: ' + result.error);
         }
-      } catch (e) { if (!quiet) alert('连接异常'); }
+      } catch (e) { 
+        if (!quiet) alert('连接异常: ' + e.message); 
+      }
     }
 
     async function loadPath(path) {
@@ -641,6 +654,16 @@
             document.getElementById('dropZoneFileListItems').innerHTML='';
             document.getElementById('dropZoneFileList').style.display='none';
             draggedFiles=null;
+            
+            // 发送消息到父窗口，记录操作日志
+            if (window.parent !== window) {
+              const fileNames = Array.from(files).map(f => f.name).join(', ');
+              window.parent.postMessage({
+                type: 'sftp_operation_log',
+                operation: '文件上传',
+                details: `上传文件到 ${target}: ${fileNames}`
+              }, '*');
+            }
         };
         xhr.send(form);
     }
@@ -652,7 +675,21 @@
     }
 
     function deletePath(p) {
-        if(confirm('确认删除?')) fetch(`/api/sftp/delete?server_id=${currentServerId}&path=${p}`, {method:'DELETE'}).then(loadPath(currentPath));
+        if(confirm('确认删除?')) {
+          fetch(`/api/sftp/delete?server_id=${currentServerId}&path=${p}`, {method:'DELETE'})
+          .then(response => response.json())
+          .then(data => {
+            loadPath(currentPath);
+            // 发送消息到父窗口，记录操作日志
+            if (window.parent !== window) {
+              window.parent.postMessage({
+                type: 'sftp_operation_log',
+                operation: '删除文件',
+                details: `删除文件/目录: ${decodeURIComponent(p)}`
+              }, '*');
+            }
+          });
+        }
     }
 
     function startRename(encPath, btn) {
@@ -686,19 +723,53 @@
                 method:'POST',
                 headers:{'Content-Type':'application/json'},
                 body: JSON.stringify({server_id:currentServerId, old_path:oldPath, new_path:newPath})
-            }).then(() => loadPath(currentPath));
+            }).then(response => response.json())
+            .then(data => {
+              loadPath(currentPath);
+              // 发送消息到父窗口，记录操作日志
+              if (window.parent !== window) {
+                window.parent.postMessage({
+                  type: 'sftp_operation_log',
+                  operation: '重命名文件',
+                  details: `重命名文件: ${oldName} -> ${newName}`
+                }, '*');
+              }
+            });
         };
 
         cell.querySelector('.btn-secondary').onclick = () => loadPath(currentPath);
     }
 
-    function addLog(t, d) { console.log(t, d); }
+    function addLog(t, d) { 
+      console.log(t, d); 
+      
+      // 发送消息到父窗口，记录操作日志
+      if (window.parent !== window) {
+        window.parent.postMessage({
+          type: 'sftp_operation_log',
+          operation: t,
+          details: d
+        }, '*');
+      }
+    }
     function createDirectory(p) {
         fetch('/api/sftp/mkdir', {
             method:'POST',
             headers:{'Content-Type':'application/json'},
             body:JSON.stringify({server_id:currentServerId, path:p})
-        }).then(()=>loadPath(currentPath));
+        }).then(response => response.json())
+        .then(data => {
+          loadPath(currentPath);
+          // 发送消息到父窗口，记录操作日志
+          if (window.parent !== window) {
+            const dirName = p.split('/').pop();
+            window.parent.postMessage({
+              type: 'sftp_operation_log',
+              operation: '创建目录',
+              details: `创建目录: ${dirName}`
+            }, '*');
+          }
+        });
     }
 
     // 设置权限和所有者（合并功能）
@@ -976,7 +1047,8 @@
           });
 
           if (!chmodResp.ok) {
-            throw new Error('权限设置失败');
+            const error = await chmodResp.json();
+            throw new Error(error.error || '权限设置失败');
           }
 
           // 更改所有者和组
@@ -1018,11 +1090,21 @@
           });
 
           if (!chownResp.ok) {
-            throw new Error('所有者/组设置失败');
+            const error = await chownResp.json();
+            throw new Error(error.error || '所有者/组设置失败');
           }
 
           // 重新加载文件列表
           loadPath(currentPath);
+          
+          // 发送消息到父窗口，记录操作日志
+          if (window.parent !== window) {
+            window.parent.postMessage({
+              type: 'sftp_operation_log',
+              operation: '设置权限',
+              details: `设置文件权限和所有者: ${path}`
+            }, '*');
+          }
         } catch (error) {
           alert('操作失败: ' + error.message);
           console.error(error);
@@ -1308,6 +1390,15 @@
                 
                 // 重新加载文件列表
                 loadPath(currentPath);
+                
+                // 发送消息到父窗口，记录操作日志
+                if (window.parent !== window) {
+                  window.parent.postMessage({
+                    type: 'sftp_operation_log',
+                    operation: '更改所有者',
+                    details: `更改文件所有者/组: ${path}`
+                  }, '*');
+                }
             }
         })
         .catch(error => {
