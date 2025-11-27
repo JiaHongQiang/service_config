@@ -208,8 +208,21 @@
             display: flex;
             flex-direction: column;
         }
-        #editor { flex: 1; height: 100%; }
+        #editor { 
+            flex: 1; 
+            height: 100%; 
+            overflow: hidden; /* 防止出现双滚动条 */
+        }
 
+        /* 确保编辑器内容区正确填充 */
+        .monaco-editor .overflow-guard {
+            height: 100%;
+        }
+        
+        .monaco-editor .monaco-scrollable-element {
+            height: 100%;
+        }
+        
         /* 📝 日志区域 */
         .operation-log {
             font-family: 'JetBrains Mono', monospace;
@@ -866,9 +879,20 @@
             require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.34.1/min/vs' }});
             require(['vs/editor/editor.main'], function() {
                 editor = monaco.editor.create(document.getElementById('editor'), {
-                    value: '', language: 'ini', theme: 'vs', automaticLayout: true,
-                    fontSize: 13, fontFamily: "'JetBrains Mono', Consolas, monospace",
-                    minimap: { enabled: true, scale: 0.75 }
+                    value: '', 
+                    language: 'ini', 
+                    theme: 'vs', 
+                    automaticLayout: true,
+                    fontSize: 13, 
+                    fontFamily: "'JetBrains Mono', Consolas, monospace",
+                    minimap: { enabled: true, scale: 0.75 },
+                    scrollbar: {
+                        vertical: 'auto',
+                        horizontal: 'auto',
+                        verticalScrollbarSize: 5,
+                        horizontalScrollbarSize: 5
+                    },
+                    scrollBeyondLastLine: false  // 防止滚动超出最后一行
                 });
                 editor.onDidChangeModelContent(() => document.getElementById('saveFileBtn').disabled = false);
             });
@@ -1255,6 +1279,7 @@
                 currentFilePath = normalizedPath;
                 editor.setValue(fileData.content || '');
                 editor.focus();
+                editor.revealLine(1); // 显示第一行
                 document.getElementById('currentFileName').textContent = normalizedPath.split('/').pop();
                 document.getElementById('lastSavedTime').textContent = '';
                 document.getElementById('saveFileBtn').disabled = true;
@@ -1423,6 +1448,18 @@
     </script>
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

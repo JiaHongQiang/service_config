@@ -1405,6 +1405,12 @@
             alert('所有者/组设置失败: ' + error.message);
         });
     }
+
+    async function loadFileContent(filePath) {
+      // SFTP页面没有文件内容编辑功能，所以这里不需要实现
+      // 保留此函数仅为可能的未来扩展或避免脚本错误
+      console.warn('SFTP页面不支持文件内容编辑功能');
+    }
   </script>
 </body>
 </html>
