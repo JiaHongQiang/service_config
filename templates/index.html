@@ -888,11 +888,9 @@
                     minimap: { enabled: true, scale: 0.75 },
                     scrollbar: {
                         vertical: 'auto',
-                        horizontal: 'auto',
-                        verticalScrollbarSize: 5,
-                        horizontalScrollbarSize: 5
+                        horizontal: 'auto'
                     },
-                    scrollBeyondLastLine: false  // 防止滚动超出最后一行
+                    scrollBeyondLastLine: false
                 });
                 editor.onDidChangeModelContent(() => document.getElementById('saveFileBtn').disabled = false);
             });
@@ -1448,22 +1446,6 @@
     </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
