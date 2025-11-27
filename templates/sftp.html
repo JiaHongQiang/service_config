@@ -561,9 +561,9 @@
 
         tr.innerHTML = `
           <td class="text-center">${iconHtml}</td>
-          <td class="position-relative">
+          <td class="position-relative filename-cell" style="cursor: pointer;" title="${it.name}">
             <div class="filename-container">
-                <span class="filename-text" title="${it.name}">${it.name}</span>
+                <span class="filename-text">${it.name}</span>
             </div>
           </td>
           <td class="font-monospace small text-secondary">${it.type==='directory'?'-':humanFileSize(it.size)}</td>
@@ -574,13 +574,26 @@
           <td class="font-monospace small text-secondary" title="${userGroup}">${userGroup}</td>
         `;
 
-        tr.querySelector('.filename-text').addEventListener('click', () => {
-            if (it.type === 'directory') loadPath(it.path);
+        // 为整个行和文件名列添加点击事件
+        tr.addEventListener('click', (e) => {
+            // 检查点击的是否是操作按钮，如果是则不触发导航
+            if (e.target.closest('.file-action-btn')) {
+                return;
+            }
+            
+            if (it.type === 'directory') {
+                loadPath(it.path);
+            }
         });
 
-        tbody.appendChild(tr);
-      });
-    }
+            // 为文件名列添加点击事件
+            tr.querySelector('.filename-cell').addEventListener('click', () => {
+                if (it.type === 'directory') loadPath(it.path);
+            });
+
+            tbody.appendChild(tr);
+          });
+        }
 
     // ✅ 修复2：按要求生成操作按钮
     function createActionButtons(item) {
