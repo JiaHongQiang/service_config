@@ -994,7 +994,11 @@ def sftp_list():
                 for line in stdout.read().decode('utf-8', errors='ignore').splitlines():
                     parts = line.split(':')
                     if len(parts) >= 3:
-                        uid_to_user[int(parts[2])] = parts[0]
+                        try:
+                            uid_to_user[int(parts[2])] = parts[0]
+                        except ValueError:
+                            # 如果转换失败，跳过该项
+                            continue
             except:
                 pass
 
@@ -1007,7 +1011,11 @@ def sftp_list():
                 for line in stdout.read().decode('utf-8', errors='ignore').splitlines():
                     parts = line.split(':')
                     if len(parts) >= 3:
-                        gid_to_group[int(parts[2])] = parts[0]
+                        try:
+                            gid_to_group[int(parts[2])] = parts[0]
+                        except ValueError:
+                            # 如果转换失败，跳过该项
+                            continue
             except:
                 pass
         # ==================== 新增代码结束 ====================

@@ -7,5 +7,14 @@
         "username": "root",
         "auth_method": "password",
         "password": "huaiye2024**"
+    },
+    {
+        "id": "1764334762662",
+        "name": "城管",
+        "host": "192.168.2.186",
+        "port": 22,
+        "username": "root",
+        "auth_method": "password",
+        "password": "huaiye2013**"
     }
 ]

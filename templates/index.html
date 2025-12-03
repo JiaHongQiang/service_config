@@ -438,6 +438,7 @@
     <script src="https://cdn.jsdelivr.net/npm/diff@5.0.0/dist/diff.min.js"></script>
 
     <script>
+        // --- 辅助工具函数 ---
         function escapeHtml(str) {
             if (!str) return '';
             return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
@@ -474,6 +475,7 @@
         }
         function showToast(title, message, type = 'info', duration = 3000) { return new ToastNotification(title, message, type, duration); }
 
+        // --- 全局变量 ---
         let editor;
         let currentFilePath = '';
         let services = [];
@@ -481,12 +483,7 @@
         let operationLog = [];
         let serviceLogs = [];
 
-        function handleTooltipClick(el, callback) {
-            const tooltip = bootstrap.Tooltip.getInstance(el);
-            if (tooltip) { tooltip.hide(); }
-            setTimeout(() => { if (typeof callback === 'function') callback(); }, 100);
-        }
-
+        // --- 初始化 ---
         document.addEventListener('DOMContentLoaded', () => {
             checkLoginStatus().then(loggedIn => {
                 if (!loggedIn) { window.location.href = '/login'; return; }
@@ -495,6 +492,7 @@
                 loadServers();
                 loadOperationLog();
 
+                // 事件绑定
                 document.getElementById('connectBtn')?.addEventListener('click', connectToServer);
                 document.getElementById('refreshFilesBtn')?.addEventListener('click', () => loadFileTree(currentServiceName));
                 document.getElementById('saveFileBtn')?.addEventListener('click', saveCurrentFile);
@@ -516,11 +514,29 @@
             });
         });
 
+        // 监听 iframe (SFTP) 消息
         window.addEventListener('message', (event) => {
             if (event.data?.type === 'sftp_operation_log') {
                 addOperationLog(event.data.operation, event.data.details);
             }
         });
+
+        // --- 核心逻辑 ---
+
+        function initializeEditor() {
+            require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.34.1/min/vs' }});
+            require(['vs/editor/editor.main'], () => {
+                editor = monaco.editor.create(document.getElementById('editor'), {
+                    value: '', language: 'ini', theme: 'vs', automaticLayout: true,
+                    fontSize: 13, fontFamily: "'JetBrains Mono', Consolas, monospace",
+                    minimap: { enabled: true, scale: 0.75 },
+                    scrollBeyondLastLine: false
+                });
+                editor.onDidChangeModelContent(() => {
+                    if(currentFilePath) document.getElementById('saveFileBtn').disabled = false;
+                });
+            });
+        }
 
         function toggleSftpView() {
             const sftpContainer = document.getElementById('sftpContainer');
@@ -556,11 +572,10 @@
         }
 
         async function logout() {
-            try {
-                await fetch('/auth/logout', { method: 'POST' });
-                window.location.href = '/login';
-            } catch (e) { showToast('错误', '登出失败', 'error'); }
+            try { await fetch('/auth/logout', { method: 'POST' }); window.location.href = '/login'; } catch (e) { showToast('错误', '登出失败', 'error'); }
         }
+
+        // --- 服务器逻辑 ---
 
         function toggleAuthFields() {
             const method = document.getElementById('authMethod').value;
@@ -578,7 +593,7 @@
                 auth_method: document.getElementById('authMethod').value
             };
             if (data.auth_method === 'password') data.password = document.getElementById('serverPassword').value;
-            else data.key_file = 'uploaded_key_path';
+            // 注意：真实场景需处理 key_file 上传
 
             try {
                 const res = await fetch('/servers', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) });
@@ -587,7 +602,6 @@
                     showToast('✓ 添加成功', data.name, 'success');
                     bootstrap.Modal.getInstance(document.getElementById('addServerModal')).hide();
                     loadServers();
-                    // 修复：恢复完整提示
                     addOperationLog('添加服务器', `成功添加服务器: ${newServer.name}`);
                 } else {
                     const err = await res.json();
@@ -604,25 +618,11 @@
                 const res = await fetch(`/servers/${id}`, { method: 'DELETE' });
                 if (res.ok) {
                     showToast('✓ 删除成功', '', 'success');
+                    sessionStorage.removeItem('lastSelectedServer');
                     loadServers();
-                    document.getElementById('connectionStatus').classList.add('d-none');
-                    document.getElementById('disconnectedStatus').classList.remove('d-none');
                     addOperationLog('删除服务器', '服务器已删除');
                 }
             } catch (e) { showToast('错误', '请求失败', 'error'); }
-        }
-
-        function initializeEditor() {
-            require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.34.1/min/vs' }});
-            require(['vs/editor/editor.main'], () => {
-                editor = monaco.editor.create(document.getElementById('editor'), {
-                    value: '', language: 'ini', theme: 'vs', automaticLayout: true,
-                    fontSize: 13, fontFamily: "'JetBrains Mono', Consolas, monospace",
-                    minimap: { enabled: true, scale: 0.75 },
-                    scrollBeyondLastLine: false
-                });
-                editor.onDidChangeModelContent(() => document.getElementById('saveFileBtn').disabled = false);
-            });
         }
 
         async function loadServers() {
@@ -635,15 +635,58 @@
                     servers.forEach(s => {
                         const opt = document.createElement('option');
                         opt.value = s.id;
-                        // 修复：恢复 [用户名] 显示
                         opt.textContent = `${escapeHtml(s.name)} (${escapeHtml(s.host)}) [${escapeHtml(s.username)}]`;
                         sel.appendChild(opt);
                     });
                     const last = sessionStorage.getItem('lastSelectedServer');
                     if (last && servers.some(s => s.id == last)) sel.value = last;
+                    handleServerSelection(); // 触发 UI 状态更新
                 }
             } catch (e) { console.error(e); }
         }
+
+        function handleServerSelection() {
+            const id = document.getElementById('serverSelector').value;
+            sessionStorage.setItem('lastSelectedServer', id);
+            const connected = document.getElementById('connectionStatus');
+            const disconnected = document.getElementById('disconnectedStatus');
+
+            // 切换服务器时重置为未连接状态
+            connected.classList.add('d-none');
+            disconnected.classList.remove('d-none');
+            services = [];
+            renderServiceCards();
+            document.getElementById('fileTree').innerHTML = id ? '<li class="text-center text-muted small mt-4">请连接服务器</li>' : '<li class="text-center text-muted small mt-4">暂无文件</li>';
+            if(editor) editor.setValue('');
+        }
+
+        async function connectToServer() {
+            const id = document.getElementById('serverSelector').value;
+            if (!id) return showToast('⚠', '请先选择服务器', 'warning');
+
+            const btn = document.getElementById('connectBtn');
+            const originalHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> 连接中';
+
+            try {
+                const res = await fetch(`/servers/${id}/connect`, { method: 'POST' });
+                if (res.ok) {
+                    const result = await res.json();
+                    document.getElementById('connectionStatus').classList.remove('d-none');
+                    document.getElementById('disconnectedStatus').classList.add('d-none');
+                    showToast('✓', '连接成功', 'success');
+                    addOperationLog('连接服务器', result.message || '已连接');
+                    loadServices();
+                } else throw new Error();
+            } catch (e) { showToast('✗', '连接失败', 'error'); }
+            finally {
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+            }
+        }
+
+        // --- 服务逻辑 ---
 
         async function loadServices() {
             const id = document.getElementById('serverSelector').value;
@@ -657,10 +700,16 @@
             } catch (e) { services = []; renderServiceCards(); }
         }
 
+        async function refreshServiceStatus() {
+            if (document.getElementById('connectionStatus').classList.contains('d-none')) return;
+            await loadServices();
+            showToast('✓', '状态已刷新', 'success');
+        }
+
         function renderServiceCards() {
             const container = document.getElementById('serviceContainer');
             if (services.length === 0) {
-                container.innerHTML = `<div class="text-center text-muted mt-5 small"><i class="fas fa-server fa-2x mb-3 opacity-25"></i><p>暂无服务数据</p></div>`;
+                container.innerHTML = `<div class="text-center text-muted mt-5 small"><i class="fas fa-server fa-2x mb-3 opacity-25"></i><p>暂无服务或未连接</p></div>`;
                 return;
             }
 
@@ -698,51 +747,6 @@
             container.appendChild(fragment);
         }
 
-        function handleServerSelection() {
-            const id = document.getElementById('serverSelector').value;
-            sessionStorage.setItem('lastSelectedServer', id);
-
-            const connected = document.getElementById('connectionStatus');
-            const disconnected = document.getElementById('disconnectedStatus');
-
-            if (!id) {
-                connected.classList.add('d-none');
-                disconnected.classList.remove('d-none');
-                services = [];
-                renderServiceCards();
-                document.getElementById('fileTree').innerHTML = '<li class="text-center text-muted small mt-4">请连接服务器</li>';
-                if(editor) editor.setValue('');
-            } else {
-                connected.classList.add('d-none');
-                disconnected.classList.remove('d-none');
-                services = [];
-                renderServiceCards();
-            }
-        }
-
-        async function connectToServer() {
-            const id = document.getElementById('serverSelector').value;
-            if (!id) return showToast('⚠', '请先选择服务器', 'warning');
-            try {
-                const res = await fetch(`/servers/${id}/connect`, { method: 'POST' });
-                if (res.ok) {
-                    const result = await res.json();
-                    document.getElementById('connectionStatus').classList.remove('d-none');
-                    document.getElementById('disconnectedStatus').classList.add('d-none');
-                    showToast('✓', '连接成功', 'success');
-                    // 修复：使用返回的 message
-                    addOperationLog('连接服务器', result.message || '已连接');
-                    loadServices();
-                } else throw new Error();
-            } catch (e) { showToast('✗', '连接失败', 'error'); }
-        }
-
-        async function refreshServiceStatus() {
-            if (document.getElementById('connectionStatus').classList.contains('d-none')) return;
-            await loadServices();
-            showToast('✓', '状态已刷新', 'success');
-        }
-
         async function serviceAction(name, action) {
             const id = document.getElementById('serverSelector').value;
             try {
@@ -750,261 +754,412 @@
                 if (res.ok) {
                     const actionText = { start: '启动', stop: '停止', restart: '重启' }[action];
                     showToast('✓', `${name} ${actionText} 指令已发送`, 'success');
-                    // 修复：恢复完整日志
                     addOperationLog('服务操作', `向服务 ${name} 发送 ${action} 命令`);
                     if (action === 'start') setTimeout(() => fetchServiceErrors(name), 2000);
                     setTimeout(loadServices, 1000);
                 } else showToast('✗', '操作失败', 'error');
             } catch (e) { showToast('✗', '网络异常', 'error'); }
         }
+        // 暴露给 HTML onclick
+        window.serviceAction = serviceAction;
 
-        // --- 文件树与配置相关 ---
+        // --- 文件配置逻辑 ---
 
         window.openConfig = function(serviceName) {
             const id = document.getElementById('serverSelector').value;
             if(!id) return showToast('⚠', '未选择服务器', 'warning');
             currentServiceName = serviceName;
+
+            // 确保显示编辑器视图
+            document.getElementById('sftpContainer').classList.add('d-none');
+            document.getElementById('configEditorContainer').classList.remove('d-none');
+
             loadFileTree(serviceName);
         }
 
-        window.serviceAction = serviceAction;
-
-        async function loadFileTree(serviceName) {
+        async function loadFileTree(serviceName = currentServiceName) {
             if (!serviceName) return;
-            const id = document.getElementById('serverSelector').value;
+            const serverId = document.getElementById('serverSelector').value;
+            if (!serverId) { showToast('⚠ 选择服务器', '未选择服务器', 'warning'); return; }
+
             try {
-                const res = await fetch(`/config/files?service=${encodeURIComponent(serviceName)}&server_id=${id}`);
-                if (res.ok) renderFileTree(await res.json(), serviceName);
-            } catch (e) { showToast('✗', '加载文件列表失败', 'error'); }
+                const response = await fetch(`/config/files?service=${encodeURIComponent(serviceName)}&server_id=${serverId}`);
+                if (response.ok) {
+                    const files = await response.json();
+                    renderFileTree(files, serviceName);
+                } else showToast('✗ 加载失败', '无法加载文件列表', 'error');
+            } catch (error) { showToast('✗ 加载失败', error.message, 'error'); }
         }
 
         function renderFileTree(files, serviceName) {
-            const container = document.getElementById('fileTree');
-            container.innerHTML = '';
+            const treeContainer = document.getElementById('fileTree');
+            treeContainer.innerHTML = '';
 
             if (files[serviceName]) {
-                const header = document.createElement('li');
-                header.className = 'mb-2 bg-light rounded border px-2 py-1 fw-bold text-dark';
-                header.innerHTML = `<i class="fas fa-box me-2 text-secondary"></i>${escapeHtml(serviceName)}`;
+                const serviceNode = document.createElement('li');
+                serviceNode.className = 'mb-2';
+                serviceNode.innerHTML = `<div class="fw-bold text-dark px-2 py-1 bg-light rounded mb-2 border"><i class="fas fa-box me-2 text-secondary"></i>${serviceName}</div>`;
 
-                const ul = document.createElement('ul');
-                ul.className = 'list-unstyled ms-2 border-start border-2 border-light ps-2';
+                const fileList = document.createElement('ul');
+                fileList.className = 'list-unstyled ms-2 border-start border-2 border-light ps-2';
 
-                files[serviceName].sort((a,b) => (a.type==='directory' ? -1 : 1)).forEach(f => {
-                    const li = document.createElement('li');
-                    li.className = 'd-flex align-items-center mb-1 rounded';
-                    const icon = f.type === 'directory' ? 'fa-folder text-warning' : 'fa-file text-secondary';
-                    li.innerHTML = `
-                        <div class="text-truncate px-2 py-1 w-100" style="cursor:pointer;" onclick="handleFileClick('${escapeHtml(f.path)}', '${f.type}')">
-                            <i class="fas ${icon} me-2 file-tree-icon"></i>${escapeHtml(f.name)}
-                        </div>
-                        ${f.type !== 'directory' ? `<button class="btn btn-link text-danger p-0 ms-1 opacity-50" onclick="deleteConfigFile('${escapeHtml(f.path)}', event)"><i class="fas fa-times"></i></button>` : ''}
-                    `;
-                    ul.appendChild(li);
+                // 文件夹在前，文件在后
+                const sortedFiles = [...files[serviceName]].sort((a, b) => {
+                    if (a.type === 'directory' && b.type !== 'directory') return -1;
+                    if (a.type !== 'directory' && b.type === 'directory') return 1;
+                    return a.name.localeCompare(b.name);
                 });
-                container.appendChild(header);
-                container.appendChild(ul);
+
+                sortedFiles.forEach(fileItem => {
+                    const fileName = fileItem.name;
+                    const fileNode = document.createElement('li');
+                    fileNode.className = 'd-flex justify-content-between align-items-center mb-1 rounded';
+                    let iconClass = fileItem.type === 'directory' ? 'fa-folder' : 'fa-file';
+                    let textClass = fileItem.type === 'directory' ? 'text-warning' : 'text-secondary';
+                    const displayName = fileName.length > 25 ? fileName.substring(0, 22) + '...' : fileName;
+
+                    fileNode.innerHTML = `
+                        <div class="text-truncate px-2 py-1 w-100 file-item-hover" style="cursor:pointer; font-size: 0.85rem;" onclick="handleFileClick('${fileItem.path}', '${fileItem.type}')">
+                            <i class="fas ${iconClass} me-2 ${textClass}" style="width: 16px; text-align:center;"></i>${displayName}
+                        </div>
+                        ${fileItem.type !== 'directory' ? `<button class="btn btn-link text-danger p-0 ms-1 opacity-50 hover-opacity-100" style="font-size:0.8rem;" onclick="deleteConfigFile('${fileItem.path}', event)" title="删除文件"><i class="fas fa-times"></i></button>` : ''}`;
+                    fileList.appendChild(fileNode);
+                });
+                serviceNode.appendChild(fileList);
+                treeContainer.appendChild(serviceNode);
             } else {
-                container.innerHTML = '<li class="text-center text-muted small mt-4">无配置文件</li>';
+                treeContainer.innerHTML = '<li class="text-center text-muted small mt-4">请选择服务打开配置文件</li>';
             }
         }
 
-        window.handleFileClick = function(path, type) {
-            if (type === 'directory') browseDirectory(path);
-            else loadFileContent(path);
+        window.handleFileClick = async function(filePath, fileType) {
+            if (fileType === 'directory') await browseDirectory(filePath);
+            else loadFileContent(filePath);
         }
 
-        window.deleteConfigFile = async function(path, e) {
-            e.stopPropagation();
-            if(!confirm(`确认删除 ${path}?`)) return;
-            const id = document.getElementById('serverSelector').value;
-            try {
-                const res = await fetch(`/config/files/${encodeURIComponent(path)}?server_id=${id}`, { method: 'DELETE' });
-                if(res.ok) {
-                    showToast('✓', '删除成功', 'success');
-                    // 修复：完整日志
-                    addOperationLog('删除文件', `文件已删除: ${path}`);
-                    loadFileTree(currentServiceName);
-                }
-            } catch(e){ showToast('✗', '删除失败', 'error'); }
-        }
+        async function browseDirectory(dirPath) {
+            const serverId = document.getElementById('serverSelector').value;
+            if (!serverId) { showToast('⚠ 选择服务器', '未选择服务器', 'warning'); return; }
 
-        async function browseDirectory(path) {
-            const id = document.getElementById('serverSelector').value;
             try {
-                const res = await fetch(`/api/sftp/list?server_id=${id}&path=${encodeURIComponent(path)}`);
-                if(res.ok) {
-                    const items = await res.json();
-                    renderDirectoryContents(items, path);
+                const response = await fetch(`/api/sftp/list?server_id=${serverId}&path=${encodeURIComponent(dirPath)}`);
+                if (response.ok) {
+                    const items = await response.json();
+                    renderDirectoryContents(items, dirPath);
+                } else {
+                    const errorData = await response.json();
+                    showToast('✗ 加载失败', errorData.error || '无法加载目录内容', 'error');
                 }
-            } catch(e) {}
+            } catch (error) { showToast('✗ 加载失败', error.message, 'error'); }
         }
 
         function renderDirectoryContents(items, dirPath) {
-            const container = document.getElementById('fileTree');
-            container.innerHTML = '';
-
+            const treeContainer = document.getElementById('fileTree');
+            treeContainer.innerHTML = '';
             const parentPath = dirPath.substring(0, dirPath.lastIndexOf('/'));
-            const backItem = document.createElement('li');
-            backItem.innerHTML = `<div class="text-primary px-2 py-1 fw-bold small cursor-pointer" onclick="browseUpDirectory('${escapeHtml(parentPath)}')"><i class="fas fa-level-up-alt me-2"></i>返回上级</div><div class="text-muted small px-2 font-monospace bg-light rounded text-truncate">${escapeHtml(dirPath)}</div>`;
-            container.appendChild(backItem);
+            const parentItem = document.createElement('li');
+            parentItem.className = 'mb-2';
+            parentItem.innerHTML = `<div class="text-primary px-2 py-1 fw-bold small" style="cursor:pointer;" onclick="browseUpDirectory('${parentPath}')"><i class="fas fa-level-up-alt me-2"></i>返回上级</div><div class="text-muted small px-2 mb-2 font-monospace bg-light rounded py-1 text-truncate" title="${dirPath}">${dirPath}</div>`;
+            treeContainer.appendChild(parentItem);
 
-            items.sort((a,b) => (a.type==='directory'?-1:1)).forEach(f => {
-                const li = document.createElement('li');
-                li.className = 'd-flex align-items-center mb-1 rounded';
-                const icon = f.type === 'directory' ? 'fa-folder text-warning' : 'fa-file text-secondary';
-                li.innerHTML = `<div class="text-truncate px-2 py-1 w-100" style="cursor:pointer;" onclick="handleFileClick('${escapeHtml(f.path)}', '${f.type}')"><i class="fas ${icon} me-2 file-tree-icon"></i>${escapeHtml(f.name)}</div>`;
-                container.appendChild(li);
+            const sortedItems = [...items].sort((a, b) => {
+                if (a.type === 'directory' && b.type !== 'directory') return -1;
+                if (a.type !== 'directory' && b.type === 'directory') return 1;
+                return a.name.localeCompare(b.name);
+            });
+
+            sortedItems.forEach(item => {
+                const itemNode = document.createElement('li');
+                itemNode.className = 'd-flex justify-content-between align-items-center mb-1 rounded';
+                let iconClass = item.type === 'directory' ? 'fa-folder' : 'fa-file';
+                let textClass = item.type === 'directory' ? 'text-warning' : 'text-secondary';
+                const displayName = item.name.length > 25 ? item.name.substring(0, 22) + '...' : item.name;
+
+                itemNode.innerHTML = `<div class="text-truncate px-2 py-1 w-100 file-item-hover" style="cursor:pointer; font-size: 0.85rem;" onclick="handleFileClick('${item.path}', '${item.type}')"><i class="fas ${iconClass} me-2 ${textClass}" style="width: 16px;"></i>${displayName}</div>${item.type !== 'directory' ? `<button class="btn btn-link text-danger p-0 ms-1 opacity-50 hover-opacity-100" style="font-size:0.8rem;" onclick="deleteConfigFile('${item.path}', event)"><i class="fas fa-times"></i></button>` : ''}`;
+                treeContainer.appendChild(itemNode);
             });
         }
 
         window.browseUpDirectory = function(path) {
-            if(!path) { if(currentServiceName) loadFileTree(currentServiceName); return; }
+            if (!path && path !== '') { if (currentServiceName) loadFileTree(currentServiceName); return; }
             browseDirectory(path);
         }
 
-        async function loadFileContent(path) {
-            const id = document.getElementById('serverSelector').value;
+        async function loadFileContent(filePath) {
             try {
-                const res = await fetch(`/config/files/${encodeURIComponent(path)}?server_id=${id}`);
-                if(res.ok) {
-                    const data = await res.json();
-                    currentFilePath = path;
-                    editor.setValue(data.content || '');
-                    document.getElementById('currentFileName').textContent = path.split('/').pop();
-                    document.getElementById('saveFileBtn').disabled = true;
-                    document.getElementById('compareBtn').disabled = false;
-                    document.getElementById('backupListBtn').disabled = false;
-                }
-            } catch(e) { showToast('✗', '加载文件失败', 'error'); }
+                const normalizedPath = filePath.replace(/\\/g, '/');
+                const serverId = document.getElementById('serverSelector').value;
+                if (!serverId) { showToast('⚠ 选择服务器', '未选择服务器', 'warning'); return; }
+
+                const response = await fetch(`/config/files/${encodeURIComponent(normalizedPath)}?server_id=${serverId}`);
+                if (!response.ok) throw new Error('加载失败');
+
+                const fileData = await response.json();
+                currentFilePath = normalizedPath;
+                editor.setValue(fileData.content || '');
+                editor.focus();
+                editor.revealLine(1);
+                document.getElementById('currentFileName').textContent = normalizedPath.split('/').pop();
+                document.getElementById('lastSavedTime').textContent = '';
+                document.getElementById('saveFileBtn').disabled = true;
+                document.getElementById('compareBtn').disabled = false;
+                document.getElementById('backupListBtn').disabled = false;
+            } catch (error) { showToast('✗ 加载失败', error.message, 'error'); }
         }
 
         async function saveCurrentFile() {
-            if (!currentFilePath) return;
-            const id = document.getElementById('serverSelector').value;
-            const content = editor.getValue();
+            if (!currentFilePath) { showToast('⚠', '请先选择要保存的文件', 'warning'); return; }
+            const serverId = document.getElementById('serverSelector').value;
+            if (!serverId) { showToast('⚠', '未选择服务器', 'warning'); return; }
+
+            const btn = document.getElementById('saveFileBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 保存中';
+
             try {
-                const res = await fetch(`/config/files/${encodeURIComponent(currentFilePath)}?server_id=${id}`, {
-                    method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({content})
+                const content = editor.getValue();
+                const response = await fetch(`/config/files/${encodeURIComponent(currentFilePath)}?server_id=${serverId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ content })
                 });
-                if (res.ok) {
-                    document.getElementById('saveFileBtn').disabled = true;
+
+                if (response.ok) {
                     document.getElementById('lastSavedTime').textContent = `已保存 ${new Date().toLocaleTimeString()}`;
-                    showToast('✓', '保存成功', 'success');
-                    // 修复：完整日志
+                    showToast('✓ 保存成功', '文件已更新并备份', 'success');
                     addOperationLog('保存文件', `文件保存成功: ${currentFilePath}`);
-                }
-            } catch(e) { showToast('✗', '保存失败', 'error'); }
+                    if (currentServiceName) loadFileTree(currentServiceName);
+                } else throw new Error('保存失败');
+            } catch (error) {
+                showToast('✗ 保存失败', error.message, 'error');
+                addOperationLog('保存文件', `保存失败: ${error.message}`);
+                btn.disabled = false;
+            } finally {
+                if(btn.innerHTML.includes('保存中')) btn.innerHTML = '<i class="fas fa-save me-1"></i> 保存更改';
+            }
         }
+
+        window.deleteConfigFile = async function(filePath, event) {
+            event.stopPropagation();
+            const serverId = document.getElementById('serverSelector').value;
+            // 简单判断是否文件夹
+            const isDirectory = event.target.closest('li').querySelector('.fa-folder') !== null;
+            const type = isDirectory ? '文件夹' : '文件';
+
+            if (!confirm(`确定要删除${type} "${filePath}" 吗？\n\n删除后将无法恢复，请确认！`)) return;
+
+            try {
+                const response = await fetch(`/config/files/${encodeURIComponent(filePath)}?server_id=${serverId}`, { method: 'DELETE' });
+                if (response.ok) {
+                    showToast('✓ 删除成功', `${type}已删除`, 'success');
+                    addOperationLog('删除文件', `${type}已删除: ${filePath}`);
+                    if (currentServiceName) loadFileTree(currentServiceName);
+                } else {
+                    const errorData = await response.json();
+                    showToast('✗ 删除失败', errorData.error, 'error');
+                }
+            } catch (error) { showToast('✗ 删除失败', error.message, 'error'); }
+        }
+
+        // --- 备份与对比 ---
 
         async function compareWithServer() {
-            if(!currentFilePath) return;
-            const id = document.getElementById('serverSelector').value;
-            try {
-                const res = await fetch(`/config/files/${encodeURIComponent(currentFilePath)}?server_id=${id}`);
-                const data = await res.json();
-                const diff = Diff.diffLines(data.content || '', editor.getValue());
+            if (!currentFilePath) { showToast('⚠ 选择文件', '请先选择一个文件', 'warning'); return; }
+            const serverId = document.getElementById('serverSelector').value;
 
-                let modal = document.getElementById('diffModal');
-                if(!modal) {
-                    modal = document.createElement('div');
-                    modal.id = 'diffModal';
-                    modal.className = 'modal fade';
-                    modal.innerHTML = `<div class="modal-dialog modal-xl"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">差异对比</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="d-flex"><div class="w-50 pe-2"><h6 class="text-center text-muted">服务器</h6><div id="serverDiff" class="diff-container"></div></div><div class="w-50 ps-2 border-start"><h6 class="text-center text-primary">本地</h6><div id="localDiff" class="diff-container"></div></div></div></div></div></div>`;
-                    document.body.appendChild(modal);
+            try {
+                const resp = await fetch(`/config/files/${encodeURIComponent(currentFilePath)}?server_id=${serverId}`);
+                if (!resp.ok) throw new Error('无法获取服务器文件');
+                const fileData = await resp.json();
+                const serverText = fileData.content || '';
+                const localText = editor.getValue();
+                const diff = Diff.diffLines(serverText, localText);
+
+                // 创建或获取 Modal
+                let modalEl = document.getElementById('diffModal');
+                if (!modalEl) {
+                    const div = document.createElement('div');
+                    div.innerHTML = `<div class="modal fade" id="diffModal" tabindex="-1"><div class="modal-dialog modal-xl"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">文件对比结果</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="d-flex"><div class="w-50 pe-2"><h6 class="text-center mb-3 fw-bold text-secondary">服务器版本</h6><div id="serverDiffContent" class="diff-container"></div></div><div class="w-50 ps-2 border-start"><h6 class="text-center mb-3 fw-bold text-primary">本地编辑器版本</h6><div id="localDiffContent" class="diff-container"></div></div></div></div><div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">关闭</button></div></div></div></div>`;
+                    document.body.appendChild(div);
+                    modalEl = div.querySelector('#diffModal');
                 }
 
-                let sHtml='', lHtml='';
+                let serverHtml = '', localHtml = '';
                 diff.forEach(part => {
-                    const color = part.added ? '#dcfce7' : (part.removed ? '#fee2e2' : 'transparent');
-                    const text = escapeHtml(part.value);
-                    if(part.added) lHtml += `<span style="background:${color}">${text}</span>`;
-                    else if(part.removed) sHtml += `<span style="background:${color}">${text}</span>`;
-                    else { sHtml+=text; lHtml+=text; }
-                });
+                    const value = escapeHtml(part.value);
+                    const lines = value.split('\n');
+                    if (lines.length > 1 && lines[lines.length - 1] === '') lines.pop();
 
-                document.getElementById('serverDiff').innerHTML = sHtml;
-                document.getElementById('localDiff').innerHTML = lHtml;
-                new bootstrap.Modal(modal).show();
-            } catch(e) { alert('对比失败'); }
+                    if (part.added) localHtml += `<div class="p-1 rounded mb-1" style="background:#dcfce7;color:#166534;">${lines.map(l=>'+ '+l).join('<br>')}</div>`;
+                    else if (part.removed) serverHtml += `<div class="p-1 rounded mb-1" style="background:#fee2e2;color:#991b1b;">${lines.map(l=>'- '+l).join('<br>')}</div>`;
+                    else {
+                        const common = `<div class="p-1 rounded mb-1" style="opacity:0.6">${lines.join('<br>')}</div>`;
+                        serverHtml += common; localHtml += common;
+                    }
+                });
+                modalEl.querySelector('#serverDiffContent').innerHTML = serverHtml;
+                modalEl.querySelector('#localDiffContent').innerHTML = localHtml;
+
+                new bootstrap.Modal(modalEl).show();
+            } catch (err) { showToast('✗ 对比失败', err.message, 'error'); }
         }
 
-        function addOperationLog(op, details) {
-            const entry = { id: Date.now(), time: new Date().toLocaleTimeString('zh-CN'), op, details };
-            operationLog.unshift(entry);
-            if(operationLog.length > 100) operationLog.pop();
-            localStorage.setItem('operationLog', JSON.stringify(operationLog));
+        async function showBackupHistory() {
+            if (!currentFilePath) { showToast('⚠ 选择文件', '请先打开一个配置文件', 'warning'); return; }
+            const serverId = document.getElementById('serverSelector').value;
+
+            const normalizedPath = currentFilePath.replace(/\\/g, '/');
+            const dirPath = normalizedPath.substring(0, normalizedPath.lastIndexOf('/'));
+            const fileName = normalizedPath.split('/').pop();
+
+            try {
+                const response = await fetch(`/config/files?service=${currentServiceName}&server_id=${serverId}`);
+                if (!response.ok) throw new Error('加载失败');
+                const files = await response.json();
+                const serviceFiles = files[currentServiceName] || [];
+                // 筛选备份
+                const backups = serviceFiles.filter(f => f.path && f.path.startsWith(dirPath) && f.path.includes(`${fileName}.backup_`)).sort((a, b) => b.path.localeCompare(a.path));
+
+                if (backups.length === 0) { showToast('ℹ 提示', '没有找到备份文件', 'info'); return; }
+
+                const listHtml = backups.map(b => {
+                    const shortName = b.path.split('/').pop();
+                    return `<li class="list-group-item d-flex justify-content-between align-items-center"><span class="font-monospace small">${shortName}</span><div><button class="btn btn-sm btn-outline-primary me-1" onclick="loadFileContent('${b.path}')">查看</button><button class="btn btn-sm btn-outline-success" onclick="restoreBackupFile('${b.path}')">恢复</button></div></li>`;
+                }).join('');
+
+                let modalEl = document.getElementById('backupModal');
+                if (!modalEl) {
+                    const div = document.createElement('div');
+                    div.innerHTML = `<div class="modal fade" id="backupModal" tabindex="-1"><div class="modal-dialog modal-lg"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">备份历史</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><ul class="list-group list-group-flush" id="backupList"></ul></div></div></div></div>`;
+                    document.body.appendChild(div);
+                    modalEl = div.querySelector('#backupModal');
+                }
+                document.getElementById('backupList').innerHTML = listHtml;
+                new bootstrap.Modal(modalEl).show();
+            } catch (error) { showToast('✗ 错误', '无法加载备份历史', 'error'); }
+        }
+
+        window.restoreBackupFile = async function(backupPath) {
+            const serverId = document.getElementById('serverSelector').value;
+            if (!confirm(`确定要用以下文件覆盖当前配置吗？\n${backupPath}`)) return;
+            try {
+                const response = await fetch(`/config/files/${encodeURIComponent(backupPath)}?server_id=${serverId}`);
+                const data = await response.json();
+                if (!data.content) throw new Error('无法读取备份文件内容');
+                editor.setValue(data.content);
+                // 恢复 currentFilePath
+                currentFilePath = backupPath.replace(/\.backup_.+$/, '');
+                document.getElementById('currentFileName').textContent = currentFilePath.split('/').pop();
+
+                const modalEl = document.getElementById('backupModal');
+                bootstrap.Modal.getInstance(modalEl).hide();
+
+                showToast('✓ 已加载', '备份文件已加载，请确认并点击保存', 'success');
+                addOperationLog('恢复备份', `已加载备份文件: ${backupPath}`);
+            } catch (error) { showToast('✗ 恢复失败', error.message, 'error'); }
+        }
+
+        // --- 日志系统 ---
+
+        function addOperationLog(operation, details = '') {
+            const now = new Date();
+            const logEntry = { id: Date.now(), timestamp: now.toLocaleTimeString('zh-CN'), operation: operation, details: details };
+            operationLog.unshift(logEntry);
+            if (operationLog.length > 100) operationLog.pop();
+            try { localStorage.setItem('operationLog', JSON.stringify(operationLog)); } catch (e) {}
+            renderOperationLog();
+        }
+
+        function loadOperationLog() {
+            try { const savedLog = localStorage.getItem('operationLog'); if (savedLog) operationLog = JSON.parse(savedLog); } catch (e) {}
             renderOperationLog();
         }
 
         function renderOperationLog() {
-            const container = document.getElementById('operationLog');
-            if(operationLog.length === 0) { container.innerHTML = '<li class="text-muted small text-center mt-4">暂无记录</li>'; return; }
-            container.innerHTML = operationLog.map(e => `
-                <li>
-                    <div class="d-flex justify-content-between"><span class="fw-bold text-dark">${escapeHtml(e.op)}</span><small class="text-secondary font-monospace">${e.time}</small></div>
-                    ${e.details ? `<div class="text-secondary small mt-1 text-break">${escapeHtml(e.details)}</div>` : ''}
-                </li>`).join('');
+            const logContainer = document.getElementById('operationLog');
+            if (operationLog.length === 0) { logContainer.innerHTML = '<li class="text-muted small text-center mt-4">暂无操作记录</li>'; return; }
+            logContainer.innerHTML = '';
+            operationLog.forEach(entry => {
+                const logItem = document.createElement('li');
+                logItem.innerHTML = `<div class="d-flex justify-content-between"><span class="fw-bold text-dark">${escapeHtml(entry.operation)}</span><small class="text-secondary font-monospace">${entry.timestamp}</small></div>${entry.details ? `<div class="text-secondary small mt-1 text-break">${escapeHtml(entry.details)}</div>` : ''}`;
+                logContainer.appendChild(logItem);
+            });
         }
 
-        function loadOperationLog() {
-            try { operationLog = JSON.parse(localStorage.getItem('operationLog')) || []; renderOperationLog(); } catch(e){}
-        }
-        function clearOperationLog() { operationLog=[]; localStorage.removeItem('operationLog'); renderOperationLog(); }
+        function clearOperationLog() { operationLog = []; localStorage.removeItem('operationLog'); renderOperationLog(); }
+
+        // --- 错误日志监控 ---
 
         async function addErrorPattern() {
             const keyword = document.getElementById('errorKeyword').value.trim();
             const name = document.getElementById('errorName').value.trim();
-            if (!keyword || !name) return showToast('⚠', '请填写完整', 'warning');
+            if (!keyword || !name) { showToast('⚠ 输入错误', '请填写完整信息', 'warning'); return; }
 
             try {
-                const res = await fetch('/config/error_patterns');
-                let patterns = res.ok ? await res.json() : [];
-                if (patterns.some(p => p.keyword === keyword)) return showToast('⚠', '重复', 'warning');
+                const response = await fetch('/config/error_patterns');
+                let patterns = [];
+                if (response.ok) patterns = await response.json();
+
+                if (patterns.some(p => p.keyword === keyword || p.name === name)) { showToast('⚠ 重复项', '规则已存在', 'warning'); return; }
 
                 patterns.push({ keyword, name });
-                const save = await fetch('/config/error_patterns', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(patterns) });
-                if(save.ok) {
-                    showToast('✓', '添加成功', 'success');
+                const saveResponse = await fetch('/config/error_patterns', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(patterns) });
+                if (saveResponse.ok) {
+                    showToast('✓ 添加成功', `已添加: ${name}`, 'success');
+                    document.getElementById('addErrorPatternForm').reset();
                     bootstrap.Modal.getInstance(document.getElementById('addErrorPatternModal')).hide();
                     addOperationLog('添加错误信息', `关键字: ${keyword}, 名称: ${name}`);
-                }
-            } catch(e) { showToast('✗', '错误', 'error'); }
+                } else throw new Error('保存失败');
+            } catch (error) { showToast('✗ 添加失败', '请稍后重试', 'error'); }
         }
 
-        function startErrorLogRefresh() {
-            setInterval(() => {
-                const id = document.getElementById('serverSelector').value;
-                if(id && !document.getElementById('connectionStatus').classList.contains('d-none')) {
-                    services.forEach(s => fetchServiceErrors(s.name));
-                }
-            }, 20000);
-        }
-
-        async function fetchServiceErrors(name) {
-            const id = document.getElementById('serverSelector').value;
+        async function fetchServiceErrors(serviceName) {
+            const serverId = document.getElementById('serverSelector').value;
+            if (!serverId) return;
             try {
-                const res = await fetch(`/services/${name}/errors?server_id=${id}`);
-                if(res.ok) {
-                    const errs = await res.json();
-                    serviceLogs = serviceLogs.filter(l => l.service !== name).concat(errs);
+                const response = await fetch(`/services/${serviceName}/errors?server_id=${serverId}`);
+                if (response.ok) {
+                    const errors = await response.json();
+                    serviceLogs = serviceLogs.filter(log => log.service !== serviceName);
+                    serviceLogs.push(...errors);
                     renderServiceLogs();
                 }
-            } catch(e){}
+            } catch (error) {}
         }
 
         function renderServiceLogs() {
-            const container = document.getElementById('errorLogList');
-            if(serviceLogs.length===0) { container.innerHTML='<li class="text-muted small text-center mt-4">暂无日志</li>'; return; }
-            container.innerHTML = serviceLogs.sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp)).slice(0,50).map(e => `
-                <li style="border-left-color:#ef4444">
-                    <div class="d-flex justify-content-between"><span class="fw-bold text-danger small">[${escapeHtml(e.service)}] ${escapeHtml(e.error_name)}</span><small class="text-secondary font-monospace">${e.timestamp.split(' ')[1]}</small></div>
-                    <div class="text-secondary small text-break mt-1 font-monospace">${escapeHtml(e.log_line)}</div>
-                </li>`).join('');
+            const logContainer = document.getElementById('errorLogList');
+            if (!logContainer) return;
+            if (serviceLogs.length === 0) { logContainer.innerHTML = '<li class="text-muted small text-center mt-4">暂无错误日志</li>'; return; }
+
+            const sortedLogs = [...serviceLogs].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            const uniqueLogs = [];
+            const seenErrors = new Set();
+            for (const log of sortedLogs) {
+                const errorKey = `${log.service}-${log.error_name}-${log.timestamp}`;
+                if (!seenErrors.has(errorKey)) { seenErrors.add(errorKey); uniqueLogs.push(log); }
+            }
+
+            logContainer.innerHTML = '';
+            uniqueLogs.forEach(entry => {
+                const logItem = document.createElement('li');
+                logItem.style.borderLeftColor = '#ef4444';
+                logItem.innerHTML = `<div class="d-flex justify-content-between"><span class="fw-bold text-danger small">[${escapeHtml(entry.service)}] ${escapeHtml(entry.error_name)}</span><small class="text-secondary font-monospace">${entry.timestamp.split(' ')[1] || entry.timestamp}</small></div><div class="text-secondary small text-break mt-1 font-monospace">${escapeHtml(entry.log_line)}</div>`;
+                logContainer.appendChild(logItem);
+            });
         }
+
         function clearServiceLogs() { serviceLogs = []; renderServiceLogs(); }
 
-        function showBackupHistory() { alert('功能未变，代码省略以节省长度'); }
+        function startErrorLogRefresh() {
+            setInterval(() => {
+                const serverId = document.getElementById('serverSelector').value;
+                const isConnected = !document.getElementById('connectionStatus').classList.contains('d-none');
+                if (serverId && isConnected && services.length > 0) {
+                    services.forEach(service => fetchServiceErrors(service.name));
+                }
+            }, 20000);
+        }
     </script>
 </body>
 </html>
