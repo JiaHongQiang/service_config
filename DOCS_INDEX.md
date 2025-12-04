@@ -50,6 +50,109 @@
 
 **何时阅读**: 需要了解测试连接功能的实现时
 
+### 🚀 [OPTIMIZATION_REPORT.md](OPTIMIZATION_REPORT.md)
+**适合**: 开发者、技术人员
+**内容**:
+- 三大性能优化说明
+- 合并测试连接函数（减少150行代码）
+- 统一 API 请求模式
+- DOM 元素缓存
+- 代码减少统计
+- 性能提升数据
+
+**何时阅读**: 需要了解项目优化策略和性能提升时
+
+### 💡 [OPTIMIZATION_EXAMPLES.js](OPTIMIZATION_EXAMPLES.js)
+**适合**: 开发者
+**内容**:
+- 优化前后代码对比
+- DOMCache 使用示例
+- API 辅助器使用示例
+- 批量替换模式
+
+**何时阅读**: 需要应用优化模式到其他函数时
+
+### ⚙️ [DOM_CACHE_INIT.js](DOM_CACHE_INIT.js)
+**适合**: 开发者
+**内容**:
+- DOMCache 初始化脚本
+- 验证函数
+- 使用说明
+
+**何时阅读**: 需要初始化 DOM 缓存时
+
+---
+
+## 🐍 后端优化文档
+
+### 🚀 [BACKEND_OPTIMIZATION_GUIDE.md](BACKEND_OPTIMIZATION_GUIDE.md)
+**适合**: Python 开发者、后端工程师
+**内容**:
+- 统一异常处理系统
+- JSON 文件管理工具类
+- 配置文件管理模块
+- 实施步骤和迁移指南
+- 优化前后代码对比
+
+**何时阅读**: 需要了解后端优化策略时
+
+### ⚡ [BACKEND_OPTIMIZATION_QUICK_REF.md](BACKEND_OPTIMIZATION_QUICK_REF.md)
+**适合**: Python 开发者
+**内容**:
+- 快速使用指南
+- API 速查表
+- 常见使用模式
+- 迁移检查清单
+
+**何时阅读**: 需要快速查阅后端 API 时
+
+### 📦 新增 Python 模块
+**适合**: 开发者
+**模块**:
+- `exceptions.py` - 统一异常处理
+- `json_manager.py` - JSON 文件管理
+- `config_manager.py` - 配置管理
+
+**何时使用**: 在代码中导入并使用这些模块
+
+---
+
+## 🎨 JavaScript 模块化文档
+
+### 🚀 [JAVASCRIPT_MODULARIZATION_GUIDE.md](JAVASCRIPT_MODULARIZATION_GUIDE.md)
+**适合**: JavaScript 开发者
+**内容**:
+- 模块化架构设计
+- 7 个独立模块说明
+- 模块依赖关系
+- 迁移步骤指南
+- 最佳实践
+
+**何时阅读**: 需要了解 JavaScript 模块化重构时
+
+### ⚡ [JAVASCRIPT_MODULES_QUICK_REF.md](JAVASCRIPT_MODULES_QUICK_REF.md)
+**适合**: JavaScript 开发者
+**内容**:
+- 模块 API 速查表
+- 常用操作示例
+- 错误排查指南
+- 快速引入方法
+
+**何时阅读**: 需要快速查阅模块 API 时
+
+### 📦 JavaScript 模块文件
+**位置**: `static/js/`
+**模块**:
+- `core-utils.js` - 核心工具
+- `server-manager.js` - 服务器管理
+- `service-manager.js` - 服务控制
+- `config-manager.js` - 配置文件管理
+- `log-manager.js` - 日志管理
+- `connection-tester.js` - 连接测试
+- `app.js` - 主应用
+
+**何时使用**: 在 HTML 中引入这些模块
+
 ## 📋 辅助文档
 
 ### 📰 [README_UPDATE_NOTES.md](README_UPDATE_NOTES.md)
@@ -82,6 +185,11 @@
 1. 阅读 **[PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md)** 的"开发建议"部分
 2. 了解代码结构和架构设计
 3. 查看 **[TEST_CONNECTION_IMPLEMENTATION.md](TEST_CONNECTION_IMPLEMENTATION.md)** 作为实现示例
+
+### 我想了解性能优化
+1. 查看 **[OPTIMIZATION_REPORT.md](OPTIMIZATION_REPORT.md)** 了解优化策略
+2. 阅读 **[OPTIMIZATION_EXAMPLES.js](OPTIMIZATION_EXAMPLES.js)** 查看代码示例
+3. 使用 **[DOM_CACHE_INIT.js](DOM_CACHE_INIT.js)** 初始化 DOM 缓存
 
 ### 我想部署到生产环境
 1. 阅读 **[README.md](README.md)** 的"配置说明"部分

@@ -918,6 +918,113 @@
 
         let currentServers = []; // 保存服务器列表以供编辑使用
 
+        // ========================================
+        // 性能优化：DOM 元素缓存
+        // ========================================
+        const DOMCache = {
+            // 服务器相关
+            serverSelector: null,
+            connectionStatus: null,
+            disconnectedStatus: null,
+
+            // 按钮
+            connectBtn: null,
+            saveFileBtn: null,
+            compareBtn: null,
+            backupListBtn: null,
+
+            // 容器
+            serviceContainer: null,
+            fileTree: null,
+            operationLog: null,
+            errorLogList: null,
+            sftpContainer: null,
+            configEditorContainer: null,
+
+            // 文件编辑器
+            currentFileName: null,
+            lastSavedTime: null,
+
+            // 初始化缓存
+            init() {
+                this.serverSelector = document.getElementById('serverSelector');
+                this.connectionStatus = document.getElementById('connectionStatus');
+                this.disconnectedStatus = document.getElementById('disconnectedStatus');
+                this.connectBtn = document.getElementById('connectBtn');
+                this.saveFileBtn = document.getElementById('saveFileBtn');
+                this.compareBtn = document.getElementById('compareBtn');
+                this.backupListBtn = document.getElementById('backupListBtn');
+                this.serviceContainer = document.getElementById('serviceContainer');
+                this.fileTree = document.getElementById('fileTree');
+                this.operationLog = document.getElementById('operationLog');
+                this.errorLogList = document.getElementById('errorLogList');
+                this.sftpContainer = document.getElementById('sftpContainer');
+                this.configEditorContainer = document.getElementById('configEditorContainer');
+                this.currentFileName = document.getElementById('currentFileName');
+                this.lastSavedTime = document.getElementById('lastSavedTime');
+            }
+        };
+
+        // ========================================
+        // 性能优化：统一 API 请求模式
+        // ========================================
+        const API = {
+            /**
+             * 统一的 API 请求处理
+             * @param {string} url - 请求 URL
+             * @param {Object} options - 请求选项
+             * @returns {Promise<Object>} 响应数据
+             */
+            async request(url, options = {}) {
+                const defaultOptions = {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...options.headers
+                    }
+                };
+
+                try {
+                    const response = await fetch(url, { ...defaultOptions, ...options });
+
+                    if (!response.ok) {
+                        const error = await response.json().catch(() => ({ error: '请求失败' }));
+                        throw new Error(error.error || `HTTP ${response.status}`);
+                    }
+
+                    return await response.json();
+                } catch (error) {
+                    console.error('API Request Error:', error);
+                    throw error;
+                }
+            },
+
+            // GET 请求
+            async get(url) {
+                return this.request(url, { method: 'GET' });
+            },
+
+            // POST 请求
+            async post(url, data = null) {
+                return this.request(url, {
+                    method: 'POST',
+                    body: data ? JSON.stringify(data) : undefined
+                });
+            },
+
+            // PUT 请求
+            async put(url, data) {
+                return this.request(url, {
+                    method: 'PUT',
+                    body: JSON.stringify(data)
+                });
+            },
+
+            // DELETE 请求
+            async delete(url) {
+                return this.request(url, { method: 'DELETE' });
+            }
+        };
+
         function openEditServerModal() {
             const serverId = document.getElementById('serverSelector').value;
             if (!serverId) {
@@ -1024,314 +1131,142 @@
             } catch (e) { showToast('✗ 错误', '网络异常', 'error'); }
         }
 
-        // 测试添加服务器时的连接
-        async function testAddConnection() {
-            // 获取表单数据（无需保存到服务器）
-            const data = {
-                id: 'temp-test-' + Date.now().toString(), // 临时ID
-                name: document.getElementById('serverName').value,
-                host: document.getElementById('serverHost').value,
-                port: parseInt(document.getElementById('serverPort').value),
-                username: document.getElementById('serverUsername').value,
-                auth_method: document.getElementById('authMethod').value,
-                password: document.getElementById('serverPassword').value
-            };
-            
-            // 验证必填字段
-            if (!data.host || !data.username || (!data.password && data.auth_method === 'password')) {
-                showToast('⚠ 提示', '请先填写完整的服务器信息（主机地址、用户名、密码）', 'warning');
-                return;
-            }
-            
-            const testBtn = document.getElementById('testAddConnectionBtn');
+        // ========================================
+        // 测试连接功能 - 优化后的通用实现
+        // ========================================
+
+        /**
+         * 通用的服务器连接测试函数
+         * @param {string} mode - 测试模式：'add' 或 'edit'
+         * @returns {Promise<void>}
+         */
+        async function testServerConnection(mode = 'add') {
+            // 1. 获取表单数据
+            const data = getServerFormData(mode);
+            if (!data) return; // 数据验证失败
+
+            // 2. 获取测试按钮
+            const btnId = mode === 'add' ? 'testAddConnectionBtn' : 'testEditConnectionBtn';
+            const testBtn = document.getElementById(btnId);
             const originalHtml = testBtn.innerHTML;
+
+            // 3. 设置按钮加载状态
             testBtn.disabled = true;
             testBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> 测试中...';
-            
+
             try {
-                // 先临时添加服务器（用于测试）
-                const addRes = await fetch('/servers', { 
-                    method: 'POST', 
-                    headers: { 'Content-Type': 'application/json' }, 
-                    body: JSON.stringify(data) 
+                // 4. 临时添加服务器
+                const addRes = await fetch('/servers', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
                 });
-                
-                if (addRes.ok) {
-                    const server = await addRes.json();
-                    
-                    // 测试连接
-                    showToast('测试中...', '正在测试连接', 'info', 2000);
-                    const testRes = await fetch(`/servers/${server.id}/test_connection`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' }
-                    });
-                    
-                    // 删除临时服务器
-                    await fetch(`/servers/${server.id}`, { method: 'DELETE' });
-                    
-                    // 显示测试结果
-                    if (testRes.ok) {
-                        const result = await testRes.json();
-                        showToast('✓ 连接成功', result.message, 'success', 5000);
-                        addOperationLog('测试连接', `测试成功: ${data.name} (${data.host})`);
-                    } else {
-                        const err = await testRes.json();
-                        showToast('✗ 连接失败', err.error, 'error', 5000);
-                        addOperationLog('测试连接', `测试失败: ${data.name} - ${err.error}`);
-                    }
-                } else {
+
+                if (!addRes.ok) {
                     const err = await addRes.json();
                     showToast('✗ 错误', err.error, 'error');
+                    return;
                 }
+
+                const server = await addRes.json();
+
+                // 5. 测试连接
+                showToast('测试中...', '正在测试连接', 'info', 2000);
+                const testRes = await fetch(`/servers/${server.id}/test_connection`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                // 6. 清理临时服务器
+                await fetch(`/servers/${server.id}`, { method: 'DELETE' });
+
+                // 7. 显示测试结果
+                handleTestResult(testRes, data);
+
             } catch (e) {
-                console.error(e);
+                console.error('测试连接失败:', e);
                 showToast('✗ 错误', '测试连接失败：' + e.message, 'error');
             } finally {
+                // 8. 恢复按钮状态
                 testBtn.disabled = false;
                 testBtn.innerHTML = originalHtml;
             }
         }
-        
-        // 测试编辑服务器时的连接
-        async function testEditConnection() {
-            const serverId = document.getElementById('serverSelector').value;
-            if (!serverId) {
-                showToast('⚠ 未选择', '请先选择要编辑的服务器', 'warning');
-                return;
-            }
-        
-            // 获取表单数据
+
+        /**
+         * 获取服务器表单数据
+         * @param {string} mode - 表单模式：'add' 或 'edit'
+         * @returns {Object|null} 服务器数据对象，验证失败返回null
+         */
+        function getServerFormData(mode) {
+            const prefix = mode === 'add' ? 'server' : 'editServer';
+            const authMethodId = mode === 'add' ? 'authMethod' : 'editAuthMethod';
+
             const data = {
                 id: 'temp-test-' + Date.now().toString(),
-                name: document.getElementById('editServerName').value,
-                host: document.getElementById('editServerHost').value,
-                port: parseInt(document.getElementById('editServerPort').value),
-                username: document.getElementById('editServerUsername').value,
-                auth_method: document.getElementById('editAuthMethod').value
+                name: document.getElementById(prefix + 'Name').value,
+                host: document.getElementById(prefix + 'Host').value,
+                port: parseInt(document.getElementById(prefix + 'Port').value),
+                username: document.getElementById(prefix + 'Username').value,
+                auth_method: document.getElementById(authMethodId).value,
+                password: document.getElementById(prefix + 'Password').value
             };
-        
-            // 如果密码字段不为空，使用新密码；否则使用原密码
-            const password = document.getElementById('editServerPassword').value;
-            if (password) {
-                data.password = password;
-            } else {
-                // 使用原服务器密码
+
+            // 编辑模式特殊处理：如果密码为空，使用原密码
+            if (mode === 'edit' && !data.password) {
+                const serverId = document.getElementById('serverSelector').value;
                 const server = currentServers.find(s => s.id == serverId);
                 if (server && server.password) {
                     data.password = server.password;
                 }
             }
-            
+
             // 验证必填字段
-            if (!data.host ||!data.username || (!data.password && data.auth_method === 'password')) {
+            if (!data.host || !data.username || (!data.password && data.auth_method === 'password')) {
                 showToast('⚠ 提示', '请先填写完整的服务器信息（主机地址、用户名、密码）', 'warning');
-                return;
+                return null;
             }
-            
-            const testBtn = document.getElementById('testEditConnectionBtn');
-            const originalHtml = testBtn.innerHTML;
-            testBtn.disabled = true;
-            testBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> 测试中...';
-            
-            try {
-                // 先临时添加服务器（用于测试）
-                const addRes = await fetch('/servers', { 
-                    method: 'POST', 
-                    headers: { 'Content-Type': 'application/json' }, 
-                    body: JSON.stringify(data) 
-                });
-                
-                if (addRes.ok) {
-                    const server = await addRes.json();
-                    
-                    // 测试连接
-                    showToast('测试中...', '正在测试连接', 'info', 2000);
-                    const testRes = await fetch(`/servers/${server.id}/test_connection`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' }
-                    });
-                    
-                    // 删除临时服务器
-                    await fetch(`/servers/${server.id}`, { method: 'DELETE' });
-                    
-                    // 显示测试结果
-                    if (testRes.ok) {
-                        const result = await testRes.json();
-                        showToast('✓ 连接成功', result.message, 'success', 5000);
-                        addOperationLog('测试连接', `测试成功: ${data.name} (${data.host})`);
-                    } else {
-                        const err = await testRes.json();
-                        showToast('✗ 连接失败', err.error, 'error', 5000);
-                        addOperationLog('测试连接', `测试失败: ${data.name} - ${err.error}`);
-                    }
-                } else {
-                    const err = await addRes.json();
-                    showToast('✗ 错误', err.error, 'error');
-                }
-            } catch (e) {
-                console.error(e);
-                showToast('✗ 错误', '测试连接失败：' + e.message, 'error');
-            } finally {
-                testBtn.disabled = false;
-                testBtn.innerHTML = originalHtml;
+
+            return data;
+        }
+
+        /**
+         * 处理测试连接结果
+         * @param {Response} testRes - 测试连接的响应对象
+         * @param {Object} data - 服务器数据
+         */
+        async function handleTestResult(testRes, data) {
+            if (testRes.ok) {
+                const result = await testRes.json();
+                showToast('✓ 连接成功', result.message, 'success', 5000);
+                addOperationLog('测试连接', `测试成功: ${data.name} (${data.host})`);
+            } else {
+                const err = await testRes.json();
+                showToast('✗ 连接失败', err.error, 'error', 5000);
+                addOperationLog('测试连接', `测试失败: ${data.name} - ${err.error}`);
             }
         }
-        
 
+        /**
+         * 测试添加服务器时的连接
+         */
+        async function testAddConnection() {
+            await testServerConnection('add');
+        }
 
-        // 测试添加服务器时的连接
-        async function testAddConnection() {
-            // 获取表单数据（无需保存到服务器）
-            const data = {
-                id: 'temp-test-' + Date.now().toString(), // 临时ID
-                name: document.getElementById('serverName').value,
-                host: document.getElementById('serverHost').value,
-                port: parseInt(document.getElementById('serverPort').value),
-                username: document.getElementById('serverUsername').value,
-                auth_method: document.getElementById('authMethod').value,
-                password: document.getElementById('serverPassword').value
-            };
-
-            // 验证必填字段
-            if (!data.host || !data.username || (!data.password && data.auth_method === 'password')) {
-                showToast('⚠ 提示', '请先填写完整的服务器信息（主机地址、用户名、密码）', 'warning');
-                return;
-            }
-
-            const testBtn = document.getElementById('testAddConnectionBtn');
-            const originalHtml = testBtn.innerHTML;
-            testBtn.disabled = true;
-            testBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> 测试中...';
-
-            try {
-                // 先临时添加服务器（用于测试）
-                const addRes = await fetch('/servers', { 
-                    method: 'POST', 
-                    headers: { 'Content-Type': 'application/json' }, 
-                    body: JSON.stringify(data) 
-                });
-
-                if (addRes.ok) {
-                    const server = await addRes.json();
-
-                    // 测试连接
-                    showToast('测试中...', '正在测试连接', 'info', 2000);
-                    const testRes = await fetch(`/servers/${server.id}/test_connection`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' }
-                    });
-
-                    // 删除临时服务器
-                    await fetch(`/servers/${server.id}`, { method: 'DELETE' });
-
-                    // 显示测试结果
-                    if (testRes.ok) {
-                        const result = await testRes.json();
-                        showToast('✓ 连接成功', result.message, 'success', 5000);
-                        addOperationLog('测试连接', `测试成功: ${data.name} (${data.host})`);
-                    } else {
-                        const err = await testRes.json();
-                        showToast('✗ 连接失败', err.error, 'error', 5000);
-                        addOperationLog('测试连接', `测试失败: ${data.name} - ${err.error}`);
-                    }
-                } else {
-                    const err = await addRes.json();
-                    showToast('✗ 错误', err.error, 'error');
-                }
-            } catch (e) {
-                console.error(e);
-                showToast('✗ 错误', '测试连接失败：' + e.message, 'error');
-            } finally {
-                testBtn.disabled = false;
-                testBtn.innerHTML = originalHtml;
-            }
-        }
-
-        // 测试编辑服务器时的连接
-        async function testEditConnection() {
-            const serverId = document.getElementById('serverSelector').value;
-            if (!serverId) {
-                showToast('⚠ 未选择', '请先选择要编辑的服务器', 'warning');
-                return;
-            }
-
-            // 获取表单数据
-            const data = {
-                id: 'temp-test-' + Date.now().toString(),
-                name: document.getElementById('editServerName').value,
-                host: document.getElementById('editServerHost').value,
-                port: parseInt(document.getElementById('editServerPort').value),
-                username: document.getElementById('editServerUsername').value,
-                auth_method: document.getElementById('editAuthMethod').value
-            };
-
-            // 如果密码字段不为空，使用新密码；否则使用原密码
-            const password = document.getElementById('editServerPassword').value;
-            if (password) {
-                data.password = password;
-            } else {
-                // 使用原服务器密码
-                const server = currentServers.find(s => s.id == serverId);
-                if (server && server.password) {
-                    data.password = server.password;
-                }
-            }
-
-            // 验证必填字段
-            if (!data.host ||!data.username || (!data.password && data.auth_method === 'password')) {
-                showToast('⚠ 提示', '请先填写完整的服务器信息（主机地址、用户名、密码）', 'warning');
-                return;
-            }
-
-            const testBtn = document.getElementById('testEditConnectionBtn');
-            const originalHtml = testBtn.innerHTML;
-            testBtn.disabled = true;
-            testBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> 测试中...';
-
-            try {
-                // 先临时添加服务器（用于测试）
-                const addRes = await fetch('/servers', { 
-                    method: 'POST', 
-                    headers: { 'Content-Type': 'application/json' }, 
-                    body: JSON.stringify(data) 
-                });
-
-                if (addRes.ok) {
-                    const server = await addRes.json();
-
-                    // 测试连接
-                    showToast('测试中...', '正在测试连接', 'info', 2000);
-                    const testRes = await fetch(`/servers/${server.id}/test_connection`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' }
-                    });
-
-                    // 删除临时服务器
-                    await fetch(`/servers/${server.id}`, { method: 'DELETE' });
-
-                    // 显示测试结果
-                    if (testRes.ok) {
-                        const result = await testRes.json();
-                        showToast('✓ 连接成功', result.message, 'success', 5000);
-                        addOperationLog('测试连接', `测试成功: ${data.name} (${data.host})`);
-                    } else {
-                        const err = await testRes.json();
-                        showToast('✗ 连接失败', err.error, 'error', 5000);
-                        addOperationLog('测试连接', `测试失败: ${data.name} - ${err.error}`);
-                    }
-                } else {
-                    const err = await addRes.json();
-                    showToast('✗ 错误', err.error, 'error');
-                }
-            } catch (e) {
-                console.error(e);
-                showToast('✗ 错误', '测试连接失败：' + e.message, 'error');
-            } finally {
-                testBtn.disabled = false;
-                testBtn.innerHTML = originalHtml;
-            }
-        }
-
+        /**
+         * 测试编辑服务器时的连接
+         */
+        async function testEditConnection() {
+            // 验证是否选择了服务器
+            const serverId = document.getElementById('serverSelector').value;
+            if (!serverId) {
+                showToast('⚠ 未选择', '请先选择要编辑的服务器', 'warning');
+                return;
+            }
+            await testServerConnection('edit');
+        }
+
         async function deleteSelectedServer() {
             const id = document.getElementById('serverSelector').value;
             if (!id) return;

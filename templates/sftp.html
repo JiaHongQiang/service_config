@@ -1,12 +1,15 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>SFTP 文件管理</title>
 
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+    rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 
   <style>
@@ -17,56 +20,236 @@
       --text-main: #1f2937;
       --text-secondary: #6b7280;
     }
-    body { padding: 0; background-color: #f9fafb; height: 100vh; font-family: 'Inter', sans-serif; color: var(--text-main); overflow: hidden; }
 
-    .container-fluid { padding: 0; height: 100%; }
-    .row { height: 100%; }
+    body {
+      padding: 0;
+      background-color: #f9fafb;
+      height: 100vh;
+      font-family: 'Inter', sans-serif;
+      color: var(--text-main);
+      overflow: hidden;
+    }
 
-    .glass-card { background: #fff; border: var(--glass-border); border-radius: 12px; box-shadow: var(--card-shadow); display: flex; flex-direction: column; height: 100%; overflow: hidden; }
-    .card-header { background: #fff; border-bottom: 1px solid #f3f4f6; padding: 0.8rem 1rem; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
-    .card-body { flex: 1; overflow: hidden; padding: 0; position: relative; }
+    .container-fluid {
+      padding: 0;
+      height: 100%;
+    }
 
-    .table-container { height: 100%; overflow-y: auto; }
-    .table { width: 100%; table-layout: fixed; margin-bottom: 0; }
-    .table thead { position: sticky; top: 0; z-index: 10; background: #f9fafb; }
-    .table th { background: #f9fafb; color: var(--text-secondary); font-size: 0.75rem; padding: 0.75rem 0.5rem; border-bottom: 1px solid #e5e7eb; white-space: nowrap; }
-    .table td { padding: 0.6rem 0.5rem; vertical-align: middle; border-bottom: 1px solid #f3f4f6; font-size: 0.85rem; color: var(--text-main); white-space: nowrap; }
+    .row {
+      height: 100%;
+    }
 
-    .col-icon { width: 40px; text-align: center; }
-    .col-name { width: auto; }
-    .col-size { width: 100px; }
-    .col-date { width: 180px; }
-    .col-perm { width: 100px; }
-    .col-user { width: 153px; }
+    .glass-card {
+      background: #fff;
+      border: var(--glass-border);
+      border-radius: 12px;
+      box-shadow: var(--card-shadow);
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      overflow: hidden;
+    }
 
-    .file-row:hover { background-color: #eff6ff; cursor: pointer; }
-    .folder-icon { color: #f59e0b; }
-    .file-icon-text { color: #9ca3af; }
-    .filename-container { display: flex; align-items: center; width: 100%; overflow: hidden; }
-    .filename-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .card-header {
+      background: #fff;
+      border-bottom: 1px solid #f3f4f6;
+      padding: 0.8rem 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+
+    .card-body {
+      flex: 1;
+      overflow: hidden;
+      padding: 0;
+      position: relative;
+    }
+
+    .table-container {
+      height: 100%;
+      overflow-y: auto;
+    }
+
+    .table {
+      width: 100%;
+      table-layout: fixed;
+      margin-bottom: 0;
+    }
+
+    .table thead {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: #f9fafb;
+    }
+
+    .table th {
+      background: #f9fafb;
+      color: var(--text-secondary);
+      font-size: 0.75rem;
+      padding: 0.75rem 0.5rem;
+      border-bottom: 1px solid #e5e7eb;
+      white-space: nowrap;
+    }
+
+    .table td {
+      padding: 0.6rem 0.5rem;
+      vertical-align: middle;
+      border-bottom: 1px solid #f3f4f6;
+      font-size: 0.85rem;
+      color: var(--text-main);
+      white-space: nowrap;
+    }
+
+    .col-icon {
+      width: 40px;
+      text-align: center;
+    }
+
+    .col-name {
+      width: auto;
+    }
+
+    .col-size {
+      width: 100px;
+    }
+
+    .col-date {
+      width: 180px;
+    }
+
+    .col-perm {
+      width: 100px;
+    }
+
+    .col-user {
+      width: 153px;
+    }
+
+    .file-row:hover {
+      background-color: #eff6ff;
+      cursor: pointer;
+    }
+
+    .folder-icon {
+      color: #f59e0b;
+    }
+
+    .file-icon-text {
+      color: #9ca3af;
+    }
+
+    .filename-container {
+      display: flex;
+      align-items: center;
+      width: 100%;
+      overflow: hidden;
+    }
+
+    .filename-text {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
 
     /* 操作按钮 */
-    .file-actions { display: none; position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.95); border: 1px solid #e5e7eb; padding: 3px; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); z-index: 20; gap: 4px; }
-    .file-row:hover .file-actions { display: flex; }
-    .file-action-btn { width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; border-radius: 4px; cursor: pointer; color: var(--text-secondary); transition: all 0.2s; }
-    .file-action-btn:hover { background: #eff6ff; color: var(--primary); }
-    .file-action-btn.delete:hover { background: #fef2f2; color: #ef4444; }
+    .file-actions {
+      display: none;
+      position: absolute;
+      right: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: rgba(255, 255, 255, 0.95);
+      border: 1px solid #e5e7eb;
+      padding: 3px;
+      border-radius: 6px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      z-index: 20;
+      gap: 4px;
+    }
+
+    .file-row:hover .file-actions {
+      display: flex;
+    }
+
+    .file-action-btn {
+      width: 26px;
+      height: 26px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+      cursor: pointer;
+      color: var(--text-secondary);
+      transition: all 0.2s;
+    }
+
+    .file-action-btn:hover {
+      background: #eff6ff;
+      color: var(--primary);
+    }
+
+    .file-action-btn.delete:hover {
+      background: #fef2f2;
+      color: #ef4444;
+    }
 
     /* 上传区域 */
-    .upload-panel-body { padding: 1.5rem; height: 100%; overflow-y: auto; }
-    .drop-zone { border: 2px dashed #d1d5db; border-radius: 12px; padding: 2rem 0.6rem; background: #f9fafb; transition: all 0.2s; color: var(--text-secondary); margin-bottom: 0.3rem; }
-    .drop-zone.dragover { border-color: var(--primary); background-color: #eff6ff; color: var(--primary); }
+    .upload-panel-body {
+      padding: 1.5rem;
+      height: 100%;
+      overflow-y: auto;
+    }
+
+    .drop-zone {
+      border: 2px dashed #d1d5db;
+      border-radius: 12px;
+      padding: 2rem 0.6rem;
+      background: #f9fafb;
+      transition: all 0.2s;
+      color: var(--text-secondary);
+      margin-bottom: 0.3rem;
+    }
+
+    .drop-zone.dragover {
+      border-color: var(--primary);
+      background-color: #eff6ff;
+      color: var(--primary);
+    }
 
     /* 原始权限弹窗的特定样式 */
-    .tea-checkbox { margin-right: 8px; }
-    .tea-form-check__label { font-size: 0.85rem; user-select: none; }
-    .dropdown-menu { max-height: 200px; overflow-y: auto; }
+    .tea-checkbox {
+      margin-right: 8px;
+    }
 
-    ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 3px; }
-    ::-webkit-scrollbar-track { background: transparent; }
+    .tea-form-check__label {
+      font-size: 0.85rem;
+      user-select: none;
+    }
+
+    .dropdown-menu {
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #d1d5db;
+      border-radius: 3px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
   </style>
 </head>
+
 <body>
   <div class="container-fluid">
     <div class="row h-100 g-0">
@@ -75,12 +258,15 @@
           <div class="card-header">
             <div class="d-flex align-items-center gap-2" style="overflow: hidden;">
               <h6 class="mb-0 fw-bold text-dark"><i class="fas fa-folder-open me-2 text-primary"></i>文件</h6>
-              <div class="font-monospace text-secondary small border px-2 rounded bg-light" id="currentPath" title="/">/</div>
+              <div class="font-monospace text-secondary small border px-2 rounded bg-light" id="currentPath" title="/">/
+              </div>
             </div>
             <div class="d-flex gap-2 flex-shrink-0">
               <button id="btnUp" class="btn btn-sm btn-outline-secondary"><i class="fas fa-level-up-alt"></i></button>
-              <button id="refreshListBtn" class="btn btn-sm btn-outline-secondary"><i class="fas fa-sync-alt"></i></button>
-              <button id="btnNewFolder" class="btn btn-sm btn-primary"><i class="fas fa-folder-plus me-1"></i>新建</button>
+              <button id="refreshListBtn" class="btn btn-sm btn-outline-secondary"><i
+                  class="fas fa-sync-alt"></i></button>
+              <button id="btnNewFolder" class="btn btn-sm btn-primary"><i
+                  class="fas fa-folder-plus me-1"></i>新建</button>
             </div>
           </div>
           <div class="card-body">
@@ -97,7 +283,9 @@
                   </tr>
                 </thead>
                 <tbody id="fileTableBody">
-                  <tr><td colspan="6" class="text-center py-5 text-muted">等待连接...</td></tr>
+                  <tr>
+                    <td colspan="6" class="text-center py-5 text-muted">等待连接...</td>
+                  </tr>
                 </tbody>
               </table>
             </div>
@@ -107,7 +295,9 @@
 
       <div class="col-md-3 h-100">
         <div class="glass-card">
-          <div class="card-header"><h6 class="mb-0 fw-bold text-dark">上传</h6></div>
+          <div class="card-header">
+            <h6 class="mb-0 fw-bold text-dark">上传</h6>
+          </div>
           <div class="card-body upload-panel-body">
             <div class="mb-3">
               <label class="form-label small fw-bold text-secondary">目标路径</label>
@@ -116,8 +306,9 @@
             <div id="dropZone" class="drop-zone text-center">
               <i class="fas fa-cloud-arrow-up fa-2x mb-2 opacity-25"></i>
               <p class="mb-1 fw-medium small">拖拽文件到此处</p>
-              <div id="dropZoneFileList" class="text-start mt-3 bg-white p-2 rounded border small" style="display: none;">
-                 <ul id="dropZoneFileListItems" class="mb-0 ps-3 text-secondary"></ul>
+              <div id="dropZoneFileList" class="text-start mt-3 bg-white p-2 rounded border small"
+                style="display: none;">
+                <ul id="dropZoneFileListItems" class="mb-0 ps-3 text-secondary"></ul>
               </div>
             </div>
             <div class="d-grid gap-2">
@@ -141,121 +332,181 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
   <script>
     function escapeHtml(str) {
-        if (!str) return '';
-        return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+      if (!str) return '';
+      return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
     }
-
     let currentPath = '/';
     let currentServerId = '';
     let draggedFiles = null;
 
     document.addEventListener('DOMContentLoaded', () => {
-        const urlParams = new URLSearchParams(window.location.search);
-        const serverIdFromUrl = urlParams.get('server_id');
+      const urlParams = new URLSearchParams(window.location.search);
+      const serverIdFromUrl = urlParams.get('server_id');
 
-        initServerSelector().then(() => {
-            const sid = serverIdFromUrl || sessionStorage.getItem('lastSelectedServer');
-            if(sid) {
-                const sel = document.getElementById('sftpServerSelector');
-                if(sel) { sel.value = sid; currentServerId = sid; connectServerFromSelector(true); }
-            }
-        });
+      initServerSelector().then(() => {
+        const sid = serverIdFromUrl || sessionStorage.getItem('lastSelectedServer');
+        if (sid) {
+          const sel = document.getElementById('sftpServerSelector');
+          if (sel) { sel.value = sid; currentServerId = sid; connectServerFromSelector(true); }
+        }
+      });
 
-        initDragAndDrop();
+      initDragAndDrop();
 
-        document.getElementById('refreshListBtn').addEventListener('click', () => loadPath(currentPath));
-        document.getElementById('btnUp').addEventListener('click', () => {
-            if(currentPath === '/' || !currentPath) return;
-            const parent = currentPath.replace(/\/+$/, '').split('/').slice(0,-1).join('/') || '/';
-            loadPath(parent);
-        });
-        document.getElementById('pickFilesBtn').addEventListener('click', () => document.getElementById('fileInput').click());
-        document.getElementById('fileInput').addEventListener('change', e => handleFiles(e.target.files));
-        document.getElementById('uploadBtn').addEventListener('click', uploadSelectedFiles);
-        document.getElementById('btnNewFolder').addEventListener('click', () => {
-            const name = prompt('请输入新目录名：');
-            if(name) createDirectory(currentPath.endsWith('/') ? currentPath + name : currentPath + '/' + name);
-        });
+      document.getElementById('refreshListBtn').addEventListener('click', () => loadPath(currentPath));
+      document.getElementById('btnUp').addEventListener('click', () => {
+        if (currentPath === '/' || !currentPath) return;
+        const parent = currentPath.replace(/\/+$/, '').split('/').slice(0, -1).join('/') || '/';
+        loadPath(parent);
+      });
+      document.getElementById('pickFilesBtn').addEventListener('click', () => document.getElementById('fileInput').click());
+      document.getElementById('fileInput').addEventListener('change', e => handleFiles(e.target.files));
+      document.getElementById('uploadBtn').addEventListener('click', uploadSelectedFiles);
+      document.getElementById('btnNewFolder').addEventListener('click', showNewFolderInput);
     });
 
     async function initServerSelector() {
-        try {
-            const res = await fetch('/servers');
-            if(res.ok) {
-                const servers = await res.json();
-                const sel = document.getElementById('sftpServerSelector');
-                sel.innerHTML = '<option value="">请选择服务器</option>';
-                servers.forEach(s => {
-                    const opt = document.createElement('option');
-                    opt.value = s.id;
-                    opt.textContent = s.name;
-                    sel.appendChild(opt);
-                });
-            }
-        } catch(e) {}
+      try {
+        const res = await fetch('/servers');
+        if (res.ok) {
+          const servers = await res.json();
+          const sel = document.getElementById('sftpServerSelector');
+          sel.innerHTML = '<option value="">请选择服务器</option>';
+          servers.forEach(s => {
+            const opt = document.createElement('option');
+            opt.value = s.id;
+            opt.textContent = s.name;
+            sel.appendChild(opt);
+          });
+        }
+      } catch (e) { }
+    }
+
+    function showNewFolderInput() {
+      const tbody = document.getElementById('fileTableBody');
+      if (tbody.querySelector('td[colspan]')) {
+        tbody.innerHTML = '';
+      }
+
+      const tr = document.createElement('tr');
+      tr.className = 'file-row new-folder-row';
+      tr.innerHTML = `
+            <td class="text-center"><i class="fas fa-folder folder-icon"></i></td>
+            <td class="position-relative filename-cell">
+                <div class="d-flex gap-1 align-items-center">
+                    <input type="text" class="form-control form-control-sm p-1" placeholder="文件夹名称" style="min-width:150px">
+                    <button class="btn btn-success btn-sm p-0 w-auto px-2 confirm-btn" title="确认"><i class="fas fa-check"></i></button>
+                    <button class="btn btn-secondary btn-sm p-0 w-auto px-2 cancel-btn" title="取消"><i class="fas fa-times"></i></button>
+                </div>
+            </td>
+            <td class="small text-secondary font-monospace">-</td>
+            <td class="small text-secondary font-monospace">-</td>
+            <td class="small text-secondary font-monospace">-</td>
+            <td class="small text-secondary font-monospace">-</td>
+        `;
+
+      tbody.insertBefore(tr, tbody.firstChild);
+
+      const input = tr.querySelector('input');
+      const confirmBtn = tr.querySelector('.confirm-btn');
+      const cancelBtn = tr.querySelector('.cancel-btn');
+
+      input.focus();
+
+      const confirm = () => {
+        const name = input.value.trim();
+        if (!name) {
+          input.classList.add('is-invalid');
+          return;
+        }
+        createDirectory(currentPath.endsWith('/') ? currentPath + name : currentPath + '/' + name);
+      };
+
+      const cancel = () => {
+        tr.remove();
+        if (tbody.children.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">空目录</td></tr>';
+        }
+      };
+
+      confirmBtn.onclick = (e) => { e.stopPropagation(); confirm(); };
+      cancelBtn.onclick = (e) => { e.stopPropagation(); cancel(); };
+
+      input.onkeydown = (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          confirm();
+        } else if (e.key === 'Escape') {
+          e.preventDefault();
+          cancel();
+        }
+        e.stopPropagation();
+      };
+
+      input.onclick = (e) => e.stopPropagation();
     }
 
     function initDragAndDrop() {
-        const dropZone = document.getElementById('dropZone');
-        const highlight = () => dropZone.classList.add('dragover');
-        const unhighlight = () => dropZone.classList.remove('dragover');
+      const dropZone = document.getElementById('dropZone');
+      const highlight = () => dropZone.classList.add('dragover');
+      const unhighlight = () => dropZone.classList.remove('dragover');
 
-        ['dragenter', 'dragover'].forEach(e => dropZone.addEventListener(e, (ev) => { ev.preventDefault(); highlight(); }));
-        ['dragleave', 'drop'].forEach(e => dropZone.addEventListener(e, (ev) => { ev.preventDefault(); unhighlight(); }));
+      ['dragenter', 'dragover'].forEach(e => dropZone.addEventListener(e, (ev) => { ev.preventDefault(); highlight(); }));
+      ['dragleave', 'drop'].forEach(e => dropZone.addEventListener(e, (ev) => { ev.preventDefault(); unhighlight(); }));
 
-        dropZone.addEventListener('drop', (e) => handleFiles(e.dataTransfer.files));
+      dropZone.addEventListener('drop', (e) => handleFiles(e.dataTransfer.files));
     }
 
     function handleFiles(files) {
-        draggedFiles = files;
-        const list = document.getElementById('dropZoneFileListItems');
-        list.innerHTML = Array.from(files).map(f => `<li>${escapeHtml(f.name)} (${humanFileSize(f.size)})</li>`).join('');
-        document.getElementById('dropZoneFileList').style.display = files.length ? 'block' : 'none';
+      draggedFiles = files;
+      const list = document.getElementById('dropZoneFileListItems');
+      list.innerHTML = Array.from(files).map(f => `<li>${escapeHtml(f.name)} (${humanFileSize(f.size)})</li>`).join('');
+      document.getElementById('dropZoneFileList').style.display = files.length ? 'block' : 'none';
     }
 
     async function connectServerFromSelector(quiet) {
-        if(!currentServerId) return;
-        try {
-            const res = await fetch(`/servers/${currentServerId}/connect`, { method: 'POST' });
-            if(res.ok) loadPath('/');
-            else if(!quiet) alert('连接失败');
-        } catch(e) { if(!quiet) alert('错误'); }
+      if (!currentServerId) return;
+      try {
+        const res = await fetch(`/servers/${currentServerId}/connect`, { method: 'POST' });
+        if (res.ok) loadPath('/');
+        else if (!quiet) alert('连接失败');
+      } catch (e) { if (!quiet) alert('错误'); }
     }
 
     async function loadPath(path) {
-        if(!currentServerId) return;
-        try {
-            const res = await fetch(`/api/sftp/list?server_id=${currentServerId}&path=${encodeURIComponent(path || '/')}`);
-            if(res.ok) {
-                currentPath = path || '/';
-                document.getElementById('currentPath').textContent = currentPath;
-                document.getElementById('uploadPath').value = currentPath;
-                renderFileTable(await res.json());
-            }
-        } catch(e){}
+      if (!currentServerId) return;
+      try {
+        const res = await fetch(`/api/sftp/list?server_id=${currentServerId}&path=${encodeURIComponent(path || '/')}`);
+        if (res.ok) {
+          currentPath = path || '/';
+          document.getElementById('currentPath').textContent = currentPath;
+          document.getElementById('uploadPath').value = currentPath;
+          renderFileTable(await res.json());
+        }
+      } catch (e) { }
     }
 
     function renderFileTable(items) {
-        const tbody = document.getElementById('fileTableBody');
-        tbody.innerHTML = '';
-        if(!items || !items.length) { tbody.innerHTML='<tr><td colspan="6" class="text-center text-muted">空目录</td></tr>'; return; }
+      const tbody = document.getElementById('fileTableBody');
+      tbody.innerHTML = '';
+      if (!items || !items.length) { tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">空目录</td></tr>'; return; }
 
-        items.sort((a,b) => {
-            if(a.type === b.type) return a.name.localeCompare(b.name);
-            return a.type === 'directory' ? -1 : 1;
-        });
+      items.sort((a, b) => {
+        if (a.type === b.type) return a.name.localeCompare(b.name);
+        return a.type === 'directory' ? -1 : 1;
+      });
 
-        const fragment = document.createDocumentFragment();
-        items.forEach(it => {
-            const tr = document.createElement('tr');
-            tr.className = 'file-row';
-            const icon = it.type === 'directory' ? 'fa-folder folder-icon' : 'fa-file file-icon-text';
-            const safeName = escapeHtml(it.name);
-            const safePath = escapeHtml(it.path);
-            const safeUser = escapeHtml(it.user);
-            const safeGroup = escapeHtml(it.group);
+      const fragment = document.createDocumentFragment();
+      items.forEach(it => {
+        const tr = document.createElement('tr');
+        tr.className = 'file-row';
+        const icon = it.type === 'directory' ? 'fa-folder folder-icon' : 'fa-file file-icon-text';
+        const safeName = escapeHtml(it.name);
+        const safePath = escapeHtml(it.path);
+        const safeUser = escapeHtml(it.user);
+        const safeGroup = escapeHtml(it.group);
 
-            const btns = `
+        const btns = `
                 <div class="file-actions shadow-sm">
                     ${it.type !== 'directory' ? `<div class="file-action-btn" onclick="downloadPath('${safePath}')" title="下载"><i class="fas fa-download fa-sm"></i></div>` : ''}
                     <div class="file-action-btn" onclick="showPermissionsModal('${safePath}', '${it.mode}', '${safeUser}', '${safeGroup}', ${it.uid}, ${it.gid})" title="权限"><i class="fas fa-shield-alt fa-sm"></i></div>
@@ -263,139 +514,139 @@
                     <div class="file-action-btn delete" onclick="deletePath('${safePath}')" title="删除"><i class="fas fa-trash fa-sm"></i></div>
                 </div>`;
 
-            tr.innerHTML = `
+        tr.innerHTML = `
                 <td class="text-center"><i class="fas ${icon}"></i></td>
                 <td class="position-relative filename-cell" title="${safeName}">
                     <div class="filename-container"><span class="filename-text">${safeName}</span></div>
                 </td>
-                <td class="small text-secondary font-monospace">${it.type==='directory'?'-':humanFileSize(it.size)}</td>
+                <td class="small text-secondary font-monospace">${it.type === 'directory' ? '-' : humanFileSize(it.size)}</td>
                 <td class="small text-secondary font-monospace position-relative">${formatDateTime(it.mtime)} ${btns}</td>
                 <td class="small text-secondary font-monospace">${formatFileMode(it.mode)}</td>
                 <td class="small text-secondary font-monospace">${safeUser}:${safeGroup}</td>
             `;
 
-            tr.addEventListener('click', (e) => {
-                if(!e.target.closest('.file-action-btn') && !e.target.closest('input') && it.type === 'directory') {
-                    loadPath(it.path);
-                }
-            });
-            fragment.appendChild(tr);
+        tr.addEventListener('click', (e) => {
+          if (!e.target.closest('.file-action-btn') && !e.target.closest('input') && it.type === 'directory') {
+            loadPath(it.path);
+          }
         });
-        tbody.appendChild(fragment);
+        fragment.appendChild(tr);
+      });
+      tbody.appendChild(fragment);
     }
 
     function humanFileSize(bytes) {
-        if(bytes===0) return '0 B';
-        const i = Math.floor(Math.log(bytes)/Math.log(1024));
-        return (bytes/Math.pow(1024, i)).toFixed(1)+' '+['B','KB','MB','GB'][i];
+      if (bytes === 0) return '0 B';
+      const i = Math.floor(Math.log(bytes) / Math.log(1024));
+      return (bytes / Math.pow(1024, i)).toFixed(1) + ' ' + ['B', 'KB', 'MB', 'GB'][i];
     }
-    function formatDateTime(ts) { return new Date(ts*1000).toLocaleString('zh-CN', {hour12:false}); }
-    function formatFileMode(m) { return typeof m==='string' && m.startsWith('0o') ? m.slice(2) : m; }
+    function formatDateTime(ts) { return new Date(ts * 1000).toLocaleString('zh-CN', { hour12: false }); }
+    function formatFileMode(m) { return typeof m === 'string' && m.startsWith('0o') ? m.slice(2) : m; }
 
     window.downloadPath = (p) => {
-        const a = document.createElement('a');
-        a.href = `/api/sftp/download?server_id=${currentServerId}&path=${encodeURIComponent(p)}`;
-        document.body.appendChild(a); a.click(); a.remove();
+      const a = document.createElement('a');
+      a.href = `/api/sftp/download?server_id=${currentServerId}&path=${encodeURIComponent(p)}`;
+      document.body.appendChild(a); a.click(); a.remove();
     }
 
     window.deletePath = (p) => {
-        if(confirm('确认删除?')) {
-            fetch(`/api/sftp/delete?server_id=${currentServerId}&path=${encodeURIComponent(p)}`, {method:'DELETE'})
-            .then(r=>r.json()).then(() => {
-                loadPath(currentPath);
-                if (window.parent !== window) window.parent.postMessage({type:'sftp_operation_log', operation:'删除文件', details:`删除: ${p}`}, '*');
-            });
-        }
+      if (confirm('确认删除?')) {
+        fetch(`/api/sftp/delete?server_id=${currentServerId}&path=${encodeURIComponent(p)}`, { method: 'DELETE' })
+          .then(r => r.json()).then(() => {
+            loadPath(currentPath);
+            if (window.parent !== window) window.parent.postMessage({ type: 'sftp_operation_log', operation: '删除文件', details: `删除: ${p}` }, '*');
+          });
+      }
     }
 
     window.startRename = (path, btn) => {
-        const row = btn.closest('tr');
-        const nameEl = row.querySelector('.filename-text');
-        const oldName = nameEl.textContent;
-        const cell = row.querySelector('td:nth-child(2)');
+      const row = btn.closest('tr');
+      const nameEl = row.querySelector('.filename-text');
+      const oldName = nameEl.textContent;
+      const cell = row.querySelector('td:nth-child(2)');
 
-        // 恢复取消按钮
-        cell.innerHTML = `
+      // 恢复取消按钮
+      cell.innerHTML = `
             <div class="d-flex gap-1 align-items-center">
                 <input type="text" class="form-control form-control-sm p-1" value="${escapeHtml(oldName)}" style="min-width:150px">
                 <button class="btn btn-success btn-sm p-0 w-auto px-2" title="确认"><i class="fas fa-check"></i></button>
                 <button class="btn btn-secondary btn-sm p-0 w-auto px-2" title="取消"><i class="fas fa-times"></i></button>
             </div>`;
-        const input = cell.querySelector('input');
-        input.focus();
+      const input = cell.querySelector('input');
+      input.focus();
 
-        cell.querySelector('.btn-success').onclick = (e) => {
-            e.stopPropagation();
-            const newName = input.value;
-            const dir = path.substring(0, path.lastIndexOf('/')+1);
-            fetch('/api/sftp/rename', {
-                method:'POST', headers:{'Content-Type':'application/json'},
-                body: JSON.stringify({server_id:currentServerId, old_path:path, new_path:dir+newName})
-            }).then(() => {
-                loadPath(currentPath);
-                if (window.parent !== window) window.parent.postMessage({type:'sftp_operation_log', operation:'重命名', details:`${oldName} -> ${newName}`}, '*');
-            });
-        };
-        // 绑定取消事件
-        cell.querySelector('.btn-secondary').onclick = (e) => {
-            e.stopPropagation();
-            loadPath(currentPath);
-        };
-        input.onclick = (e) => e.stopPropagation();
+      cell.querySelector('.btn-success').onclick = (e) => {
+        e.stopPropagation();
+        const newName = input.value;
+        const dir = path.substring(0, path.lastIndexOf('/') + 1);
+        fetch('/api/sftp/rename', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ server_id: currentServerId, old_path: path, new_path: dir + newName })
+        }).then(() => {
+          loadPath(currentPath);
+          if (window.parent !== window) window.parent.postMessage({ type: 'sftp_operation_log', operation: '重命名', details: `${oldName} -> ${newName}` }, '*');
+        });
+      };
+      // 绑定取消事件
+      cell.querySelector('.btn-secondary').onclick = (e) => {
+        e.stopPropagation();
+        loadPath(currentPath);
+      };
+      input.onclick = (e) => e.stopPropagation();
     }
 
     function uploadSelectedFiles() {
-        const files = draggedFiles || document.getElementById('fileInput').files;
-        if(!files.length) return alert('请选择文件');
+      const files = draggedFiles || document.getElementById('fileInput').files;
+      if (!files.length) return alert('请选择文件');
 
-        const fd = new FormData();
-        Array.from(files).forEach(f => fd.append('files', f));
-        fd.append('path', document.getElementById('uploadPath').value);
-        fd.append('server_id', currentServerId);
+      const fd = new FormData();
+      Array.from(files).forEach(f => fd.append('files', f));
+      fd.append('path', document.getElementById('uploadPath').value);
+      fd.append('server_id', currentServerId);
 
-        const xhr = new XMLHttpRequest();
-        xhr.open('POST', `/api/sftp/upload?server_id=${currentServerId}&path=${encodeURIComponent(currentPath)}`);
-        xhr.upload.onprogress = e => {
-            if(e.lengthComputable) {
-                const pct = Math.round((e.loaded/e.total)*100)+'%';
-                document.getElementById('uploadProgressContainer').innerHTML = `<div class="progress" style="height:4px"><div class="progress-bar" style="width:${pct}"></div></div>`;
-            }
-        };
-        xhr.onload = () => {
-            loadPath(currentPath);
-            document.getElementById('uploadProgressContainer').innerHTML='';
-            draggedFiles=null; document.getElementById('dropZoneFileList').style.display='none';
-            if (window.parent !== window) window.parent.postMessage({type:'sftp_operation_log', operation:'上传文件', details:`上传 ${files.length} 个文件到 ${currentPath}`}, '*');
-        };
-        xhr.send(fd);
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', `/api/sftp/upload?server_id=${currentServerId}&path=${encodeURIComponent(currentPath)}`);
+      xhr.upload.onprogress = e => {
+        if (e.lengthComputable) {
+          const pct = Math.round((e.loaded / e.total) * 100) + '%';
+          document.getElementById('uploadProgressContainer').innerHTML = `<div class="progress" style="height:4px"><div class="progress-bar" style="width:${pct}"></div></div>`;
+        }
+      };
+      xhr.onload = () => {
+        loadPath(currentPath);
+        document.getElementById('uploadProgressContainer').innerHTML = '';
+        draggedFiles = null; document.getElementById('dropZoneFileList').style.display = 'none';
+        if (window.parent !== window) window.parent.postMessage({ type: 'sftp_operation_log', operation: '上传文件', details: `上传 ${files.length} 个文件到 ${currentPath}` }, '*');
+      };
+      xhr.send(fd);
     }
 
     function createDirectory(p) {
-        fetch('/api/sftp/mkdir', {
-            method:'POST', headers:{'Content-Type':'application/json'},
-            body:JSON.stringify({server_id:currentServerId, path:p})
-        }).then(() => loadPath(currentPath));
+      fetch('/api/sftp/mkdir', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ server_id: currentServerId, path: p })
+      }).then(() => loadPath(currentPath));
     }
 
     // 重点：完全还原您的权限管理布局和功能逻辑
     async function showPermissionsModal(encPath, currentMode, currentUser, currentGroup, currentUid, currentGid) {
-        const path = decodeURIComponent(encPath);
+      const path = decodeURIComponent(encPath);
 
-        // 1. 准备数据
-        let users = [], groups = [];
-        try {
-            const res = await fetch(`/api/sftp/users-groups?server_id=${encodeURIComponent(currentServerId)}`);
-            if(res.ok) { const d = await res.json(); users = d.users; groups = d.groups; }
-        } catch(e) { console.warn('Fetch users error', e); }
+      // 1. 准备数据
+      let users = [], groups = [];
+      try {
+        const res = await fetch(`/api/sftp/users-groups?server_id=${encodeURIComponent(currentServerId)}`);
+        if (res.ok) { const d = await res.json(); users = d.users; groups = d.groups; }
+      } catch (e) { console.warn('Fetch users error', e); }
 
-        let mode = 0;
-        if (typeof currentMode === 'string' && currentMode.startsWith('0o')) mode = parseInt(currentMode.slice(2), 8);
-        else if (typeof currentMode === 'number') mode = currentMode;
+      let mode = 0;
+      if (typeof currentMode === 'string' && currentMode.startsWith('0o')) mode = parseInt(currentMode.slice(2), 8);
+      else if (typeof currentMode === 'number') mode = currentMode;
 
-        const check = (mask) => (mode & mask) !== 0 ? 'checked' : '';
+      const check = (mask) => (mode & mask) !== 0 ? 'checked' : '';
 
-        // 2. 还原您的原始 HTML 结构
-        const modalHtml = `
+      // 2. 还原您的原始 HTML 结构
+      const modalHtml = `
         <div class="modal fade" id="permissionModal" tabindex="-1">
           <div class="modal-dialog">
             <div class="modal-content">
@@ -475,126 +726,127 @@
         </div>
         `;
 
-        // 3. 渲染与绑定
-        const div = document.createElement('div');
-        div.innerHTML = modalHtml;
-        document.body.appendChild(div);
+      // 3. 渲染与绑定
+      const div = document.createElement('div');
+      div.innerHTML = modalHtml;
+      document.body.appendChild(div);
 
-        const modal = new bootstrap.Modal(document.getElementById('permissionModal'));
-        modal.show();
+      const modal = new bootstrap.Modal(document.getElementById('permissionModal'));
+      modal.show();
 
-        // 搜索功能实现
-        const setupSearch = (inputId, listId, dataList, idKey) => {
-            const input = div.querySelector(inputId);
-            const list = div.querySelector(listId);
+      // 搜索功能实现
+      const setupSearch = (inputId, listId, dataList, idKey) => {
+        const input = div.querySelector(inputId);
+        const list = div.querySelector(listId);
 
-            input.addEventListener('input', () => {
-                const v = input.value.toLowerCase();
-                if(!v || !dataList.length) { list.style.display='none'; return; }
-                const matched = dataList.filter(i => i.name.toLowerCase().includes(v) || String(i[idKey]).includes(v));
+        input.addEventListener('input', () => {
+          const v = input.value.toLowerCase();
+          if (!v || !dataList.length) { list.style.display = 'none'; return; }
+          const matched = dataList.filter(i => i.name.toLowerCase().includes(v) || String(i[idKey]).includes(v));
 
-                list.innerHTML = '';
-                if(matched.length) {
-                    matched.forEach(item => {
-                        const a = document.createElement('a');
-                        a.className = 'dropdown-item';
-                        a.href='#';
-                        a.textContent = `${item.name} (${item[idKey]})`;
-                        a.onclick = (e) => { e.preventDefault(); input.value = item.name; list.style.display='none'; };
-                        list.appendChild(a);
-                    });
-                    list.style.display = 'block';
-                } else list.style.display='none';
+          list.innerHTML = '';
+          if (matched.length) {
+            matched.forEach(item => {
+              const a = document.createElement('a');
+              a.className = 'dropdown-item';
+              a.href = '#';
+              a.textContent = `${item.name} (${item[idKey]})`;
+              a.onclick = (e) => { e.preventDefault(); input.value = item.name; list.style.display = 'none'; };
+              list.appendChild(a);
             });
-            // 点击外部隐藏
-            document.addEventListener('click', (e) => {
-                if(!input.contains(e.target) && !list.contains(e.target)) list.style.display='none';
+            list.style.display = 'block';
+          } else list.style.display = 'none';
+        });
+        // 点击外部隐藏
+        document.addEventListener('click', (e) => {
+          if (!input.contains(e.target) && !list.contains(e.target)) list.style.display = 'none';
+        });
+      };
+
+      setupSearch('#newUser', '#userSuggestions', users, 'uid');
+      setupSearch('#newGroup', '#groupSuggestions', groups, 'gid');
+
+      // 权限联动逻辑
+      const updateModeValue = () => {
+        let m = 0;
+        if (document.getElementById('ownerRead').checked) m |= 0o400;
+        if (document.getElementById('ownerWrite').checked) m |= 0o200;
+        if (document.getElementById('ownerExecute').checked) m |= 0o100;
+        if (document.getElementById('groupRead').checked) m |= 0o040;
+        if (document.getElementById('groupWrite').checked) m |= 0o020;
+        if (document.getElementById('groupExecute').checked) m |= 0o010;
+        if (document.getElementById('publicRead').checked) m |= 0o004;
+        if (document.getElementById('publicWrite').checked) m |= 0o002;
+        if (document.getElementById('publicExecute').checked) m |= 0o001;
+
+        const s = m.toString(8).padStart(3, '0');
+        document.getElementById('modeValue').value = s;
+        document.getElementById('modeValueDisplay').textContent = s;
+      };
+
+      div.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+        if (cb.id !== 'applyToSubdirectories') cb.addEventListener('change', updateModeValue);
+      });
+
+      document.getElementById('modeValue').addEventListener('input', function () {
+        if (this.value.length === 3) {
+          const m = parseInt(this.value, 8);
+          document.getElementById('ownerRead').checked = (m & 0o400);
+          document.getElementById('ownerWrite').checked = (m & 0o200);
+          document.getElementById('ownerExecute').checked = (m & 0o100);
+          document.getElementById('groupRead').checked = (m & 0o040);
+          document.getElementById('groupWrite').checked = (m & 0o020);
+          document.getElementById('groupExecute').checked = (m & 0o010);
+          document.getElementById('publicRead').checked = (m & 0o004);
+          document.getElementById('publicWrite').checked = (m & 0o002);
+          document.getElementById('publicExecute').checked = (m & 0o001);
+          updateModeValue();
+        }
+      });
+
+      // 保存逻辑
+      document.getElementById('confirmPermission').onclick = async () => {
+        const newUser = document.getElementById('newUser').value;
+        const newGroup = document.getElementById('newGroup').value;
+        const newMode = document.getElementById('modeValue').value;
+        const recursive = document.getElementById('applyToSubdirectories').checked;
+
+        modal.hide();
+
+        try {
+          // chmod
+          await fetch('/api/sftp/chmod', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ server_id: currentServerId, path, mode: parseInt(newMode, 8) })
+          });
+
+          // chown
+          let uid = parseInt(newUser), gid = parseInt(newGroup);
+          if (isNaN(uid)) { const u = users.find(x => x.name === newUser); if (u) uid = u.uid; }
+          if (isNaN(gid)) { const g = groups.find(x => x.name === newGroup); if (g) gid = g.gid; }
+
+          if (!isNaN(uid) || !isNaN(gid)) {
+            // 如果只改了一个，另一个保持原样(但这里简化为都传，逻辑上通常uid/gid都得有效)
+            // 简单处理：如果解析失败就用原值
+            if (isNaN(uid)) uid = currentUid;
+            if (isNaN(gid)) gid = currentGid;
+
+            await fetch('/api/sftp/chown', {
+              method: 'POST', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ server_id: currentServerId, path, uid, gid, recursive: recursive ? true : undefined })
             });
-        };
+          }
 
-        setupSearch('#newUser', '#userSuggestions', users, 'uid');
-        setupSearch('#newGroup', '#groupSuggestions', groups, 'gid');
+          loadPath(currentPath);
+          if (window.parent !== window) window.parent.postMessage({ type: 'sftp_operation_log', operation: '权限设置', details: `更新权限/所有者: ${path}` }, '*');
+        } catch (e) { alert('操作失败'); }
 
-        // 权限联动逻辑
-        const updateModeValue = () => {
-            let m = 0;
-            if(document.getElementById('ownerRead').checked) m|=0o400;
-            if(document.getElementById('ownerWrite').checked) m|=0o200;
-            if(document.getElementById('ownerExecute').checked) m|=0o100;
-            if(document.getElementById('groupRead').checked) m|=0o040;
-            if(document.getElementById('groupWrite').checked) m|=0o020;
-            if(document.getElementById('groupExecute').checked) m|=0o010;
-            if(document.getElementById('publicRead').checked) m|=0o004;
-            if(document.getElementById('publicWrite').checked) m|=0o002;
-            if(document.getElementById('publicExecute').checked) m|=0o001;
+        setTimeout(() => div.remove(), 500);
+      };
 
-            const s = m.toString(8).padStart(3,'0');
-            document.getElementById('modeValue').value = s;
-            document.getElementById('modeValueDisplay').textContent = s;
-        };
-
-        div.querySelectorAll('input[type="checkbox"]').forEach(cb => {
-            if(cb.id !== 'applyToSubdirectories') cb.addEventListener('change', updateModeValue);
-        });
-
-        document.getElementById('modeValue').addEventListener('input', function() {
-            if(this.value.length === 3) {
-                const m = parseInt(this.value, 8);
-                document.getElementById('ownerRead').checked = (m&0o400);
-                document.getElementById('ownerWrite').checked = (m&0o200);
-                document.getElementById('ownerExecute').checked = (m&0o100);
-                document.getElementById('groupRead').checked = (m&0o040);
-                document.getElementById('groupWrite').checked = (m&0o020);
-                document.getElementById('groupExecute').checked = (m&0o010);
-                document.getElementById('publicRead').checked = (m&0o004);
-                document.getElementById('publicWrite').checked = (m&0o002);
-                document.getElementById('publicExecute').checked = (m&0o001);
-                updateModeValue();
-            }
-        });
-
-        // 保存逻辑
-        document.getElementById('confirmPermission').onclick = async () => {
-            const newUser = document.getElementById('newUser').value;
-            const newGroup = document.getElementById('newGroup').value;
-            const newMode = document.getElementById('modeValue').value;
-            const recursive = document.getElementById('applyToSubdirectories').checked;
-
-            modal.hide();
-
-            try {
-                // chmod
-                await fetch('/api/sftp/chmod', {
-                    method: 'POST', headers:{'Content-Type':'application/json'},
-                    body: JSON.stringify({ server_id:currentServerId, path, mode: parseInt(newMode, 8) })
-                });
-
-                // chown
-                let uid = parseInt(newUser), gid = parseInt(newGroup);
-                if(isNaN(uid)) { const u = users.find(x=>x.name===newUser); if(u) uid=u.uid; }
-                if(isNaN(gid)) { const g = groups.find(x=>x.name===newGroup); if(g) gid=g.gid; }
-
-                if(!isNaN(uid) || !isNaN(gid)) {
-                     // 如果只改了一个，另一个保持原样(但这里简化为都传，逻辑上通常uid/gid都得有效)
-                     // 简单处理：如果解析失败就用原值
-                     if(isNaN(uid)) uid = currentUid;
-                     if(isNaN(gid)) gid = currentGid;
-
-                     await fetch('/api/sftp/chown', {
-                        method: 'POST', headers:{'Content-Type':'application/json'},
-                        body: JSON.stringify({ server_id:currentServerId, path, uid, gid, recursive: recursive ? true : undefined })
-                    });
-                }
-
-                loadPath(currentPath);
-                if (window.parent !== window) window.parent.postMessage({type:'sftp_operation_log', operation:'权限设置', details:`更新权限/所有者: ${path}`}, '*');
-            } catch(e) { alert('操作失败'); }
-
-            setTimeout(() => div.remove(), 500);
-        };
-
-        document.getElementById('permissionModal').addEventListener('hidden.bs.modal', () => div.remove());
+      document.getElementById('permissionModal').addEventListener('hidden.bs.modal', () => div.remove());
     }
   </script>
 </body>
+
 </html>
