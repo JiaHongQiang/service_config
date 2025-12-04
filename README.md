@@ -419,3 +419,7 @@ gunicorn -w 4 -b 0.0.0.0:5000 app:create_app()
 ---
 
 ⭐ 如果这个项目对您有帮助，欢迎给个 Star！
+
+## 📚 更多文档
+
+- [技术架构与实现细节 (PROJECT_OVERVIEW.md)](PROJECT_OVERVIEW.md)
