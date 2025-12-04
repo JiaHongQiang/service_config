@@ -1,3 +1,9 @@
+import warnings
+from cryptography.utils import CryptographyDeprecationWarning
+
+# 忽略 CryptographyDeprecationWarning 警告（来自 paramiko/cryptography 的 TripleDES 弃用警告）
+warnings.filterwarnings("ignore", category=CryptographyDeprecationWarning)
+
 from flask import Flask
 
 
